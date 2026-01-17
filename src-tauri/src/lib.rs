@@ -1,5 +1,7 @@
 use std::fmt;
 
+use hinge_angle::HingeAngle;
+
 enum PostureType {
     Continuous,
     Folded,
@@ -35,14 +37,41 @@ impl fmt::Display for PostureType {
     }
 }
 
-#[tauri::command]
-fn read_hinge_angle() -> Result<f64, String> {
-    Ok(42.0)
+#[cfg(target_os = "macos")]
+async fn read_platform_hinge_angle() -> Result<f64, String> {
+    use std::sync::OnceLock;
+
+    use hinge_angle::macos::Hinge;
+    use tauri::async_runtime::Mutex;
+
+    static SENSOR: OnceLock<Result<Mutex<Hinge>, hinge_angle::macos::Error>> = OnceLock::new();
+
+    let hinge = SENSOR.get_or_init(|| Hinge::new().map(Mutex::new));
+
+    let angle = hinge
+        .as_ref()
+        .map_err(|err| err.to_string())?
+        .lock()
+        .await
+        .angle()
+        .map_err(|err| err.to_string())?;
+
+    Ok(angle as f64)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn read_platform_hinge_angle() -> Result<f64, String> {
+    Err("Platform not supported")
 }
 
 #[tauri::command]
-fn read_posture_type() -> Result<String, String> {
-    let angle = read_hinge_angle()?;
+async fn read_hinge_angle() -> Result<f64, String> {
+    read_platform_hinge_angle().await
+}
+
+#[tauri::command]
+async fn read_posture_type() -> Result<String, String> {
+    let angle = read_hinge_angle().await?;
     let posture = PostureType::from_angle(angle);
     Ok(posture.to_string())
 }
