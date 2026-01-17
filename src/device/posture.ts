@@ -24,7 +24,7 @@ export function helpCopyForSupport(support: PostureSupport): HelpCopy {
   }
   return {
     fold: "<b>Fold</b>: press Space.",
-    gesture: "<b>Drag</b>: move. <b>Ctrl + drag</b>: rotate.",
+    gesture: "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate.",
   };
 }
 

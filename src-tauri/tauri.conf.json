@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "kami",
+  "version": "0.0.0",
+  "identifier": "fi.maxwase.kami",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "kami",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "../public/icons/32x32.png",
+      "../public/icons/128x128.png",
+      "../public/icons/128x128@2x.png",
+      "../public/icons/icon.icns",
+      "../public/icons/icon.ico"
+    ]
+  }
+}

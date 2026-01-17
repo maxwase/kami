@@ -16,7 +16,7 @@ export interface GestureOptions {
   setActivePaper: (paper: Paper) => void;
   bringPaperToTop: (paper: Paper) => void;
   getLockState: () => InputLock;
-  useCtrlRotate?: boolean;
+  useAltRotate?: boolean;
 }
 
 /**
@@ -31,7 +31,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     setActivePaper,
     bringPaperToTop,
     getLockState,
-    useCtrlRotate = false,
+    useAltRotate: useAltRotate = false,
   } = opts;
 
   interface PointerState {
@@ -93,7 +93,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       return;
     }
 
-    if (useCtrlRotate && e.ctrlKey) {
+    if (useAltRotate && e.altKey) {
       rotatePointerId = e.pointerId;
       rotateAnchorLocal = getPaperLocalCentroid(paper);
       rotateAnchorScreen = localToScreen(paper, rotateAnchorLocal);
@@ -139,7 +139,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
 
     if (
-      useCtrlRotate &&
+      useAltRotate &&
       rotatePointerId === e.pointerId &&
       rotateAnchorLocal &&
       rotateAnchorScreen

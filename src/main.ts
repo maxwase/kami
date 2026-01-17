@@ -278,7 +278,7 @@ attachGestureHandlers({
   bringPaperToTop,
   getLockState: () =>
     foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
-  useCtrlRotate: postureSupport === PostureSupport.Unavailable,
+  useAltRotate: postureSupport === PostureSupport.Unavailable,
 });
 
 if (postureSupport === PostureSupport.Unavailable) {

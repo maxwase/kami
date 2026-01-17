@@ -8,11 +8,13 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . ",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write .",
+    "tauri": "tauri"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
+    "@tauri-apps/cli": "^2",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "^5.2.1",
@@ -23,6 +25,8 @@
     "vite": "^7.2.4"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
     "gl-matrix": "^3.4.4",
     "polygon-clipping": "^0.15.7"
   },
