@@ -1,4 +1,6 @@
+import { isTauri } from "@tauri-apps/api/core";
 import type { SegmentRect, SegmentSource } from "./hinge";
+import { getTauriPostureType } from "./tauri";
 
 export enum PostureSupport {
   Available = "available",
@@ -33,13 +35,17 @@ export function readDevicePostureType(): string {
   const navAny = navigator as Navigator & {
     devicePosture?: { type?: string };
   };
-  return navAny.devicePosture?.type ?? "unknown";
+  if (typeof navAny.devicePosture?.type === "string") return navAny.devicePosture.type;
+  if (isTauri()) {
+    return getTauriPostureType();
+  }
+  return "unknown";
 }
 
 /** Detect whether the Device Posture API is present. */
 export function resolvePostureSupport(): PostureSupport {
   const navAny = navigator as Navigator & { devicePosture?: { type?: string } };
-  return "devicePosture" in navAny
+  return "devicePosture" in navAny || isTauri()
     ? PostureSupport.Available
     : PostureSupport.Unavailable;
 }

@@ -34,6 +34,7 @@ import {
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
+import { isTauri } from "@tauri-apps/api/core";
 
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
@@ -278,7 +279,7 @@ attachGestureHandlers({
   bringPaperToTop,
   getLockState: () =>
     foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
-  useAltRotate: postureSupport === PostureSupport.Unavailable,
+  useAltRotate: postureSupport === PostureSupport.Unavailable || isTauri(),
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
