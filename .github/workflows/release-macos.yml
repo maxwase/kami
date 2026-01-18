@@ -39,12 +39,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build Tauri app bundle
-        run: pnpm tauri build --bundles app
+        run: pnpm tauri build --bundles dmg
       - name: Upload macOS app artifact
         uses: actions/upload-artifact@v4
         with:
           name: kami-macos-app-${{ matrix.arch }}
-          path: src-tauri/target/release/bundle/macos/kami.app
+          path: src-tauri/target/release/bundle/dmg/kami*.dmg
           if-no-files-found: error
       - name: Write workflow summary
         run: |
@@ -52,6 +52,6 @@ jobs:
             echo "### macOS app artifact"
             echo ""
             echo "- name: kami-macos-app-${{ matrix.arch }}"
-            echo "- path: src-tauri/target/release/bundle/macos/kami.app"
+            echo "- path: src-tauri/target/release/bundle/dmg/kami*.dmg"
             echo "- runner: ${{ matrix.runner }}"
           } >> "$GITHUB_STEP_SUMMARY"
