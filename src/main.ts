@@ -1,5 +1,4 @@
 import "./style.css";
-import { isTauri } from "@tauri-apps/api/core";
 import { clamp } from "./math/scalars";
 import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
 import { computeHingePoint, type HingeInfo } from "./device/hinge";
@@ -12,7 +11,7 @@ import {
   resolveFoldState,
   resolvePostureSupport,
 } from "./device/posture";
-import { getScreenAngleDeg } from "./device/screen";
+import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
 import { createIdCounter } from "./paper/ids";
 import {
   makePaper,
@@ -35,11 +34,9 @@ import {
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
+import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
 
-const isMacDevice =
-  typeof navigator !== "undefined" &&
-  (navigator.platform.toLowerCase().includes("mac") ||
-    navigator.userAgent.toLowerCase().includes("mac os x"));
+const { platform, device } = resolveRuntimeInfo();
 
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
@@ -56,6 +53,7 @@ const helpBlockEl = getRequiredElement("helpBlock", HTMLDivElement);
 const buyCoffeeLink = getRequiredElement("buyCoffee", HTMLAnchorElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
+const stableAccelRow = stableAccelInput.closest(".input-row");
 const invertFoldDirectionInput = getRequiredElement(
   "invertFoldDirection",
   HTMLInputElement,
@@ -63,6 +61,7 @@ const invertFoldDirectionInput = getRequiredElement(
 const manualHingeX = getRequiredElement("manualHingeX", HTMLInputElement);
 const manualHingeY = getRequiredElement("manualHingeY", HTMLInputElement);
 const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
+const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 
 let dpr = 1;
 let cssW = 0;
@@ -97,14 +96,16 @@ if (window.screen?.orientation) {
     passive: true,
   });
 }
-window.addEventListener(
-  "devicemotion",
-  (event) => {
-    motionActive = true;
-    motion.handleEvent(event);
-  },
-  { passive: true },
-);
+if (platform === Platform.Web && device === Device.Phone) {
+  window.addEventListener(
+    "devicemotion",
+    (event) => {
+      motionActive = true;
+      motion.handleEvent(event);
+    },
+    { passive: true },
+  );
+}
 resize();
 
 const nextFaceId = createIdCounter(1);
@@ -284,7 +285,9 @@ attachGestureHandlers({
   bringPaperToTop,
   getLockState: () =>
     foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
-  useAltRotate: postureSupport === PostureSupport.Unavailable || isTauri(),
+  useAltRotate:
+    postureSupport === PostureSupport.Unavailable ||
+    platform === Platform.Tauri,
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
@@ -302,7 +305,11 @@ foldFallbackBtn.onclick = () => {
 
 const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.fold;
-gestureHelpEl.innerHTML = helpCopy.gesture;
+const gestureHelp =
+  platform === Platform.Tauri && device === Device.Laptop
+    ? "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate."
+    : helpCopy.gesture;
+gestureHelpEl.innerHTML = gestureHelp;
 let helpVisible = false;
 
 const syncHelpVisibility = () => {
@@ -342,6 +349,19 @@ manualHingeY.addEventListener("input", updateManualHingePos);
 manualHingeFlip.addEventListener("change", () => {
   updateOptions({ manualHingeDirFlip: manualHingeFlip.checked });
 });
+manualHingeX.disabled =
+  platform === Platform.Tauri && device === Device.Laptop;
+manualHingeY.disabled =
+  platform === Platform.Tauri && device === Device.Laptop;
+manualHingeFlip.disabled = device === Device.Laptop;
+const allowAccelAdjustments = platform === Platform.Web && device === Device.Phone;
+stableAccelInput.disabled = !allowAccelAdjustments;
+if (stableAccelRow instanceof HTMLElement) {
+  stableAccelRow.style.display = allowAccelAdjustments ? "flex" : "none";
+}
+if (manualHingeFlipRow instanceof HTMLElement) {
+  manualHingeFlipRow.style.display = device === Device.Laptop ? "none" : "flex";
+}
 updateStableAccelFromUi();
 updateManualHingePos();
 
@@ -353,16 +373,34 @@ function tick(now: number) {
     last = now;
 
     let hingeBaseDir = hingeInfo.hingeDir;
-    if (isTauri() && isMacDevice) {
+    if (platform === Platform.Tauri && device === Device.Laptop) {
       hingeBaseDir = { x: -1, y: 0 };
+    } else if (
+      platform === Platform.Web &&
+      device === Device.Phone &&
+      resolveScreenLandscape(cssW, cssH)
+    ) {
+      hingeBaseDir = { x: 0, y: 1 };
     }
-    const activeHingeDir = options.manualHingeDirFlip
-      ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
-      : hingeBaseDir;
+    const activeHingeDir =
+      platform === Platform.Tauri && device === Device.Laptop
+        ? hingeBaseDir
+        : platform === Platform.Web &&
+            device === Device.Phone &&
+            resolveScreenLandscape(cssW, cssH)
+          ? hingeBaseDir
+          : options.manualHingeDirFlip
+            ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
+            : hingeBaseDir;
     const hingeY =
-      isTauri() && isMacDevice ? cssH : cssH * options.manualHingePos.y;
+      platform === Platform.Tauri && device === Device.Laptop
+        ? cssH
+        : cssH * options.manualHingePos.y;
     const activeHinge: Vec2 = {
-      x: cssW * options.manualHingePos.x,
+      x:
+        platform === Platform.Tauri && device === Device.Laptop
+          ? cssW / 2
+          : cssW * options.manualHingePos.x,
       y: hingeY,
     };
     const postureType =
@@ -457,9 +495,17 @@ function tick(now: number) {
       }
     }
 
-    statusEl.textContent = `posture=${postureType} | hinge=(${displayHinge.x.toFixed(
-      0,
-    )},${displayHinge.y.toFixed(0)}) | accel=${accelMag.toFixed(2)} m/s²`;
+    const statusParts = [
+      `posture=${postureType}`,
+      `hinge=(${displayHinge.x.toFixed(0)},${displayHinge.y.toFixed(0)})`,
+    ];
+    if (platform === Platform.Web && device === Device.Phone) {
+      statusParts.push(
+        `accel=(${accel.x.toFixed(2)},${accel.y.toFixed(2)}) m/s²`,
+        `accelMag=${accelMag.toFixed(2)} m/s²`,
+      );
+    }
+    statusEl.textContent = statusParts.join(" | ");
   } finally {
     requestAnimationFrame(tick);
   }
