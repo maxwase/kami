@@ -12,7 +12,6 @@ Try it online at https://maxwase.github.io/kami
 
 https://github.com/user-attachments/assets/56427f60-d67c-44de-a087-7d626d0598f2
 
-
 # Options
 
 The game tries its best to auto-detect your device's folding posture and capabilities, but you can also manually set them using the "Show Options" button in the top-left.
@@ -21,19 +20,41 @@ The game tries its best to auto-detect your device's folding posture and capabil
 2. Stability threshold -- This setting controls how sensitive posture detection is to small movements. A lower value means even small tilts count as a fold, while a higher value requires faster folds.
 3. X and Y axis -- The problem of the century persists: Where is the center of the device?
 
+## Installation
+
+1. Download the latest version for your Mac from the [releases](https://github.com/maxwase/kami/releases) page.
+2. Unzip it
+3. Install like any other dng, drag the app into application
+4. Run `xattr -dr com.apple.quarantine /Applications/kami-tauri.app`. This is needed because I don't have an Apple account to sign the binary with.
+   If you don't trust the GitHub actions output, consider building the app [yourself](#Native)
+
 ## Requirements
 
 - Node.js 18+ (Vite 7)
 - pnpm 9+
 - A modern [browser](https://developer.mozilla.org/en-US/docs/Web/API/Device_Posture_API) to actually test folding. Note that the API is only available on localhost or HTTPS connections.
+- Or [stable Rust](https://rustup.sh) when building with `tauri` for MacOS.
 
 ## Build and run
+
+### Web
 
 ```sh
 pnpm install
 pnpm run dev    # start Vite dev server
 pnpm run build  # type-check + production build to dist/
 ```
+
+### Native
+
+To run it on MacOS do the following
+
+```sh
+pnpm install
+pnpm run tauri dev    # start Vite dev server
+pnpm tauri build --bundles app    # build an app
+```
+
 
 # Credits
 
@@ -43,5 +64,5 @@ pnpm run build  # type-check + production build to dist/
 # Future of the project
 
 I'm primarily a backend developer, so the code quality here is probably not the best; a lot of it was AI-generated over a weekend.
-I want to rewrite this in Rust, WebAssembly, Bevy, or Tauri to make it cross-platform and to add more complex folding puzzles.
+I want to rewrite this in Rust, WebAssembly to make it cross-platform and to add more complex folding puzzles.
 If you have any thoughts or suggestions, please contact me via [telegram](https://t.me/maxwase) or [email](mailto:max.vvase@gmail.com) :)

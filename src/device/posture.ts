@@ -1,4 +1,8 @@
 import type { SegmentRect, SegmentSource } from "./hinge";
+import { getTauriPostureType } from "./tauri";
+import { Platform, resolveRuntimeInfo } from "./runtime";
+
+const runtime = resolveRuntimeInfo();
 
 export enum PostureSupport {
   Available = "available",
@@ -24,7 +28,7 @@ export function helpCopyForSupport(support: PostureSupport): HelpCopy {
   }
   return {
     fold: "<b>Fold</b>: press Space.",
-    gesture: "<b>Drag</b>: move. <b>Ctrl + drag</b>: rotate.",
+    gesture: "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate.",
   };
 }
 
@@ -33,13 +37,17 @@ export function readDevicePostureType(): string {
   const navAny = navigator as Navigator & {
     devicePosture?: { type?: string };
   };
-  return navAny.devicePosture?.type ?? "unknown";
+  if (typeof navAny.devicePosture?.type === "string") return navAny.devicePosture.type;
+  if (runtime.platform === Platform.Tauri) {
+    return getTauriPostureType();
+  }
+  return "unknown";
 }
 
 /** Detect whether the Device Posture API is present. */
 export function resolvePostureSupport(): PostureSupport {
   const navAny = navigator as Navigator & { devicePosture?: { type?: string } };
-  return "devicePosture" in navAny
+  return "devicePosture" in navAny || runtime.platform === Platform.Tauri
     ? PostureSupport.Available
     : PostureSupport.Unavailable;
 }
