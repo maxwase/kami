@@ -20,11 +20,20 @@ The game tries its best to auto-detect your device's folding posture and capabil
 2. Stability threshold -- This setting controls how sensitive posture detection is to small movements. A lower value means even small tilts count as a fold, while a higher value requires faster folds.
 3. X and Y axis -- The problem of the century persists: Where is the center of the device?
 
+## Installation
+
+1. Download the latest version for your Mac from the [releases](https://github.com/maxwase/kami/releases) page.
+2. Unzip it
+3. Install like any other dng, drag the app into application
+4. Run `xattr -dr com.apple.quarantine /Applications/kami-tauri.app`. This is needed because I don't have an Apple account to sign the binary with.
+   If you don't trust the GitHub actions output, consider building the app [yourself](#Native)
+
 ## Requirements
 
 - Node.js 18+ (Vite 7)
 - pnpm 9+
 - A modern [browser](https://developer.mozilla.org/en-US/docs/Web/API/Device_Posture_API) to actually test folding. Note that the API is only available on localhost or HTTPS connections.
+- Or [stable Rust](https://rustup.sh) when building with `tauri` for MacOS.
 
 ## Build and run
 

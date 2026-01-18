@@ -1,9 +1,6 @@
 name: Build macOS app for release
 
 on:
-  push:
-    branches:
-      - add-tauri
   release:
     types: [published]
   workflow_dispatch:
