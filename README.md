@@ -12,7 +12,6 @@ Try it online at https://maxwase.github.io/kami
 
 https://github.com/user-attachments/assets/56427f60-d67c-44de-a087-7d626d0598f2
 
-
 # Options
 
 The game tries its best to auto-detect your device's folding posture and capabilities, but you can also manually set them using the "Show Options" button in the top-left.
@@ -29,11 +28,24 @@ The game tries its best to auto-detect your device's folding posture and capabil
 
 ## Build and run
 
+### Web
+
 ```sh
 pnpm install
 pnpm run dev    # start Vite dev server
 pnpm run build  # type-check + production build to dist/
 ```
+
+### Native
+
+To run it on MacOS do the following
+
+```sh
+pnpm install
+pnpm run tauri dev    # start Vite dev server
+pnpm tauri build --bundles app    # build an app
+```
+
 
 # Credits
 
@@ -43,5 +55,5 @@ pnpm run build  # type-check + production build to dist/
 # Future of the project
 
 I'm primarily a backend developer, so the code quality here is probably not the best; a lot of it was AI-generated over a weekend.
-I want to rewrite this in Rust, WebAssembly, Bevy, or Tauri to make it cross-platform and to add more complex folding puzzles.
+I want to rewrite this in Rust, WebAssembly to make it cross-platform and to add more complex folding puzzles.
 If you have any thoughts or suggestions, please contact me via [telegram](https://t.me/maxwase) or [email](mailto:max.vvase@gmail.com) :)

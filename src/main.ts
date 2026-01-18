@@ -286,8 +286,7 @@ attachGestureHandlers({
   getLockState: () =>
     foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
   useAltRotate:
-    postureSupport === PostureSupport.Unavailable ||
-    platform === Platform.Tauri,
+    postureSupport === PostureSupport.Unavailable || platform === Platform.Tauri,
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
@@ -349,10 +348,8 @@ manualHingeY.addEventListener("input", updateManualHingePos);
 manualHingeFlip.addEventListener("change", () => {
   updateOptions({ manualHingeDirFlip: manualHingeFlip.checked });
 });
-manualHingeX.disabled =
-  platform === Platform.Tauri && device === Device.Laptop;
-manualHingeY.disabled =
-  platform === Platform.Tauri && device === Device.Laptop;
+manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
+manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeFlip.disabled = device === Device.Laptop;
 const allowAccelAdjustments = platform === Platform.Web && device === Device.Phone;
 stableAccelInput.disabled = !allowAccelAdjustments;

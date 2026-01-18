@@ -14,8 +14,7 @@
     "windows": [
       {
         "title": "kami",
-        "width": 800,
-        "height": 600
+        "maximized": true
       }
     ],
     "security": {
