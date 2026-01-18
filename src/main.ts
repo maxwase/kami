@@ -1,4 +1,5 @@
 import "./style.css";
+import { isTauri } from "@tauri-apps/api/core";
 import { clamp } from "./math/scalars";
 import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
 import { computeHingePoint, type HingeInfo } from "./device/hinge";
@@ -34,7 +35,11 @@ import {
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
-import { isTauri } from "@tauri-apps/api/core";
+
+const isMacDevice =
+  typeof navigator !== "undefined" &&
+  (navigator.platform.toLowerCase().includes("mac") ||
+    navigator.userAgent.toLowerCase().includes("mac os x"));
 
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
@@ -347,13 +352,18 @@ function tick(now: number) {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
 
-    const hingeBaseDir = hingeInfo.hingeDir;
+    let hingeBaseDir = hingeInfo.hingeDir;
+    if (isTauri() && isMacDevice) {
+      hingeBaseDir = { x: -1, y: 0 };
+    }
     const activeHingeDir = options.manualHingeDirFlip
       ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
       : hingeBaseDir;
+    const hingeY =
+      isTauri() && isMacDevice ? cssH : cssH * options.manualHingePos.y;
     const activeHinge: Vec2 = {
       x: cssW * options.manualHingePos.x,
-      y: cssH * options.manualHingePos.y,
+      y: hingeY,
     };
     const postureType =
       postureSupport === PostureSupport.Available
