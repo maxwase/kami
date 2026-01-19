@@ -80,6 +80,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     if (hit) {
       setActivePaper(hit);
       bringPaperToTop(hit);
+      hit.isDragging = true; // Start lift effect
     }
 
     const paper = getActivePaper();
@@ -161,6 +162,12 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
   const onPointerUp = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
+
+    // End drag effect when all pointers released
+    if (pointers.size === 0) {
+      const paper = getActivePaper();
+      paper.isDragging = false;
+    }
 
     if (pointers.size < 2) {
       pinchLastMid = undefined;
