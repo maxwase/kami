@@ -42,15 +42,11 @@ const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
 ctx.imageSmoothingEnabled = true;
 
-const statusEl = getRequiredElement("status", HTMLDivElement);
 const foldHelpEl = getRequiredElement("foldHelp", HTMLDivElement);
 const gestureHelpEl = getRequiredElement("gestureHelp", HTMLDivElement);
 const resetActiveBtn = getRequiredElement("resetActive", HTMLButtonElement);
 const undoBtn = getRequiredElement("undo", HTMLButtonElement);
 const foldFallbackBtn = getRequiredElement("foldFallback", HTMLButtonElement);
-const toggleHelpBtn = getRequiredElement("toggleHelp", HTMLButtonElement);
-const helpBlockEl = getRequiredElement("helpBlock", HTMLDivElement);
-const buyCoffeeLink = getRequiredElement("buyCoffee", HTMLAnchorElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
 const stableAccelRow = stableAccelInput.closest(".input-row");
@@ -62,6 +58,12 @@ const manualHingeX = getRequiredElement("manualHingeX", HTMLInputElement);
 const manualHingeY = getRequiredElement("manualHingeY", HTMLInputElement);
 const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
 const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
+const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
+const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
+const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
+const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
+const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
+const hingeStatusEl = getRequiredElement("hingeStatus", HTMLDivElement);
 
 let dpr = 1;
 let cssW = 0;
@@ -119,23 +121,73 @@ let motionActive = false;
 const postureSupport = resolvePostureSupport();
 let manualFoldQueued = false;
 
-const styles: PaperStyle[] = [
-  { front: "#f8f8f7", back: "#f1efe5", edge: "rgba(0,0,0,0.16)" },
-  { front: "#f6fbff", back: "#eef2f9", edge: "rgba(0,0,0,0.16)" },
-  { front: "#fff7ef", back: "#f4e8da", edge: "rgba(0,0,0,0.16)" },
-];
-
 const A4_ASPECT = 210 / 297;
 const PAPER_SCREEN_FRACTION = 0.6;
 
+const styles: Record<string, PaperStyle> = {
+  white: { front: "#ffffff", back: "#f0f0f0", edge: "rgba(0,0,0,0.16)" },
+  red: { front: "#d90000", back: "#b30000", edge: "rgba(0,0,0,0.16)" },
+  skyBlue: { front: "#008ac5", back: "#0072a3", edge: "rgba(0,0,0,0.16)" },
+  black: { front: "#1a1a1a", back: "#000000", edge: "rgba(255,255,255,0.2)" },
+  green: { front: "#00cc00", back: "#00a300", edge: "rgba(0,0,0,0.16)" },
+  yellow: { front: "#ffcc00", back: "#e6b800", edge: "rgba(0,0,0,0.16)" },
+};
+
+let currentAspect = A4_ASPECT;
+let currentStyleKey = "white";
+
+
+
+// Rotation Logic with Animation
+let rotationDirection: "left" | "right" | null = null;
+let rotationStartTime: number | null = null;
+let rotationTargetAngle: number | null = null;
+let rotationStartAngle: number | null = null;
+let rotationAnimProgress = 1; // 0-1, 1 means complete
+
+const startRotation = (dir: "left" | "right") => {
+  const paper = getActivePaper();
+  rotationDirection = dir;
+  rotationStartTime = performance.now();
+  
+  // Set up animation
+  const step = (dir === "left" ? -1 : 1) * (5 * Math.PI) / 180;
+  rotationStartAngle = paper.rot;
+  rotationTargetAngle = paper.rot + step;
+  rotationAnimProgress = 0;
+};
+
+const stopRotation = () => {
+  rotationDirection = null;
+  rotationStartTime = null;
+};
+
+const setupRotation = (btnId: string, dir: "left" | "right") => {
+  const btn = document.getElementById(btnId)!;
+  btn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    startRotation(dir);
+  });
+  btn.addEventListener("pointerup", stopRotation);
+  btn.addEventListener("pointerleave", stopRotation);
+  btn.addEventListener("contextmenu", (e) => e.preventDefault());
+};
+
+setupRotation("rotateLeft", "left");
+setupRotation("rotateRight", "right");
+
 // A4 paper size that fits within a fraction of the screen
-function computePaperSize(viewW: number, viewH: number): { w: number; h: number } {
+function computePaperSize(
+  viewW: number,
+  viewH: number,
+  aspect: number,
+): { w: number; h: number } {
   const maxW = viewW * PAPER_SCREEN_FRACTION;
   const maxH = viewH * PAPER_SCREEN_FRACTION;
-  if (maxW / maxH > A4_ASPECT) {
-    return { w: maxH * A4_ASPECT, h: maxH };
+  if (maxW / maxH > aspect) {
+    return { w: maxH * aspect, h: maxH };
   }
-  return { w: maxW, h: maxW / A4_ASPECT };
+  return { w: maxW, h: maxW / aspect };
 }
 
 function orientPaperSize(
@@ -148,11 +200,15 @@ function orientPaperSize(
 }
 
 const initialCenter = getScreenCenterInViewport();
-const initialSize = orientPaperSize(computePaperSize(cssW, cssH), cssW, cssH);
+const initialSize = orientPaperSize(
+  computePaperSize(cssW, cssH, currentAspect),
+  cssW,
+  cssH,
+);
 const papers: Paper[] = [
   makePaper(
     factory,
-    styles[0],
+    styles.white,
     initialCenter.x,
     initialCenter.y,
     initialSize.w,
@@ -255,7 +311,7 @@ resetActiveBtn.onclick = () => {
   const paper = getActivePaper();
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
-  const size = orientPaperSize(computePaperSize(cssW, cssH), cssW, cssH);
+  const size = orientPaperSize(computePaperSize(cssW, cssH, currentAspect), cssW, cssH);
   paper.baseW = size.w;
   paper.baseH = size.h;
   resetPaper(paper, factory);
@@ -285,8 +341,7 @@ attachGestureHandlers({
   bringPaperToTop,
   getLockState: () =>
     foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
-  useAltRotate:
-    postureSupport === PostureSupport.Unavailable || platform === Platform.Tauri,
+  useAltRotate: true, // Enable alt+drag rotation
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
@@ -306,23 +361,38 @@ const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.fold;
 const gestureHelp =
   platform === Platform.Tauri && device === Device.Laptop
-    ? "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate."
-    : helpCopy.gesture;
+    ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate."
+    : helpCopy.gesture.replace(". ", ".<br>");
 gestureHelpEl.innerHTML = gestureHelp;
-let helpVisible = false;
+let settingsVisible = false;
+let infoVisible = false;
 
-const syncHelpVisibility = () => {
-  helpBlockEl.style.display = helpVisible ? "flex" : "none";
-  toggleHelpBtn.textContent = helpVisible ? "Hide Options" : "Show Options";
-  toggleHelpBtn.setAttribute("aria-pressed", helpVisible ? "true" : "false");
-  buyCoffeeLink.style.display = helpVisible ? "inline-flex" : "none";
+const syncSettingsVisibility = () => {
+  settingsPanelEl.style.display = settingsVisible ? "flex" : "none";
+  toggleSettingsBtn.setAttribute("aria-pressed", settingsVisible ? "true" : "false");
 };
 
-toggleHelpBtn.onclick = () => {
-  helpVisible = !helpVisible;
-  syncHelpVisibility();
+const syncInfoVisibility = () => {
+  infoPanelEl.style.display = infoVisible ? "flex" : "none";
+  toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
-syncHelpVisibility();
+
+toggleSettingsBtn.onclick = () => {
+  settingsVisible = !settingsVisible;
+  if (settingsVisible) infoVisible = false; // Close info if opening settings
+  syncSettingsVisibility();
+  syncInfoVisibility();
+};
+
+toggleInfoBtn.onclick = () => {
+  infoVisible = !infoVisible;
+  if (infoVisible) settingsVisible = false; // Close settings if opening info
+  syncInfoVisibility();
+  syncSettingsVisibility();
+};
+
+syncSettingsVisibility();
+syncInfoVisibility();
 
 function updateStableAccelFromUi() {
   const value = Number(stableAccelInput.value);
@@ -350,7 +420,6 @@ manualHingeFlip.addEventListener("change", () => {
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
-manualHingeFlip.disabled = device === Device.Laptop;
 const allowAccelAdjustments = platform === Platform.Web && device === Device.Phone;
 stableAccelInput.disabled = !allowAccelAdjustments;
 if (stableAccelRow instanceof HTMLElement) {
@@ -362,12 +431,103 @@ if (manualHingeFlipRow instanceof HTMLElement) {
 updateStableAccelFromUi();
 updateManualHingePos();
 
+// Reset Hinge Button
+resetHingeBtn.onclick = () => {
+  manualHingeX.value = "50";
+  manualHingeY.value = "50";
+  updateManualHingePos();
+};
+
+// Paper Options Logic
+const paperSizeRadios = document.querySelectorAll('input[name="paperSize"]');
+paperSizeRadios.forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    const target = e.target as HTMLInputElement;
+    currentAspect = target.value === "a4" ? A4_ASPECT : 1.0;
+    // Trigger reset to apply new size
+    resetActiveBtn.click();
+  });
+});
+
+const colorOptionsContainer = document.getElementById("colorOptions");
+if (colorOptionsContainer) {
+  Object.keys(styles).forEach((key) => {
+    const style = styles[key];
+    const btn = document.createElement("div");
+    btn.className = `color-option ${currentStyleKey === key ? "active" : ""}`;
+    btn.style.backgroundColor = style.front;
+    btn.setAttribute("data-color", key); // Add data attribute for CSS targeting
+    btn.title = key;
+
+    // Add checkmark
+    const checkmark = document.createElement("span");
+    checkmark.className = "material-symbols-outlined checkmark";
+    checkmark.textContent = "check";
+    btn.appendChild(checkmark);
+
+    btn.onclick = () => {
+      currentStyleKey = key;
+      const paper = getActivePaper();
+      paper.style = styles[key];
+      // Update UI selection
+      Array.from(colorOptionsContainer.children).forEach((c: any) => {
+        c.classList.remove("active");
+      });
+      btn.classList.add("active");
+    };
+    colorOptionsContainer.appendChild(btn);
+  });
+}
+
 let last = performance.now();
 
 function tick(now: number) {
   try {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
+
+    // Animate lift scale for drag effect
+    for (const p of papers) {
+      const targetScale = p.isDragging ? 1.05 : 1; // 5% scale increase
+      const liftSpeed = p.isDragging ? 8 : 10; // Faster release animation
+      p.liftScale += (targetScale - p.liftScale) * dt * liftSpeed;
+      
+      // Animate shadow opacity and position for smooth transitions
+      const targetOpacity = p.isDragging ? 1 : 0;
+      const opacitySpeed = p.isDragging ? 6 : 4; // Slower fade out
+      p.shadowOpacity += (targetOpacity - p.shadowOpacity) * dt * opacitySpeed;
+      
+      // Animate shadow lift height - retracts to top on release
+      const targetLiftZ = p.isDragging ? 35 : 0;
+      const liftZSpeed = p.isDragging ? 10 : 6; // Faster rise, slower drop
+      p.shadowLiftZ += (targetLiftZ - p.shadowLiftZ) * dt * liftZSpeed;
+    }
+
+    // Animate rotation
+    if (rotationAnimProgress < 1 && rotationStartAngle !== null && rotationTargetAngle !== null) {
+      rotationAnimProgress += dt * 6; // Animation speed
+      if (rotationAnimProgress >= 1) {
+        rotationAnimProgress = 1;
+      }
+      // Ease out cubic
+      const t = rotationAnimProgress;
+      const eased = 1 - Math.pow(1 - t, 3);
+      const paper = getActivePaper();
+      paper.rot = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * eased;
+    }
+
+    // Continuous Rotation
+    if (rotationDirection && rotationStartTime) {
+      const holdDuration = now - rotationStartTime;
+      if (holdDuration > 200) { // If held for more than 200ms
+        const activePaper = getActivePaper();
+        const speed = Math.PI; // 180 degrees per second
+        const sign = rotationDirection === "left" ? -1 : 1;
+        activePaper.rot += sign * speed * dt;
+        // Cancel step animation when continuous rotation starts
+        rotationAnimProgress = 1;
+      }
+    }
 
     let hingeBaseDir = hingeInfo.hingeDir;
     if (platform === Platform.Tauri && device === Device.Laptop) {
@@ -502,7 +662,7 @@ function tick(now: number) {
         `accelMag=${accelMag.toFixed(2)} m/s²`,
       );
     }
-    statusEl.textContent = statusParts.join(" | ");
+    hingeStatusEl.textContent = statusParts.join(" | ");
   } finally {
     requestAnimationFrame(tick);
   }

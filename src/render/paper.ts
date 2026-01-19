@@ -26,9 +26,16 @@ export function drawFlatPaperFaces(
   const faces = [...paper.faces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
 
-  for (const f of faces) {
-    const screenVerts = f.verts.map((p) => localToScreen(paper, p));
-    drawShadow(ctx, screenVerts, 18);
+  // Draw single consolidated shadow for all faces to avoid doubling
+  if (faces.length > 0 && paper.shadowOpacity > 0.01) {
+    // Get bounding vertices of all faces
+    const allVerts: Vec2[] = [];
+    for (const f of faces) {
+      allVerts.push(...f.verts);
+    }
+    // Find convex hull or just use first face's verts as representative shadow
+    const shadowVerts = faces[0].verts.map((p) => localToScreen(paper, p));
+    drawShadow(ctx, shadowVerts, paper.shadowLiftZ, paper.shadowOpacity);
   }
 
   for (const f of faces) {
@@ -54,6 +61,7 @@ export function drawFoldingPaper(
 ): void {
   const keep = [...anim.keepFaces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
+  
   for (const f of keep) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
     drawShadow(ctx, screenVerts, 16);
@@ -171,22 +179,27 @@ function drawShadow(
   ctx: CanvasRenderingContext2D,
   screenVerts: Vec2[],
   zAvg: number,
+  opacity: number = 1,
 ): void {
-  const a = clamp(zAvg / 220, 0, 1) * 0.35;
+  const isDragging = zAvg > 25;
+  const baseAlpha = clamp(zAvg / 220, 0, 1);
+  const targetAlpha = isDragging ? baseAlpha * 0.95 * 2 : baseAlpha * 0.95;
+  const a = targetAlpha * opacity;
   if (a < 0.01) return;
 
-  const off = mul2(PROJ_DIR, zAvg * 0.38);
+  const distanceMultiplier = isDragging ? 0.6 : 0.15;
+  const off = { x: 0, y: zAvg * distanceMultiplier };
 
   ctx.save();
   ctx.translate(off.x, off.y);
-  ctx.globalAlpha = a;
+  
+  // Use canvas filter for true blur effect
+  ctx.filter = 'blur(35px)';
+  ctx.globalAlpha = Math.min(a, 1);
   ctx.fillStyle = "#000";
-  ctx.shadowColor = "rgba(0,0,0,0.35)";
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 10;
   pathPoly(ctx, screenVerts);
   ctx.fill();
+  
   ctx.restore();
 }
 
@@ -208,7 +221,8 @@ function shadeFace(
     ctx.restore();
 
     ctx.save();
-    ctx.globalAlpha = 0.35;
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = 0.9;
     ctx.fillStyle = baseColor;
     pathPoly(ctx, screenVerts);
     ctx.fill();
