@@ -8,6 +8,8 @@ import { toggleSide } from "../paper/model";
 import type { Paper, PaperSide } from "../paper/model";
 import type { FoldAnim } from "../paper/fold";
 
+
+
 const PROJ_DIR = norm2({ x: 0.35, y: -0.65 });
 const LIGHT_DIR = norm3({ x: -0.35, y: -0.25, z: 0.9 });
 
@@ -26,30 +28,13 @@ export function drawFlatPaperFaces(
   const faces = [...paper.faces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
 
-  // Draw single consolidated shadow for all faces to avoid doubling
-  if (faces.length > 0 && paper.shadowOpacity > 0.01) {
-    // Get bounding vertices of all faces
-    const allVerts: Vec2[] = [];
-    for (const f of faces) {
-      allVerts.push(...f.verts);
-    }
-    // Find convex hull or just use first face's verts as representative shadow
-    const shadowVerts = faces[0].verts.map((p) => localToScreen(paper, p));
-    drawShadow(ctx, shadowVerts, paper.shadowLiftZ, paper.shadowOpacity);
-  }
+  alignTextureToPaper(texture, paper);
 
   for (const f of faces) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
     const color = f.up === "front" ? paper.style.front : paper.style.back;
 
     shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture);
-
-    ctx.save();
-    ctx.strokeStyle = paper.style.edge;
-    ctx.lineWidth = 1;
-    pathPoly(ctx, screenVerts);
-    ctx.stroke();
-    ctx.restore();
   }
 }
 
@@ -62,21 +47,11 @@ export function drawFoldingPaper(
   const keep = [...anim.keepFaces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
   
-  for (const f of keep) {
-    const screenVerts = f.verts.map((p) => localToScreen(paper, p));
-    drawShadow(ctx, screenVerts, 16);
-  }
+
   for (const f of keep) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
     const color = f.up === "front" ? paper.style.front : paper.style.back;
     shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture);
-
-    ctx.save();
-    ctx.strokeStyle = paper.style.edge;
-    ctx.lineWidth = 1;
-    pathPoly(ctx, screenVerts);
-    ctx.stroke();
-    ctx.restore();
   }
 
   const progress = easeInOutCubic(anim.progress);
@@ -118,17 +93,8 @@ export function drawFoldingPaper(
 
   items.sort((a, b) => a.zAvg - b.zAvg);
 
-  for (const it of items) drawShadow(ctx, it.screenVerts, it.zAvg);
-
   for (const it of items) {
     shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
-
-    ctx.save();
-    ctx.strokeStyle = paper.style.edge;
-    ctx.lineWidth = 1;
-    pathPoly(ctx, it.screenVerts);
-    ctx.stroke();
-    ctx.restore();
   }
 
   ctx.save();
@@ -152,11 +118,10 @@ export function drawFoldingPaper(
 export function drawActiveOutline(
   ctx: CanvasRenderingContext2D,
   paper: Paper,
-  strokeStyle = "rgba(255,255,255,0.35)",
 ): void {
   ctx.save();
   ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = strokeStyle;
+  ctx.strokeStyle = "rgba(255,255,255,0.2)";
   ctx.lineWidth = 2;
   for (const f of paper.faces) {
     const sv = f.verts.map((pt) => localToScreen(paper, pt));
@@ -173,34 +138,6 @@ function pathPoly(ctx: CanvasRenderingContext2D, screenVerts: Vec2[]): void {
   for (let i = 1; i < screenVerts.length; i++)
     ctx.lineTo(screenVerts[i].x, screenVerts[i].y);
   ctx.closePath();
-}
-
-function drawShadow(
-  ctx: CanvasRenderingContext2D,
-  screenVerts: Vec2[],
-  zAvg: number,
-  opacity: number = 1,
-): void {
-  const isDragging = zAvg > 25;
-  const baseAlpha = clamp(zAvg / 220, 0, 1);
-  const targetAlpha = isDragging ? baseAlpha * 0.95 * 2 : baseAlpha * 0.95;
-  const a = targetAlpha * opacity;
-  if (a < 0.01) return;
-
-  const distanceMultiplier = isDragging ? 0.6 : 0.15;
-  const off = { x: 0, y: zAvg * distanceMultiplier };
-
-  ctx.save();
-  ctx.translate(off.x, off.y);
-  
-  // Use canvas filter for true blur effect
-  ctx.filter = 'blur(35px)';
-  ctx.globalAlpha = Math.min(a, 1);
-  ctx.fillStyle = "#000";
-  pathPoly(ctx, screenVerts);
-  ctx.fill();
-  
-  ctx.restore();
 }
 
 function shadeFace(

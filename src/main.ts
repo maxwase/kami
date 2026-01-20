@@ -60,8 +60,10 @@ const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
 const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
 const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
+const toggleStyleBtn = getRequiredElement("toggleStyle", HTMLButtonElement);
 const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
+const stylePanelEl = getRequiredElement("stylePanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const hingeStatusEl = getRequiredElement("hingeStatus", HTMLDivElement);
 
@@ -134,7 +136,7 @@ const styles: Record<string, PaperStyle> = {
 };
 
 let currentAspect = A4_ASPECT;
-let currentStyleKey = "white";
+
 
 
 
@@ -366,6 +368,7 @@ const gestureHelp =
 gestureHelpEl.innerHTML = gestureHelp;
 let settingsVisible = false;
 let infoVisible = false;
+let styleVisible = false;
 
 const syncSettingsVisibility = () => {
   settingsPanelEl.style.display = settingsVisible ? "flex" : "none";
@@ -377,22 +380,55 @@ const syncInfoVisibility = () => {
   toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
 
+const syncStyleVisibility = () => {
+  stylePanelEl.style.display = styleVisible ? "flex" : "none";
+  toggleStyleBtn.setAttribute("aria-pressed", styleVisible ? "true" : "false");
+};
+
+toggleStyleBtn.onclick = () => {
+  styleVisible = !styleVisible;
+  if (styleVisible) {
+    infoVisible = false;
+    settingsVisible = false;
+  }
+  syncStyleVisibility();
+  syncInfoVisibility();
+  syncSettingsVisibility();
+};
+
 toggleSettingsBtn.onclick = () => {
   settingsVisible = !settingsVisible;
-  if (settingsVisible) infoVisible = false; // Close info if opening settings
+  if (settingsVisible) {
+    infoVisible = false;
+    styleVisible = false;
+  }
   syncSettingsVisibility();
   syncInfoVisibility();
+  syncStyleVisibility();
 };
 
 toggleInfoBtn.onclick = () => {
   infoVisible = !infoVisible;
-  if (infoVisible) settingsVisible = false; // Close settings if opening info
+  if (infoVisible) {
+    settingsVisible = false;
+    styleVisible = false;
+  }
   syncInfoVisibility();
   syncSettingsVisibility();
+  syncStyleVisibility();
 };
 
 syncSettingsVisibility();
 syncInfoVisibility();
+syncStyleVisibility();
+
+// Keyboard shortcuts for folding (F, Enter, Space)
+window.addEventListener("keydown", (e) => {
+  if ((e.code === "KeyF" || e.code === "Enter" || e.code === "Space") && !e.repeat) {
+    e.preventDefault();
+    manualFoldQueued = true;
+  }
+});
 
 function updateStableAccelFromUi() {
   const value = Number(stableAccelInput.value);
@@ -449,34 +485,60 @@ paperSizeRadios.forEach((radio) => {
   });
 });
 
-const colorOptionsContainer = document.getElementById("colorOptions");
-if (colorOptionsContainer) {
-  Object.keys(styles).forEach((key) => {
-    const style = styles[key];
-    const btn = document.createElement("div");
-    btn.className = `color-option ${currentStyleKey === key ? "active" : ""}`;
-    btn.style.backgroundColor = style.front;
-    btn.setAttribute("data-color", key); // Add data attribute for CSS targeting
-    btn.title = key;
+// RGB Color picker
+const paperColorInput = document.getElementById("paperColor") as HTMLInputElement;
+const paperColorDisplay = document.getElementById("paperColorDisplay") as HTMLDivElement;
 
-    // Add checkmark
-    const checkmark = document.createElement("span");
-    checkmark.className = "material-symbols-outlined checkmark";
-    checkmark.textContent = "check";
-    btn.appendChild(checkmark);
-
-    btn.onclick = () => {
-      currentStyleKey = key;
-      const paper = getActivePaper();
-      paper.style = styles[key];
-      // Update UI selection
-      Array.from(colorOptionsContainer.children).forEach((c: any) => {
-        c.classList.remove("active");
-      });
-      btn.classList.add("active");
+if (paperColorInput && paperColorDisplay) {
+  // Initialize display with current color
+  paperColorDisplay.style.backgroundColor = paperColorInput.value;
+  
+  // Update when color changes
+  paperColorInput.addEventListener("input", () => {
+    const color = paperColorInput.value;
+    paperColorDisplay.style.backgroundColor = color;
+    
+    const paper = getActivePaper();
+    
+    // Simple darkening: reduce lightness by 10%
+    const darkerColor = adjustColorBrightness(color, -0.1);
+    
+    paper.style = {
+      front: color,
+      back: darkerColor,
+      edge: "rgba(0,0,0,0.3)",
     };
-    colorOptionsContainer.appendChild(btn);
   });
+  
+  // Click on display to open color picker
+  paperColorDisplay.addEventListener("click", () => {
+    // paperColorInput.click(); // This might not work in some browsers due to security
+     paperColorInput.showPicker?.(); // Try showPicker API
+     if (!paperColorInput.showPicker) paperColorInput.click(); // Fallback
+  });
+}
+
+const showPaperBorderInput = document.getElementById("showPaperBorder") as HTMLInputElement;
+if (showPaperBorderInput) {
+  showPaperBorderInput.addEventListener("change", () => {
+    updateOptions({ showPaperBorder: showPaperBorderInput.checked });
+  });
+}
+
+function adjustColorBrightness(hex: string, percent: number): string {
+  // Convert hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  
+  // Adjust brightness
+  const adjust = (val: number) => Math.max(0, Math.min(255, val + val * percent));
+  const newR = Math.round(adjust(r));
+  const newG = Math.round(adjust(g));
+  const newB = Math.round(adjust(b));
+  
+  // Convert back to hex
+  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 }
 
 let last = performance.now();
@@ -647,7 +709,7 @@ function tick(now: number) {
         drawFlatPaperFaces(ctx, p, textures.paper);
       }
 
-      if (p.id === activePaperId && !activeAnim) {
+      if (p.id === activePaperId && !activeAnim && options.showPaperBorder) {
         drawActiveOutline(ctx, p);
       }
     }
