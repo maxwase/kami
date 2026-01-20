@@ -9,6 +9,8 @@ export interface GameOptions {
   manualHingePos: Vec2;
   /** Whether to flip the hinge orientation by 90 degrees. */
   manualHingeDirFlip: boolean;
+  /** Whether to show a border around the paper. */
+  showPaperBorder: boolean;
 }
 
 export const options: GameOptions = {
@@ -16,6 +18,7 @@ export const options: GameOptions = {
   invertFoldDirection: false,
   manualHingePos: { x: 0.5, y: 0.5 },
   manualHingeDirFlip: false,
+  showPaperBorder: true,
 };
 
 export function updateOptions(update: Partial<GameOptions>): void {
@@ -30,5 +33,8 @@ export function updateOptions(update: Partial<GameOptions>): void {
   }
   if (typeof update.manualHingeDirFlip === "boolean") {
     options.manualHingeDirFlip = update.manualHingeDirFlip;
+  }
+  if (typeof update.showPaperBorder === "boolean") {
+    options.showPaperBorder = update.showPaperBorder;
   }
 }

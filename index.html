@@ -56,6 +56,16 @@
     <!-- Settings & Info Buttons (Top Right) -->
     <div id="settings-btn-container">
       <button
+        id="toggleStyle"
+        type="button"
+        aria-controls="stylePanel"
+        aria-pressed="false"
+        title="Style"
+      >
+        <span class="material-symbols-outlined">palette</span>
+        <span>Style</span>
+      </button>
+      <button
         id="toggleSettings"
         type="button"
         aria-controls="settingsPanel"
@@ -77,27 +87,43 @@
       </button>
     </div>
 
-    <!-- Settings Panel -->
-    <div id="settingsPanel" class="settings-panel" style="display: none">
-      <h3>Settings</h3>
+    <!-- Style Panel -->
+    <div id="stylePanel" class="settings-panel" style="display: none">
+      <h3>Style</h3>
       
-      <!-- Paper Settings -->
       <div class="settings-section">
-        <h4>Paper</h4>
+        <h4>Format</h4>
         <div class="input-group">
           <div class="paper-size-selector">
-            <span>Size:</span>
-            <div class="toggle-group">
-              <label><input type="radio" name="paperSize" value="a4" checked> A4</label>
-              <label><input type="radio" name="paperSize" value="square"> Square</label>
+              <div class="toggle-group">
+                <label><input type="radio" name="paperSize" value="a4" checked> A4</label>
+                <label><input type="radio" name="paperSize" value="square"> Square</label>
+              </div>
             </div>
+            <label class="checkbox-label">
+              <input type="checkbox" id="showPaperBorder" checked />
+              Show paper border
+            </label>
           </div>
-          <div class="paper-color-selector">
-            <span>Color:</span>
-            <div id="colorOptions" class="color-grid"></div>
+        </div>
+
+      <div class="settings-section">
+        <h4>Color</h4>
+        <div class="input-group">
+          <div class="input-row">
+            <label for="paperColor">Paper Color</label>
+            <div class="color-picker-wrapper">
+              <input id="paperColor" type="color" value="#ffffff" />
+              <div class="color-picker-display" id="paperColorDisplay" style="background-color: #ffffff;"></div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="settings-panel" style="display: none">
+      <h3>Settings</h3>
 
       <div class="settings-section">
         <h4>Motion</h4>
@@ -152,11 +178,10 @@
         <a
           id="buyCoffee"
           href="https://www.buymeacoffee.com/maxwase"
-          target="_blank"
           class="footer-link"
         >
           <span class="material-symbols-outlined icon-small">coffee</span>
-          <span>Buy Me A Coffee</span>
+          <span>Buy me a coffee</span>
         </a>
         <a
           id="repoLink"
