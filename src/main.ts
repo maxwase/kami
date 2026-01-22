@@ -468,11 +468,16 @@ updateStableAccelFromUi();
 updateManualHingePos();
 
 // Reset Hinge Button
-resetHingeBtn.onclick = () => {
+// Reset Hinge Button
+const handleHingeReset = (e: Event) => {
+  e.preventDefault(); // Prevent ghost clicks or double firing
   manualHingeX.value = "50";
   manualHingeY.value = "50";
   updateManualHingePos();
 };
+
+resetHingeBtn.addEventListener("click", handleHingeReset);
+resetHingeBtn.addEventListener("touchend", handleHingeReset);
 
 // Paper Options Logic
 const paperSizeRadios = document.querySelectorAll('input[name="paperSize"]');
@@ -502,11 +507,18 @@ if (paperColorInput && paperColorDisplay) {
     
     // Simple darkening: reduce lightness by 10%
     const darkerColor = adjustColorBrightness(color, -0.1);
+
+    // Determine edge color based on brightness
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    const edgeColor = brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
     
     paper.style = {
       front: color,
       back: darkerColor,
-      edge: "rgba(0,0,0,0.3)",
+      edge: edgeColor,
     };
   });
   
@@ -548,22 +560,6 @@ function tick(now: number) {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
 
-    // Animate lift scale for drag effect
-    for (const p of papers) {
-      const targetScale = p.isDragging ? 1.05 : 1; // 5% scale increase
-      const liftSpeed = p.isDragging ? 8 : 10; // Faster release animation
-      p.liftScale += (targetScale - p.liftScale) * dt * liftSpeed;
-      
-      // Animate shadow opacity and position for smooth transitions
-      const targetOpacity = p.isDragging ? 1 : 0;
-      const opacitySpeed = p.isDragging ? 6 : 4; // Slower fade out
-      p.shadowOpacity += (targetOpacity - p.shadowOpacity) * dt * opacitySpeed;
-      
-      // Animate shadow lift height - retracts to top on release
-      const targetLiftZ = p.isDragging ? 35 : 0;
-      const liftZSpeed = p.isDragging ? 10 : 6; // Faster rise, slower drop
-      p.shadowLiftZ += (targetLiftZ - p.shadowLiftZ) * dt * liftZSpeed;
-    }
 
     // Animate rotation
     if (rotationAnimProgress < 1 && rotationStartAngle !== null && rotationTargetAngle !== null) {
