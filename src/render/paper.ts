@@ -1,5 +1,5 @@
 import { clamp, easeInOutCubic } from "../math/scalars";
-import { add2, mul2, norm2 } from "../math/vec2";
+import { add2, mul2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import { mul3, norm3, rotateAroundAxis, rotatePointAroundLine, v3 } from "../math/vec3";
 import type { Vec3 } from "../math/vec3";
@@ -10,14 +10,13 @@ import type { FoldAnim } from "../paper/fold";
 
 
 
-const PROJ_DIR = norm2({ x: 0.35, y: -0.65 });
+
 const LIGHT_DIR = norm3({ x: -0.35, y: -0.25, z: 0.9 });
 
 /** Project local 3D point into local 2D with slight perspective and lift. */
 export function project3To2Local(p: Vec3): Vec2 {
   const persp = 1 / (1 + p.z * 0.0022);
-  const lift = mul2(PROJ_DIR, p.z * 0.22);
-  return { x: p.x * persp + lift.x, y: p.y * persp + lift.y };
+  return { x: p.x * persp, y: p.y * persp };
 }
 
 export function drawFlatPaperFaces(
@@ -114,20 +113,44 @@ export function drawFoldingPaper(
   ctx.restore();
 }
 
+
+let scratchCanvas: HTMLCanvasElement | undefined;
+let scratchCtx: CanvasRenderingContext2D | null | undefined;
+
 /** Draw a subtle outline to indicate the active sheet. */
 export function drawActiveOutline(
   ctx: CanvasRenderingContext2D,
   paper: Paper,
 ): void {
-  ctx.save();
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = "rgba(255,255,255,0.2)";
-  ctx.lineWidth = 2;
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+
+  if (!scratchCanvas || scratchCanvas.width !== width || scratchCanvas.height !== height) {
+    scratchCanvas = document.createElement("canvas");
+    scratchCanvas.width = width;
+    scratchCanvas.height = height;
+    scratchCtx = scratchCanvas.getContext("2d");
+  }
+
+  if (!scratchCtx) return;
+
+  scratchCtx.clearRect(0, 0, width, height);
+  
+  // Determine opaque color and target alpha
+  const isWhite = paper.style.edge.includes("255");
+  scratchCtx.strokeStyle = isWhite ? "#ffffff" : "#000000";
+  scratchCtx.lineWidth = 1;
+  const targetAlpha = isWhite ? 0.2 : 0.16;
+
   for (const f of paper.faces) {
     const sv = f.verts.map((pt) => localToScreen(paper, pt));
-    pathPoly(ctx, sv);
-    ctx.stroke();
+    pathPoly(scratchCtx, sv);
+    scratchCtx.stroke();
   }
+
+  ctx.save();
+  ctx.globalAlpha = targetAlpha;
+  ctx.drawImage(scratchCanvas, 0, 0);
   ctx.restore();
 }
 

@@ -26,9 +26,6 @@ export interface Paper {
   baseW: number;
   baseH: number;
   isDragging: boolean;
-  liftScale: number; // Animated scale for lift effect
-  shadowOpacity: number; // Animated shadow opacity (0-1)
-  shadowLiftZ: number; // Animated shadow lift height
 }
 
 export interface PaperSnapshot {
@@ -110,9 +107,6 @@ export function makePaper(
     baseW: w,
     baseH: h,
     isDragging: false,
-    liftScale: 1,
-    shadowOpacity: 0,
-    shadowLiftZ: 0,
   };
 }
 

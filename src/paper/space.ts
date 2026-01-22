@@ -4,8 +4,7 @@ import type { Paper } from "../paper/model";
 
 /** Convert from local paper coords to screen coords. */
 export function localToScreen(paper: Paper, p: Vec2): Vec2 {
-  const effectiveScale = paper.scale * paper.liftScale;
-  const scaled = mul2(p, effectiveScale);
+  const scaled = mul2(p, paper.scale);
   const r = rotate2(scaled, paper.rot);
   return add2(r, paper.pos);
 }
