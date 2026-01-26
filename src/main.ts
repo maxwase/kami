@@ -128,11 +128,6 @@ const PAPER_SCREEN_FRACTION = 0.6;
 
 const styles: Record<string, PaperStyle> = {
   white: { front: "#ffffff", back: "#f0f0f0", edge: "rgba(0,0,0,0.16)" },
-  red: { front: "#d90000", back: "#b30000", edge: "rgba(0,0,0,0.16)" },
-  skyBlue: { front: "#008ac5", back: "#0072a3", edge: "rgba(0,0,0,0.16)" },
-  black: { front: "#1a1a1a", back: "#000000", edge: "rgba(255,255,255,0.2)" },
-  green: { front: "#00cc00", back: "#00a300", edge: "rgba(0,0,0,0.16)" },
-  yellow: { front: "#ffcc00", back: "#e6b800", edge: "rgba(0,0,0,0.16)" },
 };
 
 let currentAspect = A4_ASPECT;
@@ -605,8 +600,8 @@ function tick(now: number) {
       platform === Platform.Tauri && device === Device.Laptop
         ? hingeBaseDir
         : platform === Platform.Web &&
-            device === Device.Phone &&
-            resolveScreenLandscape(cssW, cssH)
+          device === Device.Phone &&
+          resolveScreenLandscape(cssW, cssH)
           ? hingeBaseDir
           : options.manualHingeDirFlip
             ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
@@ -629,7 +624,7 @@ function tick(now: number) {
     const foldedNow =
       postureSupport === PostureSupport.Available
         ? resolveFoldState(postureType, hingeInfo.segments) === FoldState.Folded ||
-          manualFoldQueued
+        manualFoldQueued
         : manualFoldQueued;
     const screenAngle = normalizeScreenAngle(getScreenAngleDeg());
     const accel = motion.getAccel();
