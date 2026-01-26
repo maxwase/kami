@@ -132,43 +132,6 @@ const styles: Record<string, PaperStyle> = {
 
 let currentAspect = A4_ASPECT;
 
-let rotationDirection: "left" | "right" | null = null;
-let rotationStartTime: number | null = null;
-let rotationTargetAngle: number | null = null;
-let rotationStartAngle: number | null = null;
-let rotationAnimProgress = 1; // 0-1, 1 means complete
-
-const startRotation = (dir: "left" | "right") => {
-  const paper = getActivePaper();
-  rotationDirection = dir;
-  rotationStartTime = performance.now();
-
-  // Set up animation
-  const step = ((dir === "left" ? -1 : 1) * (5 * Math.PI)) / 180;
-  rotationStartAngle = paper.rot;
-  rotationTargetAngle = paper.rot + step;
-  rotationAnimProgress = 0;
-};
-
-const stopRotation = () => {
-  rotationDirection = null;
-  rotationStartTime = null;
-};
-
-const setupRotation = (btnId: string, dir: "left" | "right") => {
-  const btn = document.getElementById(btnId)!;
-  btn.addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    startRotation(dir);
-  });
-  btn.addEventListener("pointerup", stopRotation);
-  btn.addEventListener("pointerleave", stopRotation);
-  btn.addEventListener("contextmenu", (e) => e.preventDefault());
-};
-
-setupRotation("rotateLeft", "left");
-setupRotation("rotateRight", "right");
-
 // A4 paper size that fits within a fraction of the screen
 function computePaperSize(
   viewW: number,
@@ -353,8 +316,8 @@ foldFallbackBtn.onclick = () => {
 const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.fold;
 const gestureHelp =
-  platform === Platform.Tauri && device === Device.Laptop
-    ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate."
+  device === Device.Laptop
+    ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.<br><b>F / Space / Enter</b>: fold."
     : helpCopy.gesture.replace(". ", ".<br>");
 gestureHelpEl.innerHTML = gestureHelp;
 let settingsVisible = false;
@@ -554,38 +517,6 @@ function tick(now: number) {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
 
-    // Animate rotation
-    if (
-      rotationAnimProgress < 1 &&
-      rotationStartAngle !== null &&
-      rotationTargetAngle !== null
-    ) {
-      rotationAnimProgress += dt * 6; // Animation speed
-      if (rotationAnimProgress >= 1) {
-        rotationAnimProgress = 1;
-      }
-      // Ease out cubic
-      const t = rotationAnimProgress;
-      const eased = 1 - Math.pow(1 - t, 3);
-      const paper = getActivePaper();
-      paper.rot =
-        rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * eased;
-    }
-
-    // Continuous Rotation
-    if (rotationDirection && rotationStartTime) {
-      const holdDuration = now - rotationStartTime;
-      if (holdDuration > 200) {
-        // If held for more than 200ms
-        const activePaper = getActivePaper();
-        const speed = Math.PI; // 180 degrees per second
-        const sign = rotationDirection === "left" ? -1 : 1;
-        activePaper.rot += sign * speed * dt;
-        // Cancel step animation when continuous rotation starts
-        rotationAnimProgress = 1;
-      }
-    }
-
     let hingeBaseDir = hingeInfo.hingeDir;
     if (platform === Platform.Tauri && device === Device.Laptop) {
       hingeBaseDir = { x: -1, y: 0 };
@@ -600,8 +531,8 @@ function tick(now: number) {
       platform === Platform.Tauri && device === Device.Laptop
         ? hingeBaseDir
         : platform === Platform.Web &&
-          device === Device.Phone &&
-          resolveScreenLandscape(cssW, cssH)
+            device === Device.Phone &&
+            resolveScreenLandscape(cssW, cssH)
           ? hingeBaseDir
           : options.manualHingeDirFlip
             ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
@@ -624,7 +555,7 @@ function tick(now: number) {
     const foldedNow =
       postureSupport === PostureSupport.Available
         ? resolveFoldState(postureType, hingeInfo.segments) === FoldState.Folded ||
-        manualFoldQueued
+          manualFoldQueued
         : manualFoldQueued;
     const screenAngle = normalizeScreenAngle(getScreenAngleDeg());
     const accel = motion.getAccel();
