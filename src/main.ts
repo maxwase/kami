@@ -137,10 +137,6 @@ const styles: Record<string, PaperStyle> = {
 
 let currentAspect = A4_ASPECT;
 
-
-
-
-// Rotation Logic with Animation
 let rotationDirection: "left" | "right" | null = null;
 let rotationStartTime: number | null = null;
 let rotationTargetAngle: number | null = null;
@@ -151,9 +147,9 @@ const startRotation = (dir: "left" | "right") => {
   const paper = getActivePaper();
   rotationDirection = dir;
   rotationStartTime = performance.now();
-  
+
   // Set up animation
-  const step = (dir === "left" ? -1 : 1) * (5 * Math.PI) / 180;
+  const step = ((dir === "left" ? -1 : 1) * (5 * Math.PI)) / 180;
   rotationStartAngle = paper.rot;
   rotationTargetAngle = paper.rot + step;
   rotationAnimProgress = 0;
@@ -468,7 +464,6 @@ updateStableAccelFromUi();
 updateManualHingePos();
 
 // Reset Hinge Button
-// Reset Hinge Button
 const handleHingeReset = (e: Event) => {
   e.preventDefault(); // Prevent ghost clicks or double firing
   manualHingeX.value = "50";
@@ -492,19 +487,21 @@ paperSizeRadios.forEach((radio) => {
 
 // RGB Color picker
 const paperColorInput = document.getElementById("paperColor") as HTMLInputElement;
-const paperColorDisplay = document.getElementById("paperColorDisplay") as HTMLDivElement;
+const paperColorDisplay = document.getElementById(
+  "paperColorDisplay",
+) as HTMLDivElement;
 
 if (paperColorInput && paperColorDisplay) {
   // Initialize display with current color
   paperColorDisplay.style.backgroundColor = paperColorInput.value;
-  
+
   // Update when color changes
   paperColorInput.addEventListener("input", () => {
     const color = paperColorInput.value;
     paperColorDisplay.style.backgroundColor = color;
-    
+
     const paper = getActivePaper();
-    
+
     // Simple darkening: reduce lightness by 10%
     const darkerColor = adjustColorBrightness(color, -0.1);
 
@@ -514,23 +511,25 @@ if (paperColorInput && paperColorDisplay) {
     const b = parseInt(color.slice(5, 7), 16);
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     const edgeColor = brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
-    
+
     paper.style = {
       front: color,
       back: darkerColor,
       edge: edgeColor,
     };
   });
-  
+
   // Click on display to open color picker
   paperColorDisplay.addEventListener("click", () => {
     // paperColorInput.click(); // This might not work in some browsers due to security
-     paperColorInput.showPicker?.(); // Try showPicker API
-     if (!paperColorInput.showPicker) paperColorInput.click(); // Fallback
+    paperColorInput.showPicker?.(); // Try showPicker API
+    if (!paperColorInput.showPicker) paperColorInput.click(); // Fallback
   });
 }
 
-const showPaperBorderInput = document.getElementById("showPaperBorder") as HTMLInputElement;
+const showPaperBorderInput = document.getElementById(
+  "showPaperBorder",
+) as HTMLInputElement;
 if (showPaperBorderInput) {
   showPaperBorderInput.addEventListener("change", () => {
     updateOptions({ showPaperBorder: showPaperBorderInput.checked });
@@ -542,15 +541,15 @@ function adjustColorBrightness(hex: string, percent: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  
+
   // Adjust brightness
   const adjust = (val: number) => Math.max(0, Math.min(255, val + val * percent));
   const newR = Math.round(adjust(r));
   const newG = Math.round(adjust(g));
   const newB = Math.round(adjust(b));
-  
+
   // Convert back to hex
-  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
 }
 
 let last = performance.now();
@@ -560,9 +559,12 @@ function tick(now: number) {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
 
-
     // Animate rotation
-    if (rotationAnimProgress < 1 && rotationStartAngle !== null && rotationTargetAngle !== null) {
+    if (
+      rotationAnimProgress < 1 &&
+      rotationStartAngle !== null &&
+      rotationTargetAngle !== null
+    ) {
       rotationAnimProgress += dt * 6; // Animation speed
       if (rotationAnimProgress >= 1) {
         rotationAnimProgress = 1;
@@ -571,13 +573,15 @@ function tick(now: number) {
       const t = rotationAnimProgress;
       const eased = 1 - Math.pow(1 - t, 3);
       const paper = getActivePaper();
-      paper.rot = rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * eased;
+      paper.rot =
+        rotationStartAngle + (rotationTargetAngle - rotationStartAngle) * eased;
     }
 
     // Continuous Rotation
     if (rotationDirection && rotationStartTime) {
       const holdDuration = now - rotationStartTime;
-      if (holdDuration > 200) { // If held for more than 200ms
+      if (holdDuration > 200) {
+        // If held for more than 200ms
         const activePaper = getActivePaper();
         const speed = Math.PI; // 180 degrees per second
         const sign = rotationDirection === "left" ? -1 : 1;

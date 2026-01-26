@@ -162,11 +162,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   const onPointerUp = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
 
-    // End drag effect when all pointers released
-    if (pointers.size === 0) {
-      // no-op
-    }
-
     if (pointers.size < 2) {
       pinchLastMid = undefined;
     }

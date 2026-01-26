@@ -16,10 +16,10 @@ body {
 /* Material Symbols */
 .material-symbols-outlined {
   font-variation-settings:
-  'FILL' 0,
-  'wght' 400,
-  'GRAD' 0,
-  'opsz' 24;
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
   font-size: 24px;
 }
 
@@ -244,7 +244,7 @@ body {
   border-radius: 50%;
   background: #fff;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: transform 0.2s;
 }
 
@@ -334,8 +334,10 @@ body {
   height: 32px;
   border-radius: 8px;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.2);
-  transition: transform 0.15s, border-color 0.15s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
   position: relative;
   display: flex;
   align-items: center;
@@ -348,20 +350,22 @@ body {
 
 .color-option.active {
   border: 2px solid #fff;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
 }
 
 .color-option .checkmark {
   font-size: 18px;
-  color: rgba(255,255,255,0.9);
-  text-shadow: 0 0 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.6);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.6);
   display: none;
 }
 
 /* Dark checkmark for white/light colors */
 .color-option[data-color="white"] .checkmark {
-  color: rgba(0,0,0,0.7);
-  text-shadow: 0 0 2px rgba(255,255,255,0.5);
+  color: rgba(0, 0, 0, 0.7);
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
 }
 
 .color-option.active .checkmark {
@@ -388,7 +392,9 @@ body {
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: transform 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 

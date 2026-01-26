@@ -8,9 +8,6 @@ import { toggleSide } from "../paper/model";
 import type { Paper, PaperSide } from "../paper/model";
 import type { FoldAnim } from "../paper/fold";
 
-
-
-
 const LIGHT_DIR = norm3({ x: -0.35, y: -0.25, z: 0.9 });
 
 /** Project local 3D point into local 2D with slight perspective and lift. */
@@ -45,7 +42,6 @@ export function drawFoldingPaper(
 ): void {
   const keep = [...anim.keepFaces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
-  
 
   for (const f of keep) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
@@ -113,19 +109,19 @@ export function drawFoldingPaper(
   ctx.restore();
 }
 
-
 let scratchCanvas: HTMLCanvasElement | undefined;
 let scratchCtx: CanvasRenderingContext2D | null | undefined;
 
 /** Draw a subtle outline to indicate the active sheet. */
-export function drawActiveOutline(
-  ctx: CanvasRenderingContext2D,
-  paper: Paper,
-): void {
+export function drawActiveOutline(ctx: CanvasRenderingContext2D, paper: Paper): void {
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
 
-  if (!scratchCanvas || scratchCanvas.width !== width || scratchCanvas.height !== height) {
+  if (
+    !scratchCanvas ||
+    scratchCanvas.width !== width ||
+    scratchCanvas.height !== height
+  ) {
     scratchCanvas = document.createElement("canvas");
     scratchCanvas.width = width;
     scratchCanvas.height = height;
@@ -135,7 +131,7 @@ export function drawActiveOutline(
   if (!scratchCtx) return;
 
   scratchCtx.clearRect(0, 0, width, height);
-  
+
   // Determine opaque color and target alpha
   const isWhite = paper.style.edge.includes("255");
   scratchCtx.strokeStyle = isWhite ? "#ffffff" : "#000000";

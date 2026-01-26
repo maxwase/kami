@@ -10,10 +10,14 @@
     <meta name="theme-color" content="#201a14" />
     <title>kami: Origami simulator</title>
     <!-- Add Material Symbols Font -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+    />
     <meta property="og:image" content="https://maxwase.github.io/kami/og.png" />
     <link rel="icon" type="image/png" href="icon.png" />
   </head>
+
   <body>
     <canvas id="c"></canvas>
 
@@ -29,15 +33,25 @@
           <span>Undo</span>
         </button>
       </div>
-      
+
       <div class="action-divider"></div>
 
       <div class="action-btn-group">
-        <button id="rotateLeft" type="button" aria-label="Rotate left" title="Rotate left (or Alt+drag up/down)">
+        <button
+          id="rotateLeft"
+          type="button"
+          aria-label="Rotate left"
+          title="Rotate left (or Alt+drag up/down)"
+        >
           <span class="material-symbols-outlined">rotate_left</span>
           <span>Left</span>
         </button>
-        <button id="rotateRight" type="button" aria-label="Rotate right" title="Rotate right (or Alt+drag up/down)">
+        <button
+          id="rotateRight"
+          type="button"
+          aria-label="Rotate right"
+          title="Rotate right (or Alt+drag up/down)"
+        >
           <span class="material-symbols-outlined">rotate_right</span>
           <span>Right</span>
         </button>
@@ -90,22 +104,26 @@
     <!-- Style Panel -->
     <div id="stylePanel" class="settings-panel" style="display: none">
       <h3>Style</h3>
-      
+
       <div class="settings-section">
         <h4>Format</h4>
         <div class="input-group">
           <div class="paper-size-selector">
-              <div class="toggle-group">
-                <label><input type="radio" name="paperSize" value="a4" checked> A4</label>
-                <label><input type="radio" name="paperSize" value="square"> Square</label>
-              </div>
+            <div class="toggle-group">
+              <label
+                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
+              >
+              <label
+                ><input type="radio" name="paperSize" value="square" /> Square</label
+              >
             </div>
-            <label class="checkbox-label">
-              <input type="checkbox" id="showPaperBorder" checked />
-              Show paper border
-            </label>
           </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showPaperBorder" checked />
+            Show paper border
+          </label>
         </div>
+      </div>
 
       <div class="settings-section">
         <h4>Color</h4>
@@ -114,7 +132,11 @@
             <label for="paperColor">Paper Color</label>
             <div class="color-picker-wrapper">
               <input id="paperColor" type="color" value="#ffffff" />
-              <div class="color-picker-display" id="paperColorDisplay" style="background-color: #ffffff;"></div>
+              <div
+                class="color-picker-display"
+                id="paperColorDisplay"
+                style="background-color: #ffffff"
+              ></div>
             </div>
           </div>
         </div>
@@ -131,9 +153,20 @@
           <div class="input-row mono">
             <span>Stability:</span>
             <span id="stableAccelValue">0.35 m/s²</span>
-            <input id="stableAccel" type="range" class="styled-range" min="0" max="3" step="0.05" value="0.35" />
+            <input
+              id="stableAccel"
+              type="range"
+              class="styled-range"
+              min="0"
+              max="3"
+              step="0.05"
+              value="0.35"
+            />
           </div>
-          <label class="checkbox-label" title="Reverse which side the fold prefers to move toward when triggered">
+          <label
+            class="checkbox-label"
+            title="Reverse which side the fold prefers to move toward when triggered"
+          >
             <input id="invertFoldDirection" type="checkbox" />
             Invert fold direction
           </label>
@@ -145,11 +178,27 @@
         <div class="input-group">
           <div class="input-row mono">
             <span>X:</span>
-            <input id="manualHingeX" type="range" class="styled-range" min="0" max="100" step="1" value="50" />
+            <input
+              id="manualHingeX"
+              type="range"
+              class="styled-range"
+              min="0"
+              max="100"
+              step="1"
+              value="50"
+            />
           </div>
           <div class="input-row mono">
             <span>Y:</span>
-            <input id="manualHingeY" type="range" class="styled-range" min="0" max="100" step="1" value="50" />
+            <input
+              id="manualHingeY"
+              type="range"
+              class="styled-range"
+              min="0"
+              max="100"
+              step="1"
+              value="50"
+            />
           </div>
           <label class="checkbox-label">
             <input id="manualHingeFlip" type="checkbox" />
@@ -158,7 +207,7 @@
           <div class="mono hinge-status" id="hingeStatus" role="status"></div>
           <button id="resetHinge" type="button" class="reset-hinge-btn">
             <span class="material-symbols-outlined icon-small">restart_alt</span>
-            <span>Reset to Center</span>
+            <span>Reset axis</span>
           </button>
         </div>
       </div>
@@ -167,7 +216,7 @@
     <!-- Info Panel -->
     <div id="infoPanel" class="settings-panel" style="display: none">
       <h3>Info</h3>
-      
+
       <div class="test-controls-section">
         <div id="foldHelp"></div>
         <div id="gestureHelp"></div>
@@ -175,11 +224,7 @@
       </div>
 
       <div class="settings-footer">
-        <a
-          id="buyCoffee"
-          href="https://www.buymeacoffee.com/maxwase"
-          target="_blank"
-        >
+        <a id="buyCoffee" href="https://www.buymeacoffee.com/maxwase" target="_blank">
           <img
             src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
             alt="Buy Me A Coffee"
