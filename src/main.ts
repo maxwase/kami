@@ -316,6 +316,7 @@ foldFallbackBtn.onclick = () => {
 const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.fold;
 const gestureHelp =
+  // Device.Laptop covers all non-mobile devices (Desktops, Laptops)
   device === Device.Laptop
     ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.<br><b>F / Space / Enter</b>: fold."
     : helpCopy.gesture.replace(". ", ".<br>");
@@ -531,8 +532,8 @@ function tick(now: number) {
       platform === Platform.Tauri && device === Device.Laptop
         ? hingeBaseDir
         : platform === Platform.Web &&
-            device === Device.Phone &&
-            resolveScreenLandscape(cssW, cssH)
+          device === Device.Phone &&
+          resolveScreenLandscape(cssW, cssH)
           ? hingeBaseDir
           : options.manualHingeDirFlip
             ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
@@ -555,7 +556,7 @@ function tick(now: number) {
     const foldedNow =
       postureSupport === PostureSupport.Available
         ? resolveFoldState(postureType, hingeInfo.segments) === FoldState.Folded ||
-          manualFoldQueued
+        manualFoldQueued
         : manualFoldQueued;
     const screenAngle = normalizeScreenAngle(getScreenAngleDeg());
     const accel = motion.getAccel();
