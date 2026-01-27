@@ -1,9 +1,8 @@
 name: Build macOS app for release
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: write
