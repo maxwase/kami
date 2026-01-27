@@ -3,10 +3,18 @@ name: Release
 on:
   push:
     branches:
+      - "master"
+  pull_request:
+    branches:
       - "**"
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to deploy (for feature previews)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -28,23 +36,30 @@ jobs:
         run: |
           set -euo pipefail
 
+          pr_number="${{ github.event.pull_request.number }}"
+          manual_pr="${{ github.event.inputs.pr_number }}"
+
           if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
             base_path="/kami/"
             target_dir="kami"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            if [[ -z "${pr_number}" ]]; then
+              echo "PR number missing; cannot determine feature deploy target." >&2
+              exit 1
+            fi
+            base_path="/kami-feat${pr_number}/"
+            target_dir="kami-feat${pr_number}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${manual_pr}" ]]; then
+            base_path="/kami-feat${manual_pr}/"
+            target_dir="kami-feat${manual_pr}"
           else
             branch="${GITHUB_REF#refs/heads/}"
             if [[ "${branch}" == "master" ]]; then
               base_path="/kami-master/"
               target_dir="kami-master"
             else
-              if [[ "${branch}" =~ ([0-9]+) ]]; then
-                num="${BASH_REMATCH[1]}"
-                base_path="/kami-feat${num}/"
-                target_dir="kami-feat${num}"
-              else
-                echo "Branch '${branch}' must include a number for feature deployments." >&2
-                exit 1
-              fi
+              echo "Feature deployments use PR numbers; open a PR or pass pr_number on workflow_dispatch." >&2
+              exit 1
             fi
           fi
 
