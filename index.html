@@ -21,84 +21,64 @@
   <body>
     <canvas id="c"></canvas>
 
-    <!-- Action Island (Top Left) -->
-    <div id="action-island">
-      <div class="action-btn-group">
-        <button id="resetActive" type="button" title="Reset">
-          <span class="material-symbols-outlined">restart_alt</span>
-          <span>Reset</span>
-        </button>
-        <button id="undo" type="button" disabled title="Undo">
-          <span class="material-symbols-outlined">undo</span>
-          <span>Undo</span>
-        </button>
+    <!-- Control Footer (Top Left/Right on desktop, Bottom on portrait) -->
+    <div id="control-footer">
+      <!-- Action Island -->
+      <div id="action-island">
+        <div class="action-btn-group">
+          <button id="resetActive" type="button" title="Reset">
+            <span class="material-symbols-outlined">restart_alt</span>
+            <span>Reset</span>
+          </button>
+          <button id="undo" type="button" disabled title="Undo">
+            <span class="material-symbols-outlined">undo</span>
+            <span>Undo</span>
+          </button>
+        </div>
+        <div class="action-btn-group">
+          <button id="foldFallback" type="button" title="Fold">
+            <span class="material-symbols-outlined">devices_fold</span>
+            <span>Fold</span>
+          </button>
+        </div>
       </div>
 
-      <div class="action-divider"></div>
-
-      <div class="action-btn-group">
+      <!-- Settings & Info Buttons -->
+      <div id="settings-btn-container">
         <button
-          id="rotateLeft"
+          id="toggleStyle"
           type="button"
-          aria-label="Rotate left"
-          title="Rotate left (or Alt+drag up/down)"
+          aria-controls="stylePanel"
+          aria-pressed="false"
+          aria-label="Style"
+          title="Style"
         >
-          <span class="material-symbols-outlined">rotate_left</span>
-          <span>Left</span>
+          <span class="material-symbols-outlined">palette</span>
+          <span>Style</span>
         </button>
         <button
-          id="rotateRight"
+          id="toggleSettings"
           type="button"
-          aria-label="Rotate right"
-          title="Rotate right (or Alt+drag up/down)"
+          aria-controls="settingsPanel"
+          aria-pressed="false"
+          aria-label="Settings"
+          title="Settings"
         >
-          <span class="material-symbols-outlined">rotate_right</span>
-          <span>Right</span>
+          <span class="material-symbols-outlined">settings</span>
+          <span>Settings</span>
+        </button>
+        <button
+          id="toggleInfo"
+          type="button"
+          aria-controls="infoPanel"
+          aria-pressed="false"
+          aria-label="Info"
+          title="Info"
+        >
+          <span class="material-symbols-outlined">info</span>
+          <span>Info</span>
         </button>
       </div>
-
-      <div class="action-divider"></div>
-
-      <div class="action-btn-group">
-        <button id="foldFallback" type="button" title="Fold">
-          <span class="material-symbols-outlined">devices_fold</span>
-          <span>Fold</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Settings & Info Buttons (Top Right) -->
-    <div id="settings-btn-container">
-      <button
-        id="toggleStyle"
-        type="button"
-        aria-controls="stylePanel"
-        aria-pressed="false"
-        title="Style"
-      >
-        <span class="material-symbols-outlined">palette</span>
-        <span>Style</span>
-      </button>
-      <button
-        id="toggleSettings"
-        type="button"
-        aria-controls="settingsPanel"
-        aria-pressed="false"
-        title="Settings"
-      >
-        <span class="material-symbols-outlined">settings</span>
-        <span>Settings</span>
-      </button>
-      <button
-        id="toggleInfo"
-        type="button"
-        aria-controls="infoPanel"
-        aria-pressed="false"
-        title="Info"
-      >
-        <span class="material-symbols-outlined">info</span>
-        <span>Info</span>
-      </button>
     </div>
 
     <!-- Style Panel -->
@@ -177,7 +157,9 @@
         <h4>Hinge</h4>
         <div class="input-group">
           <div class="input-row mono">
-            <span>X:</span>
+            <span class="hinge-label"
+              ><span>X:</span> <span id="hingeXValue"></span
+            ></span>
             <input
               id="manualHingeX"
               type="range"
@@ -189,7 +171,9 @@
             />
           </div>
           <div class="input-row mono">
-            <span>Y:</span>
+            <span class="hinge-label"
+              ><span>Y:</span> <span id="hingeYValue"></span
+            ></span>
             <input
               id="manualHingeY"
               type="range"
