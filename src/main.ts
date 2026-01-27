@@ -56,6 +56,8 @@ const invertFoldDirectionInput = getRequiredElement(
 );
 const manualHingeX = getRequiredElement("manualHingeX", HTMLInputElement);
 const manualHingeY = getRequiredElement("manualHingeY", HTMLInputElement);
+const hingeXValueEl = getRequiredElement("hingeXValue", HTMLSpanElement);
+const hingeYValueEl = getRequiredElement("hingeYValue", HTMLSpanElement);
 const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
 const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
@@ -617,6 +619,8 @@ function tick(now: number) {
       foldRuntime.phase === "animating" ? foldRuntime.hinge : activeHinge;
     const displayHingeDir =
       foldRuntime.phase === "animating" ? foldRuntime.hingeDir : activeHingeDir;
+    hingeXValueEl.textContent = displayHinge.x.toFixed(0);
+    hingeYValueEl.textContent = displayHinge.y.toFixed(0);
     drawHingeCrosshair(
       ctx,
       displayHinge,
@@ -640,10 +644,7 @@ function tick(now: number) {
       }
     }
 
-    const statusParts = [
-      `posture=${postureType}`,
-      `hinge=(${displayHinge.x.toFixed(0)},${displayHinge.y.toFixed(0)})`,
-    ];
+    const statusParts = [`posture=${postureType}`];
     if (platform === Platform.Web && device === Device.Phone) {
       statusParts.push(
         `accel=(${accel.x.toFixed(2)},${accel.y.toFixed(2)}) m/s²`,

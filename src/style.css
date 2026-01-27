@@ -55,11 +55,12 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   align-items: center; /* Ensure vertical alignment */
+  justify-content: center;
 }
 
 .action-btn-group {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .action-divider {
@@ -122,6 +123,7 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
+  justify-content: center;
 }
 
 #toggleStyle,
@@ -221,9 +223,12 @@ body {
   font-size: 13px;
 }
 
+.hinge-label span:last-child {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* Textured Range Inputs */
 .styled-range {
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   background: rgba(255, 255, 255, 0.1);
@@ -237,8 +242,6 @@ body {
 }
 
 .styled-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -474,4 +477,59 @@ body {
   color: rgba(255, 255, 255, 0.5);
   line-height: 1.4;
   margin-bottom: 10px;
+}
+
+@media (orientation: portrait) {
+  #control-footer {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    bottom: 12px;
+    z-index: 20;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transform: translateX(-50%);
+  }
+
+  #action-island,
+  #settings-btn-container {
+    display: contents;
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    transform: none;
+    padding: 0;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .action-btn-group {
+    display: contents;
+  }
+
+  .settings-panel {
+    left: 12px;
+    right: 12px;
+    top: 16px;
+    width: auto;
+    max-height: calc(100vh - 140px);
+  }
 }
