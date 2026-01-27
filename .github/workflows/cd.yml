@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       target_dir:
-        description: "Target directory inside Pages artifact."
+        description: "Target directory inside Pages artifact (empty for root)."
         required: true
         type: string
 
@@ -49,7 +49,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pages_dir=".pages/${{ inputs.target_dir }}"
+          pages_root=".pages"
+          if [[ -n "${{ inputs.target_dir }}" && "${{ inputs.target_dir }}" != "." ]]; then
+            pages_dir="${pages_root}/${{ inputs.target_dir }}"
+          else
+            pages_dir="${pages_root}"
+          fi
           mkdir -p "${pages_dir}"
           cp -R dist/. "${pages_dir}/"
       - name: Setup Pages
