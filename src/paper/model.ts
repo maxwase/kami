@@ -25,6 +25,7 @@ export interface Paper {
   faces: Face[];
   baseW: number;
   baseH: number;
+  isDragging: boolean;
 }
 
 export interface PaperSnapshot {
@@ -105,6 +106,7 @@ export function makePaper(
     faces: [makeRectFace(factory, w, h, "front", 0)],
     baseW: w,
     baseH: h,
+    isDragging: false,
   };
 }
 

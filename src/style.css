@@ -13,106 +13,465 @@ body {
     Arial;
 }
 
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  font-size: 24px;
+}
+
+#action-island .material-symbols-outlined {
+  font-size: 28px;
+}
+
+.icon-small {
+  font-size: 18px !important;
+}
+
 #c {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  touch-action: none; /* allow custom gestures */
+  touch-action: none;
   display: block;
 }
 
-#hud {
+/* --- Action Island (Top Left) --- */
+#action-island {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 10;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 10px 10px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  max-width: min(520px, calc(100vw - 24px));
-  user-select: none;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  align-items: center; /* Ensure vertical alignment */
 }
 
-.row {
+.action-btn-group {
   display: flex;
   gap: 8px;
+}
+
+.action-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#action-island button {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-button {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.95);
-  padding: 8px 10px;
-  border-radius: 10px;
+  justify-content: center;
+  gap: 4px;
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
-  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-button.active {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.28);
+#action-island button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
-button:disabled {
-  opacity: 0.55;
+#action-island button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+#action-island button span {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+#action-island button svg {
+  opacity: 0.9;
+}
+
+#action-island button:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
-#buyCoffee {
-  display: inline-flex;
-  align-items: center;
-  line-height: 0;
+/* --- Settings & Info Buttons (Top Right) --- */
+#settings-btn-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
 }
 
-#buyCoffee img {
-  display: block;
-}
-
-.help {
-  font-size: 12px;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.82);
-  gap: 6px;
+#toggleStyle,
+#toggleSettings,
+#toggleInfo {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
 }
 
-.help a {
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
-  text-decoration: underline;
+#toggleStyle .material-symbols-outlined,
+#toggleSettings .material-symbols-outlined,
+#toggleInfo .material-symbols-outlined {
+  font-size: 28px;
 }
 
-.help a:hover {
+#toggleStyle span:not(.material-symbols-outlined),
+#toggleSettings span:not(.material-symbols-outlined),
+#toggleInfo span:not(.material-symbols-outlined) {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+#toggleStyle:hover,
+#toggleSettings:hover,
+#toggleInfo:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+#toggleStyle:active,
+#toggleSettings:active,
+#toggleInfo:active {
+  transform: translateY(0);
+}
+
+/* --- Settings Panel --- */
+.settings-panel {
+  position: fixed;
+  top: 104px; /* Position below button container with 16px gap (16 + 8 + 56 + 8 + 16) */
+  right: 16px;
+  width: 300px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  z-index: 10;
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.mono {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  font-size: 12px;
-  opacity: 0.9;
+.settings-panel h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.settings-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .input-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  font-size: 13px;
 }
 
-.input-row label {
-  display: inline-flex;
+/* Textured Range Inputs */
+.styled-range {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  transition: background 0.2s;
+}
+
+.styled-range:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.styled-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s;
+}
+
+.styled-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.input-row input[type="range"] {
+  width: 120px;
+}
+
+.checkbox-label {
+  display: flex;
   align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reset-hinge-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.reset-hinge-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 1);
+}
+
+.hinge-status {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  padding: 8px 0;
+}
+
+/* Paper Selector Styles */
+.toggle-group {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.toggle-group label {
+  flex: 1;
+  text-align: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
+}
+
+.toggle-group label:has(input:checked) {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+}
+
+.toggle-group input {
+  display: none;
+}
+
+.color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.active {
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.color-option .checkmark {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.6);
+  display: none;
+}
+
+/* Dark checkmark for white/light colors */
+.color-option[data-color="white"] .checkmark {
+  color: rgba(0, 0, 0, 0.7);
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.color-option.active .checkmark {
+  display: block;
+}
+
+/* Custom Color Picker */
+.color-picker-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.color-picker-wrapper input[type="color"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.color-picker-display {
+  width: 60px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.color-picker-display:hover {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.color-picker-display:active {
+  transform: scale(0.98);
+}
+
+/* Footer Section */
+.settings-footer {
+  margin-top: auto;
+  padding-top: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 0.2s;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.footer-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Utilities */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Scrollbar */
+.settings-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.settings-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+/* Test Controls Section */
+.test-controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.test-controls-section > div {
+  line-height: 1.6;
+}
+
+.paper-size-selector > span,
+.paper-color-selector > span {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Status Text */
+#status {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  margin-bottom: 10px;
 }

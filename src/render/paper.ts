@@ -1,5 +1,5 @@
 import { clamp, easeInOutCubic } from "../math/scalars";
-import { add2, mul2, norm2 } from "../math/vec2";
+import { add2, mul2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import { mul3, norm3, rotateAroundAxis, rotatePointAroundLine, v3 } from "../math/vec3";
 import type { Vec3 } from "../math/vec3";
@@ -8,14 +8,12 @@ import { toggleSide } from "../paper/model";
 import type { Paper, PaperSide } from "../paper/model";
 import type { FoldAnim } from "../paper/fold";
 
-const PROJ_DIR = norm2({ x: 0.35, y: -0.65 });
 const LIGHT_DIR = norm3({ x: -0.35, y: -0.25, z: 0.9 });
 
 /** Project local 3D point into local 2D with slight perspective and lift. */
 export function project3To2Local(p: Vec3): Vec2 {
   const persp = 1 / (1 + p.z * 0.0022);
-  const lift = mul2(PROJ_DIR, p.z * 0.22);
-  return { x: p.x * persp + lift.x, y: p.y * persp + lift.y };
+  return { x: p.x * persp, y: p.y * persp };
 }
 
 export function drawFlatPaperFaces(
@@ -26,23 +24,13 @@ export function drawFlatPaperFaces(
   const faces = [...paper.faces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
 
-  for (const f of faces) {
-    const screenVerts = f.verts.map((p) => localToScreen(paper, p));
-    drawShadow(ctx, screenVerts, 18);
-  }
+  alignTextureToPaper(texture, paper);
 
   for (const f of faces) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
     const color = f.up === "front" ? paper.style.front : paper.style.back;
 
     shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture);
-
-    ctx.save();
-    ctx.strokeStyle = paper.style.edge;
-    ctx.lineWidth = 1;
-    pathPoly(ctx, screenVerts);
-    ctx.stroke();
-    ctx.restore();
   }
 }
 
@@ -54,21 +42,11 @@ export function drawFoldingPaper(
 ): void {
   const keep = [...anim.keepFaces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
-  for (const f of keep) {
-    const screenVerts = f.verts.map((p) => localToScreen(paper, p));
-    drawShadow(ctx, screenVerts, 16);
-  }
+
   for (const f of keep) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
     const color = f.up === "front" ? paper.style.front : paper.style.back;
     shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture);
-
-    ctx.save();
-    ctx.strokeStyle = paper.style.edge;
-    ctx.lineWidth = 1;
-    pathPoly(ctx, screenVerts);
-    ctx.stroke();
-    ctx.restore();
   }
 
   const progress = easeInOutCubic(anim.progress);
@@ -110,17 +88,8 @@ export function drawFoldingPaper(
 
   items.sort((a, b) => a.zAvg - b.zAvg);
 
-  for (const it of items) drawShadow(ctx, it.screenVerts, it.zAvg);
-
   for (const it of items) {
     shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
-
-    ctx.save();
-    ctx.strokeStyle = paper.style.edge;
-    ctx.lineWidth = 1;
-    pathPoly(ctx, it.screenVerts);
-    ctx.stroke();
-    ctx.restore();
   }
 
   ctx.save();
@@ -140,21 +109,44 @@ export function drawFoldingPaper(
   ctx.restore();
 }
 
+let scratchCanvas: HTMLCanvasElement | undefined;
+let scratchCtx: CanvasRenderingContext2D | null | undefined;
+
 /** Draw a subtle outline to indicate the active sheet. */
-export function drawActiveOutline(
-  ctx: CanvasRenderingContext2D,
-  paper: Paper,
-  strokeStyle = "rgba(255,255,255,0.35)",
-): void {
-  ctx.save();
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = strokeStyle;
-  ctx.lineWidth = 2;
+export function drawActiveOutline(ctx: CanvasRenderingContext2D, paper: Paper): void {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+
+  if (
+    !scratchCanvas ||
+    scratchCanvas.width !== width ||
+    scratchCanvas.height !== height
+  ) {
+    scratchCanvas = document.createElement("canvas");
+    scratchCanvas.width = width;
+    scratchCanvas.height = height;
+    scratchCtx = scratchCanvas.getContext("2d");
+  }
+
+  if (!scratchCtx) return;
+
+  scratchCtx.clearRect(0, 0, width, height);
+
+  // Determine opaque color and target alpha
+  const isWhite = paper.style.edge.includes("255");
+  scratchCtx.strokeStyle = isWhite ? "#ffffff" : "#000000";
+  scratchCtx.lineWidth = 1;
+  const targetAlpha = isWhite ? 0.2 : 0.16;
+
   for (const f of paper.faces) {
     const sv = f.verts.map((pt) => localToScreen(paper, pt));
-    pathPoly(ctx, sv);
-    ctx.stroke();
+    pathPoly(scratchCtx, sv);
+    scratchCtx.stroke();
   }
+
+  ctx.save();
+  ctx.globalAlpha = targetAlpha;
+  ctx.drawImage(scratchCanvas, 0, 0);
   ctx.restore();
 }
 
@@ -165,29 +157,6 @@ function pathPoly(ctx: CanvasRenderingContext2D, screenVerts: Vec2[]): void {
   for (let i = 1; i < screenVerts.length; i++)
     ctx.lineTo(screenVerts[i].x, screenVerts[i].y);
   ctx.closePath();
-}
-
-function drawShadow(
-  ctx: CanvasRenderingContext2D,
-  screenVerts: Vec2[],
-  zAvg: number,
-): void {
-  const a = clamp(zAvg / 220, 0, 1) * 0.35;
-  if (a < 0.01) return;
-
-  const off = mul2(PROJ_DIR, zAvg * 0.38);
-
-  ctx.save();
-  ctx.translate(off.x, off.y);
-  ctx.globalAlpha = a;
-  ctx.fillStyle = "#000";
-  ctx.shadowColor = "rgba(0,0,0,0.35)";
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 10;
-  pathPoly(ctx, screenVerts);
-  ctx.fill();
-  ctx.restore();
 }
 
 function shadeFace(
@@ -208,7 +177,8 @@ function shadeFace(
     ctx.restore();
 
     ctx.save();
-    ctx.globalAlpha = 0.35;
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = 0.9;
     ctx.fillStyle = baseColor;
     pathPoly(ctx, screenVerts);
     ctx.fill();

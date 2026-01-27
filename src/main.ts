@@ -42,15 +42,11 @@ const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
 ctx.imageSmoothingEnabled = true;
 
-const statusEl = getRequiredElement("status", HTMLDivElement);
 const foldHelpEl = getRequiredElement("foldHelp", HTMLDivElement);
 const gestureHelpEl = getRequiredElement("gestureHelp", HTMLDivElement);
 const resetActiveBtn = getRequiredElement("resetActive", HTMLButtonElement);
 const undoBtn = getRequiredElement("undo", HTMLButtonElement);
 const foldFallbackBtn = getRequiredElement("foldFallback", HTMLButtonElement);
-const toggleHelpBtn = getRequiredElement("toggleHelp", HTMLButtonElement);
-const helpBlockEl = getRequiredElement("helpBlock", HTMLDivElement);
-const buyCoffeeLink = getRequiredElement("buyCoffee", HTMLAnchorElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
 const stableAccelRow = stableAccelInput.closest(".input-row");
@@ -62,6 +58,14 @@ const manualHingeX = getRequiredElement("manualHingeX", HTMLInputElement);
 const manualHingeY = getRequiredElement("manualHingeY", HTMLInputElement);
 const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
 const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
+const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
+const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
+const toggleStyleBtn = getRequiredElement("toggleStyle", HTMLButtonElement);
+const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
+const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
+const stylePanelEl = getRequiredElement("stylePanel", HTMLDivElement);
+const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
+const hingeStatusEl = getRequiredElement("hingeStatus", HTMLDivElement);
 
 let dpr = 1;
 let cssW = 0;
@@ -119,23 +123,27 @@ let motionActive = false;
 const postureSupport = resolvePostureSupport();
 let manualFoldQueued = false;
 
-const styles: PaperStyle[] = [
-  { front: "#f8f8f7", back: "#f1efe5", edge: "rgba(0,0,0,0.16)" },
-  { front: "#f6fbff", back: "#eef2f9", edge: "rgba(0,0,0,0.16)" },
-  { front: "#fff7ef", back: "#f4e8da", edge: "rgba(0,0,0,0.16)" },
-];
-
 const A4_ASPECT = 210 / 297;
 const PAPER_SCREEN_FRACTION = 0.6;
 
+const styles: Record<string, PaperStyle> = {
+  white: { front: "#ffffff", back: "#f0f0f0", edge: "rgba(0,0,0,0.16)" },
+};
+
+let currentAspect = A4_ASPECT;
+
 // A4 paper size that fits within a fraction of the screen
-function computePaperSize(viewW: number, viewH: number): { w: number; h: number } {
+function computePaperSize(
+  viewW: number,
+  viewH: number,
+  aspect: number,
+): { w: number; h: number } {
   const maxW = viewW * PAPER_SCREEN_FRACTION;
   const maxH = viewH * PAPER_SCREEN_FRACTION;
-  if (maxW / maxH > A4_ASPECT) {
-    return { w: maxH * A4_ASPECT, h: maxH };
+  if (maxW / maxH > aspect) {
+    return { w: maxH * aspect, h: maxH };
   }
-  return { w: maxW, h: maxW / A4_ASPECT };
+  return { w: maxW, h: maxW / aspect };
 }
 
 function orientPaperSize(
@@ -148,11 +156,15 @@ function orientPaperSize(
 }
 
 const initialCenter = getScreenCenterInViewport();
-const initialSize = orientPaperSize(computePaperSize(cssW, cssH), cssW, cssH);
+const initialSize = orientPaperSize(
+  computePaperSize(cssW, cssH, currentAspect),
+  cssW,
+  cssH,
+);
 const papers: Paper[] = [
   makePaper(
     factory,
-    styles[0],
+    styles.white,
     initialCenter.x,
     initialCenter.y,
     initialSize.w,
@@ -255,7 +267,7 @@ resetActiveBtn.onclick = () => {
   const paper = getActivePaper();
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
-  const size = orientPaperSize(computePaperSize(cssW, cssH), cssW, cssH);
+  const size = orientPaperSize(computePaperSize(cssW, cssH, currentAspect), cssW, cssH);
   paper.baseW = size.w;
   paper.baseH = size.h;
   resetPaper(paper, factory);
@@ -285,8 +297,7 @@ attachGestureHandlers({
   bringPaperToTop,
   getLockState: () =>
     foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
-  useAltRotate:
-    postureSupport === PostureSupport.Unavailable || platform === Platform.Tauri,
+  useAltRotate: true, // Enable alt+drag rotation
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
@@ -305,24 +316,73 @@ foldFallbackBtn.onclick = () => {
 const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.fold;
 const gestureHelp =
-  platform === Platform.Tauri && device === Device.Laptop
-    ? "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate."
-    : helpCopy.gesture;
+  device === Device.Laptop
+    ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.<br><b>F / Space / Enter</b>: fold."
+    : helpCopy.gesture.replace(". ", ".<br>");
 gestureHelpEl.innerHTML = gestureHelp;
-let helpVisible = false;
+let settingsVisible = false;
+let infoVisible = false;
+let styleVisible = false;
 
-const syncHelpVisibility = () => {
-  helpBlockEl.style.display = helpVisible ? "flex" : "none";
-  toggleHelpBtn.textContent = helpVisible ? "Hide Options" : "Show Options";
-  toggleHelpBtn.setAttribute("aria-pressed", helpVisible ? "true" : "false");
-  buyCoffeeLink.style.display = helpVisible ? "inline-flex" : "none";
+const syncSettingsVisibility = () => {
+  settingsPanelEl.style.display = settingsVisible ? "flex" : "none";
+  toggleSettingsBtn.setAttribute("aria-pressed", settingsVisible ? "true" : "false");
 };
 
-toggleHelpBtn.onclick = () => {
-  helpVisible = !helpVisible;
-  syncHelpVisibility();
+const syncInfoVisibility = () => {
+  infoPanelEl.style.display = infoVisible ? "flex" : "none";
+  toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
-syncHelpVisibility();
+
+const syncStyleVisibility = () => {
+  stylePanelEl.style.display = styleVisible ? "flex" : "none";
+  toggleStyleBtn.setAttribute("aria-pressed", styleVisible ? "true" : "false");
+};
+
+toggleStyleBtn.onclick = () => {
+  styleVisible = !styleVisible;
+  if (styleVisible) {
+    infoVisible = false;
+    settingsVisible = false;
+  }
+  syncStyleVisibility();
+  syncInfoVisibility();
+  syncSettingsVisibility();
+};
+
+toggleSettingsBtn.onclick = () => {
+  settingsVisible = !settingsVisible;
+  if (settingsVisible) {
+    infoVisible = false;
+    styleVisible = false;
+  }
+  syncSettingsVisibility();
+  syncInfoVisibility();
+  syncStyleVisibility();
+};
+
+toggleInfoBtn.onclick = () => {
+  infoVisible = !infoVisible;
+  if (infoVisible) {
+    settingsVisible = false;
+    styleVisible = false;
+  }
+  syncInfoVisibility();
+  syncSettingsVisibility();
+  syncStyleVisibility();
+};
+
+syncSettingsVisibility();
+syncInfoVisibility();
+syncStyleVisibility();
+
+// Keyboard shortcuts for folding (F, Enter, Space)
+window.addEventListener("keydown", (e) => {
+  if ((e.code === "KeyF" || e.code === "Enter" || e.code === "Space") && !e.repeat) {
+    e.preventDefault();
+    manualFoldQueued = true;
+  }
+});
 
 function updateStableAccelFromUi() {
   const value = Number(stableAccelInput.value);
@@ -350,7 +410,6 @@ manualHingeFlip.addEventListener("change", () => {
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
-manualHingeFlip.disabled = device === Device.Laptop;
 const allowAccelAdjustments = platform === Platform.Web && device === Device.Phone;
 stableAccelInput.disabled = !allowAccelAdjustments;
 if (stableAccelRow instanceof HTMLElement) {
@@ -361,6 +420,95 @@ if (manualHingeFlipRow instanceof HTMLElement) {
 }
 updateStableAccelFromUi();
 updateManualHingePos();
+
+// Reset Hinge Button
+const handleHingeReset = (e: Event) => {
+  e.preventDefault(); // Prevent ghost clicks or double firing
+  manualHingeX.value = "50";
+  manualHingeY.value = "50";
+  updateManualHingePos();
+};
+
+resetHingeBtn.addEventListener("click", handleHingeReset);
+resetHingeBtn.addEventListener("touchend", handleHingeReset);
+
+// Paper Options Logic
+const paperSizeRadios = document.querySelectorAll('input[name="paperSize"]');
+paperSizeRadios.forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    const target = e.target as HTMLInputElement;
+    currentAspect = target.value === "a4" ? A4_ASPECT : 1.0;
+    // Trigger reset to apply new size
+    resetActiveBtn.click();
+  });
+});
+
+// RGB Color picker
+const paperColorInput = document.getElementById("paperColor") as HTMLInputElement;
+const paperColorDisplay = document.getElementById(
+  "paperColorDisplay",
+) as HTMLDivElement;
+
+if (paperColorInput && paperColorDisplay) {
+  // Initialize display with current color
+  paperColorDisplay.style.backgroundColor = paperColorInput.value;
+
+  // Update when color changes
+  paperColorInput.addEventListener("input", () => {
+    const color = paperColorInput.value;
+    paperColorDisplay.style.backgroundColor = color;
+
+    const paper = getActivePaper();
+
+    // Simple darkening: reduce lightness by 10%
+    const darkerColor = adjustColorBrightness(color, -0.1);
+
+    // Determine edge color based on brightness
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    const edgeColor = brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
+
+    paper.style = {
+      front: color,
+      back: darkerColor,
+      edge: edgeColor,
+    };
+  });
+
+  // Click on display to open color picker
+  paperColorDisplay.addEventListener("click", () => {
+    // paperColorInput.click(); // This might not work in some browsers due to security
+    paperColorInput.showPicker?.(); // Try showPicker API
+    if (!paperColorInput.showPicker) paperColorInput.click(); // Fallback
+  });
+}
+
+const showPaperBorderInput = document.getElementById(
+  "showPaperBorder",
+) as HTMLInputElement;
+if (showPaperBorderInput) {
+  showPaperBorderInput.addEventListener("change", () => {
+    updateOptions({ showPaperBorder: showPaperBorderInput.checked });
+  });
+}
+
+function adjustColorBrightness(hex: string, percent: number): string {
+  // Convert hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  // Adjust brightness
+  const adjust = (val: number) => Math.max(0, Math.min(255, val + val * percent));
+  const newR = Math.round(adjust(r));
+  const newG = Math.round(adjust(g));
+  const newB = Math.round(adjust(b));
+
+  // Convert back to hex
+  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+}
 
 let last = performance.now();
 
@@ -487,7 +635,7 @@ function tick(now: number) {
         drawFlatPaperFaces(ctx, p, textures.paper);
       }
 
-      if (p.id === activePaperId && !activeAnim) {
+      if (p.id === activePaperId && !activeAnim && options.showPaperBorder) {
         drawActiveOutline(ctx, p);
       }
     }
@@ -502,7 +650,7 @@ function tick(now: number) {
         `accelMag=${accelMag.toFixed(2)} m/s²`,
       );
     }
-    statusEl.textContent = statusParts.join(" | ");
+    hingeStatusEl.textContent = statusParts.join(" | ");
   } finally {
     requestAnimationFrame(tick);
   }
