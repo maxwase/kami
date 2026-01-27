@@ -3,9 +3,12 @@ import { defineConfig } from "vite";
 const host = process.env.TAURI_DEV_HOST;
 const isTauri = Boolean(process.env.TAURI_ENV_PLATFORM || host);
 
+const webBase = process.env.VITE_BASE || "/kami/";
+const normalizedWebBase = webBase.endsWith("/") ? webBase : `${webBase}/`;
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: isTauri ? "./" : "/kami/",
+  base: isTauri ? "./" : normalizedWebBase,
   clearScreen: false,
   server: {
     port: 1420,

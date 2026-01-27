@@ -1,27 +1,27 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: CD
 
 on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["master"]
+  workflow_call:
+    inputs:
+      base_path:
+        description: "Base path for Vite build (must include leading/trailing slash)."
+        required: true
+        type: string
+      target_dir:
+        description: "Target directory inside Pages artifact."
+        required: true
+        type: string
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -38,18 +38,26 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: "pnpm"
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build
+        env:
+          VITE_BASE: ${{ inputs.base_path }}
         run: pnpm run build
+      - name: Prepare Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          pages_dir=".pages/${{ inputs.target_dir }}"
+          mkdir -p "${pages_dir}"
+          cp -R dist/. "${pages_dir}/"
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          # Upload dist folder
-          path: "./dist"
+          path: ./.pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - "**"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  prepare-deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      base_path: ${{ steps.vars.outputs.base_path }}
+      target_dir: ${{ steps.vars.outputs.target_dir }}
+    steps:
+      - id: vars
+        name: Resolve deploy target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            base_path="/kami/"
+            target_dir="kami"
+          else
+            branch="${GITHUB_REF#refs/heads/}"
+            if [[ "${branch}" == "master" ]]; then
+              base_path="/kami-master/"
+              target_dir="kami-master"
+            else
+              if [[ "${branch}" =~ ([0-9]+) ]]; then
+                num="${BASH_REMATCH[1]}"
+                base_path="/kami-feat${num}/"
+                target_dir="kami-feat${num}"
+              else
+                echo "Branch '${branch}' must include a number for feature deployments." >&2
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "base_path=${base_path}" >> "$GITHUB_OUTPUT"
+          echo "target_dir=${target_dir}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: [ci, prepare-deploy]
+    uses: ./.github/workflows/cd.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    secrets: inherit
+    with:
+      base_path: ${{ needs.prepare-deploy.outputs.base_path }}
+      target_dir: ${{ needs.prepare-deploy.outputs.target_dir }}
