@@ -471,6 +471,15 @@ body {
   margin-bottom: 8px;
 }
 
+#infoPanel {
+  gap: 12px;
+}
+
+#infoPanel .test-controls-section {
+  gap: 0px;
+  padding: 4px 0 8px;
+}
+
 /* Status Text */
 #status {
   font-size: 11px;

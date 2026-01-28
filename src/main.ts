@@ -646,10 +646,7 @@ function tick(now: number) {
 
     const statusParts = [`posture=${postureType}`];
     if (platform === Platform.Web && device === Device.Phone) {
-      statusParts.push(
-        `accel=(${accel.x.toFixed(2)},${accel.y.toFixed(2)}) m/s²`,
-        `accelMag=${accelMag.toFixed(2)} m/s²`,
-      );
+      statusParts.push(`accelMag=${accelMag.toFixed(2)} m/s²`);
     }
     hingeStatusEl.textContent = statusParts.join(" | ");
   } finally {
