@@ -533,3 +533,53 @@ body {
     max-height: calc(100vh - 140px);
   }
 }
+
+@media (max-width: 420px) {
+  #action-island,
+  #settings-btn-container {
+    gap: 6px;
+    padding: 4px;
+    border-radius: 12px;
+  }
+
+  .action-btn-group {
+    gap: 6px;
+  }
+
+  .action-divider {
+    height: 24px;
+  }
+
+  #action-island button,
+  #toggleStyle,
+  #toggleSettings,
+  #toggleInfo {
+    width: 44px;
+    height: 44px;
+    gap: 2px;
+    border-radius: 9px;
+  }
+
+  #action-island .material-symbols-outlined,
+  #toggleStyle .material-symbols-outlined,
+  #toggleSettings .material-symbols-outlined,
+  #toggleInfo .material-symbols-outlined {
+    font-size: 22px;
+  }
+
+  #action-island button span,
+  #toggleStyle span:not(.material-symbols-outlined),
+  #toggleSettings span:not(.material-symbols-outlined),
+  #toggleInfo span:not(.material-symbols-outlined) {
+    font-size: 8px;
+  }
+
+  .reset-hinge-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .settings-panel {
+    padding: 14px;
+  }
+}
