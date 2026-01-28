@@ -6,7 +6,7 @@ import type { Vec3 } from "../math/vec3";
 import { localToScreen } from "../paper/space";
 import { toggleSide } from "../paper/model";
 import type { Paper, PaperSide } from "../paper/model";
-import type { FoldAnim } from "../paper/fold";
+import { FoldSide, type FoldAnim } from "../paper/fold";
 
 const LIGHT_DIR = norm3({ x: -0.35, y: -0.25, z: 0.9 });
 
@@ -51,6 +51,8 @@ export function drawFoldingPaper(
 
   const progress = easeInOutCubic(anim.progress);
   const angle = progress * Math.PI;
+  // Fold in the correct direction, not though the table
+  const signedAngle = angle * (anim.foldSide === FoldSide.Front ? -1 : 1);
 
   const axisDirLocal3 = norm3({
     x: anim.lineLocal.dir.x,
@@ -64,7 +66,7 @@ export function drawFoldingPaper(
   };
 
   const baseNormal = v3(0, 0, 1);
-  const normalRot = rotateAroundAxis(baseNormal, axisDirLocal3, angle);
+  const normalRot = rotateAroundAxis(baseNormal, axisDirLocal3, signedAngle);
 
   const items = anim.movingFaces.map((f) => {
     const pts3 = f.verts.map((p) =>
@@ -72,7 +74,7 @@ export function drawFoldingPaper(
         { x: p.x, y: p.y, z: 0 },
         axisPointLocal3,
         axisDirLocal3,
-        angle,
+        signedAngle,
       ),
     );
     const zAvg = pts3.reduce((s, p) => s + p.z, 0) / Math.max(1, pts3.length);
