@@ -50,17 +50,6 @@
       <!-- Settings & Info Buttons -->
       <div id="settings-btn-container">
         <button
-          id="toggleStyle"
-          type="button"
-          aria-controls="stylePanel"
-          aria-pressed="false"
-          aria-label="Style"
-          title="Style"
-        >
-          <span class="material-symbols-outlined">palette</span>
-          <span>Style</span>
-        </button>
-        <button
           id="toggleSettings"
           type="button"
           aria-controls="settingsPanel"
@@ -82,59 +71,6 @@
           <span class="material-symbols-outlined">info</span>
           <span>Info</span>
         </button>
-      </div>
-    </div>
-
-    <!-- Style Panel -->
-    <div id="stylePanel" class="settings-panel" style="display: none">
-      <h3>Style</h3>
-
-      <div class="settings-section">
-        <h4>Format</h4>
-        <div class="input-group">
-          <div class="paper-size-selector">
-            <div class="toggle-group">
-              <label
-                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
-              >
-              <label
-                ><input type="radio" name="paperSize" value="square" /> Square</label
-              >
-            </div>
-          </div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="showPaperBorder" checked />
-            Show paper border
-          </label>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <h4>Color</h4>
-        <div class="input-group">
-          <div class="input-row">
-            <label for="paperFrontColor">Front</label>
-            <div class="color-picker-wrapper">
-              <input id="paperFrontColor" type="color" value="#ffffff" />
-              <div
-                class="color-picker-display"
-                id="paperFrontColorDisplay"
-                style="background-color: #ffffff"
-              ></div>
-            </div>
-          </div>
-          <div class="input-row">
-            <label for="paperBackColor">Back</label>
-            <div class="color-picker-wrapper">
-              <input id="paperBackColor" type="color" value="#f0f0f0" />
-              <div
-                class="color-picker-display"
-                id="paperBackColorDisplay"
-                style="background-color: #f0f0f0"
-              ></div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -208,6 +144,48 @@
             <span class="material-symbols-outlined icon-small">restart_alt</span>
             <span>Reset axis</span>
           </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>Style</h4>
+        <div class="input-group">
+          <div class="paper-size-selector">
+            <div class="toggle-group">
+              <label
+                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
+              >
+              <label
+                ><input type="radio" name="paperSize" value="square" /> Square</label
+              >
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showPaperBorder" checked />
+            Show paper border
+          </label>
+          <div class="input-row">
+            <label for="paperFrontColor">Front color</label>
+            <div class="color-picker-wrapper">
+              <input id="paperFrontColor" type="color" value="#ffffff" />
+              <div
+                class="color-picker-display"
+                id="paperFrontColorDisplay"
+                style="background-color: #ffffff"
+              ></div>
+            </div>
+          </div>
+          <div class="input-row">
+            <label for="paperBackColor">Back color</label>
+            <div class="color-picker-wrapper">
+              <input id="paperBackColor" type="color" value="#f0f0f0" />
+              <div
+                class="color-picker-display"
+                id="paperBackColorDisplay"
+                style="background-color: #f0f0f0"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
