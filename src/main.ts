@@ -16,6 +16,7 @@ import { createIdCounter } from "./paper/ids";
 import {
   makePaper,
   resetPaper,
+  flipPaper,
   snapshotPaper,
   restorePaper,
   type Paper,
@@ -47,6 +48,7 @@ const gestureHelpEl = getRequiredElement("gestureHelp", HTMLDivElement);
 const resetActiveBtn = getRequiredElement("resetActive", HTMLButtonElement);
 const undoBtn = getRequiredElement("undo", HTMLButtonElement);
 const foldFallbackBtn = getRequiredElement("foldFallback", HTMLButtonElement);
+const flipPaperBtn = getRequiredElement("flipPaper", HTMLButtonElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
 const stableAccelRow = stableAccelInput.closest(".input-row");
@@ -313,6 +315,16 @@ if (postureSupport === PostureSupport.Unavailable) {
 foldFallbackBtn.style.display = "inline-block";
 foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
+};
+
+flipPaperBtn.onclick = () => {
+  if (foldRuntime.phase === "animating") return;
+  const paper = getActivePaper();
+  // Save state for undo
+  undoStack.push(snapshotPaper(paper));
+  updateUndoBtn(false);
+  // Flip the paper
+  flipPaper(paper);
 };
 
 const helpCopy = helpCopyForSupport(postureSupport);

@@ -115,3 +115,19 @@ export function resetPaper(p: Paper, factory: PaperFactory): void {
   p.rot = 0;
   p.scale = 1;
 }
+
+/**
+ * Flip the paper over by rotating 180° around the origin.
+ * Left-top becomes right-bottom, revealing the other side.
+ */
+export function flipPaper(p: Paper): void {
+  for (const f of p.faces) {
+    // Rotate 180° around origin (negate both x and y)
+    f.verts = f.verts.map((v) => ({ x: -v.x, y: -v.y }));
+    // Toggle which side is facing up
+    f.up = toggleSide(f.up);
+    // Reset layer to 0 - after flip, all visible surfaces are "outer" surfaces
+    // This ensures the fold logic treats them correctly
+    f.layer = 0;
+  }
+}
