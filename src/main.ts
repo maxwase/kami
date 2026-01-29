@@ -64,10 +64,8 @@ const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
 const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
 const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
-const toggleStyleBtn = getRequiredElement("toggleStyle", HTMLButtonElement);
 const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
-const stylePanelEl = getRequiredElement("stylePanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const hingeStatusEl = getRequiredElement("hingeStatus", HTMLDivElement);
 
@@ -336,7 +334,6 @@ const gestureHelp =
 gestureHelpEl.innerHTML = gestureHelp;
 let settingsVisible = false;
 let infoVisible = false;
-let styleVisible = false;
 
 const syncSettingsVisibility = () => {
   settingsPanelEl.style.display = settingsVisible ? "flex" : "none";
@@ -348,47 +345,26 @@ const syncInfoVisibility = () => {
   toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
 
-const syncStyleVisibility = () => {
-  stylePanelEl.style.display = styleVisible ? "flex" : "none";
-  toggleStyleBtn.setAttribute("aria-pressed", styleVisible ? "true" : "false");
-};
-
-toggleStyleBtn.onclick = () => {
-  styleVisible = !styleVisible;
-  if (styleVisible) {
-    infoVisible = false;
-    settingsVisible = false;
-  }
-  syncStyleVisibility();
-  syncInfoVisibility();
-  syncSettingsVisibility();
-};
-
 toggleSettingsBtn.onclick = () => {
   settingsVisible = !settingsVisible;
   if (settingsVisible) {
     infoVisible = false;
-    styleVisible = false;
   }
   syncSettingsVisibility();
   syncInfoVisibility();
-  syncStyleVisibility();
 };
 
 toggleInfoBtn.onclick = () => {
   infoVisible = !infoVisible;
   if (infoVisible) {
     settingsVisible = false;
-    styleVisible = false;
   }
   syncInfoVisibility();
   syncSettingsVisibility();
-  syncStyleVisibility();
 };
 
 syncSettingsVisibility();
 syncInfoVisibility();
-syncStyleVisibility();
 
 // Keyboard shortcuts for folding (F, Enter, Space)
 window.addEventListener("keydown", (e) => {
