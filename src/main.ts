@@ -445,45 +445,63 @@ paperSizeRadios.forEach((radio) => {
   });
 });
 
-// RGB Color picker
-const paperColorInput = document.getElementById("paperColor") as HTMLInputElement;
-const paperColorDisplay = document.getElementById(
-  "paperColorDisplay",
+// RGB Color pickers for front and back sides
+const paperFrontColorInput = document.getElementById("paperFrontColor") as HTMLInputElement;
+const paperFrontColorDisplay = document.getElementById(
+  "paperFrontColorDisplay",
+) as HTMLDivElement;
+const paperBackColorInput = document.getElementById("paperBackColor") as HTMLInputElement;
+const paperBackColorDisplay = document.getElementById(
+  "paperBackColorDisplay",
 ) as HTMLDivElement;
 
-if (paperColorInput && paperColorDisplay) {
-  // Initialize display with current color
-  paperColorDisplay.style.backgroundColor = paperColorInput.value;
+/** Compute edge color based on front color brightness. */
+function computeEdgeColor(frontColor: string): string {
+  const r = parseInt(frontColor.slice(1, 3), 16);
+  const g = parseInt(frontColor.slice(3, 5), 16);
+  const b = parseInt(frontColor.slice(5, 7), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
+}
 
-  // Update when color changes
-  paperColorInput.addEventListener("input", () => {
-    const color = paperColorInput.value;
-    paperColorDisplay.style.backgroundColor = color;
+/** Update paper style from both color pickers. */
+function updatePaperColors(): void {
+  const paper = getActivePaper();
+  const frontColor = paperFrontColorInput.value;
+  const backColor = paperBackColorInput.value;
 
-    const paper = getActivePaper();
+  paper.style = {
+    front: frontColor,
+    back: backColor,
+    edge: computeEdgeColor(frontColor),
+  };
+}
 
-    // Simple darkening: reduce lightness by 10%
-    const darkerColor = adjustColorBrightness(color, -0.1);
+if (paperFrontColorInput && paperFrontColorDisplay) {
+  paperFrontColorDisplay.style.backgroundColor = paperFrontColorInput.value;
 
-    // Determine edge color based on brightness
-    const r = parseInt(color.slice(1, 3), 16);
-    const g = parseInt(color.slice(3, 5), 16);
-    const b = parseInt(color.slice(5, 7), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    const edgeColor = brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
-
-    paper.style = {
-      front: color,
-      back: darkerColor,
-      edge: edgeColor,
-    };
+  paperFrontColorInput.addEventListener("input", () => {
+    paperFrontColorDisplay.style.backgroundColor = paperFrontColorInput.value;
+    updatePaperColors();
   });
 
-  // Click on display to open color picker
-  paperColorDisplay.addEventListener("click", () => {
-    // paperColorInput.click(); // This might not work in some browsers due to security
-    paperColorInput.showPicker?.(); // Try showPicker API
-    if (!paperColorInput.showPicker) paperColorInput.click(); // Fallback
+  paperFrontColorDisplay.addEventListener("click", () => {
+    paperFrontColorInput.showPicker?.();
+    if (!paperFrontColorInput.showPicker) paperFrontColorInput.click();
+  });
+}
+
+if (paperBackColorInput && paperBackColorDisplay) {
+  paperBackColorDisplay.style.backgroundColor = paperBackColorInput.value;
+
+  paperBackColorInput.addEventListener("input", () => {
+    paperBackColorDisplay.style.backgroundColor = paperBackColorInput.value;
+    updatePaperColors();
+  });
+
+  paperBackColorDisplay.addEventListener("click", () => {
+    paperBackColorInput.showPicker?.();
+    if (!paperBackColorInput.showPicker) paperBackColorInput.click();
   });
 }
 
@@ -494,22 +512,6 @@ if (showPaperBorderInput) {
   showPaperBorderInput.addEventListener("change", () => {
     updateOptions({ showPaperBorder: showPaperBorderInput.checked });
   });
-}
-
-function adjustColorBrightness(hex: string, percent: number): string {
-  // Convert hex to RGB
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  // Adjust brightness
-  const adjust = (val: number) => Math.max(0, Math.min(255, val + val * percent));
-  const newR = Math.round(adjust(r));
-  const newG = Math.round(adjust(g));
-  const newB = Math.round(adjust(b));
-
-  // Convert back to hex
-  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
 }
 
 let last = performance.now();

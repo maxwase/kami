@@ -2,9 +2,9 @@ import { norm2, rotate2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import { reflectPoint, makeLine } from "../geom/line2";
 import type { Line2 } from "../geom/line2";
-import { clipPolyHalfPlane, polyArea } from "../geom/polygon";
+import { clipPolyHalfPlane, polyArea, signedPolyArea } from "../geom/polygon";
 import { toggleSide } from "./model";
-import type { Face, Paper } from "./model";
+import type { Face, Paper, PaperSide } from "./model";
 import { screenToLocal } from "./space";
 
 /** Which side of the fold line moves. */
@@ -59,6 +59,12 @@ export type FoldBuildResult =
 
 /** Faces smaller than this area are discarded after clipping. */
 const MIN_FACE_AREA = 4;
+
+/** Default animation duration in seconds for fold transitions. */
+const FOLD_DURATION_SECONDS = 0.46;
+
+/** Precision multiplier for face vertex comparison (e.g., 100 = 2 decimal places). */
+const FACE_KEY_PRECISION = 100;
 
 /**
  * Determine which side of the fold line moves.
@@ -136,7 +142,7 @@ export function buildFoldAnim(
     anim: {
       paperId: paper.id,
       progress: 0,
-      durationSeconds: 0.46,
+      durationSeconds: FOLD_DURATION_SECONDS,
       lineLocal,
       foldSide,
       keepFaces,
@@ -157,10 +163,13 @@ export function commitFold(
 
   for (const f of anim.movingFaces) {
     const reflected = f.verts.map((p) => reflectPoint(p, anim.lineLocal));
+    // For layer 0 (original paper): toggle side - we see the other side after folding
+    // For higher layers (already folded): keep same side - inner surface stays hidden
+    const newUp: PaperSide = f.layer === 0 ? toggleSide(f.up) : f.up;
     const nf: Face = {
       id: nextFaceId(),
       verts: reflected,
-      up: toggleSide(f.up),
+      up: newUp,
       layer: anim.foldedLayer,
     };
     newFaces.push(nf);
@@ -188,37 +197,56 @@ function faceKey(face: Face): string {
   return `${face.up}:${face.layer}:${parts.join("|")}`;
 }
 
-function normalizeVerts(verts: Vec2[]): Vec2[] {
-  if (verts.length < 2) return verts;
-  const area = signedArea(verts);
-  const ordered = area < 0 ? [...verts].reverse() : [...verts];
-  let start = 0;
-  for (let i = 1; i < ordered.length; i++) {
-    if (
-      ordered[i].y < ordered[start].y ||
-      (ordered[i].y === ordered[start].y && ordered[i].x < ordered[start].x)
-    ) {
-      start = i;
+/**
+ * Ensure polygon has counter-clockwise winding order.
+ * Returns a new array with vertices in CCW order.
+ */
+function ensureCCW(verts: Vec2[]): Vec2[] {
+  const area = signedPolyArea(verts);
+  return area < 0 ? [...verts].reverse() : [...verts];
+}
+
+/**
+ * Find the index of the lexicographically smallest vertex.
+ * Compares by Y coordinate first, then X coordinate for ties.
+ * Used to establish a canonical starting point for polygon comparison.
+ */
+function findLexicographicMinIndex(verts: Vec2[]): number {
+  let minIdx = 0;
+  for (let i = 1; i < verts.length; i++) {
+    const curr = verts[i];
+    const min = verts[minIdx];
+    if (curr.y < min.y || (curr.y === min.y && curr.x < min.x)) {
+      minIdx = i;
     }
   }
-  const out: Vec2[] = [];
-  for (let i = 0; i < ordered.length; i++) {
-    out.push(ordered[(start + i) % ordered.length]);
+  return minIdx;
+}
+
+/**
+ * Rotate array so element at startIdx becomes element 0.
+ */
+function rotateArray<T>(arr: T[], startIdx: number): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < arr.length; i++) {
+    out.push(arr[(startIdx + i) % arr.length]);
   }
   return out;
 }
 
-function signedArea(poly: Vec2[]): number {
-  if (poly.length < 3) return 0;
-  let a = 0;
-  for (let i = 0; i < poly.length; i++) {
-    const p = poly[i];
-    const q = poly[(i + 1) % poly.length];
-    a += p.x * q.y - q.x * p.y;
-  }
-  return a * 0.5;
+/**
+ * Normalize polygon vertices for canonical comparison:
+ * 1. Ensure counter-clockwise winding
+ * 2. Rotate so lexicographically smallest vertex is first
+ */
+function normalizeVerts(verts: Vec2[]): Vec2[] {
+  if (verts.length < 2) return verts;
+
+  const ccw = ensureCCW(verts);
+  const startIdx = findLexicographicMinIndex(ccw);
+  return rotateArray(ccw, startIdx);
 }
 
 function round2(v: number): number {
-  return Math.round(v * 100) / 100;
+  return Math.round(v * FACE_KEY_PRECISION) / FACE_KEY_PRECISION;
 }
