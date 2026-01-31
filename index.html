@@ -27,7 +27,7 @@
       <div id="action-island">
         <div class="action-btn-group">
           <button id="resetActive" type="button" title="Reset">
-            <span class="material-symbols-outlined">restart_alt</span>
+            <span class="material-symbols-outlined">delete_outline</span>
             <span>Reset</span>
           </button>
           <button id="undo" type="button" disabled title="Undo">
@@ -40,22 +40,15 @@
             <span class="material-symbols-outlined">devices_fold</span>
             <span>Fold</span>
           </button>
+          <button id="flipPaper" type="button" title="Flip">
+            <span class="material-symbols-outlined">flip</span>
+            <span>Flip</span>
+          </button>
         </div>
       </div>
 
       <!-- Settings & Info Buttons -->
       <div id="settings-btn-container">
-        <button
-          id="toggleStyle"
-          type="button"
-          aria-controls="stylePanel"
-          aria-pressed="false"
-          aria-label="Style"
-          title="Style"
-        >
-          <span class="material-symbols-outlined">palette</span>
-          <span>Style</span>
-        </button>
         <button
           id="toggleSettings"
           type="button"
@@ -78,48 +71,6 @@
           <span class="material-symbols-outlined">info</span>
           <span>Info</span>
         </button>
-      </div>
-    </div>
-
-    <!-- Style Panel -->
-    <div id="stylePanel" class="settings-panel" style="display: none">
-      <h3>Style</h3>
-
-      <div class="settings-section">
-        <h4>Format</h4>
-        <div class="input-group">
-          <div class="paper-size-selector">
-            <div class="toggle-group">
-              <label
-                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
-              >
-              <label
-                ><input type="radio" name="paperSize" value="square" /> Square</label
-              >
-            </div>
-          </div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="showPaperBorder" checked />
-            Show paper border
-          </label>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <h4>Color</h4>
-        <div class="input-group">
-          <div class="input-row">
-            <label for="paperColor">Paper Color</label>
-            <div class="color-picker-wrapper">
-              <input id="paperColor" type="color" value="#ffffff" />
-              <div
-                class="color-picker-display"
-                id="paperColorDisplay"
-                style="background-color: #ffffff"
-              ></div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -154,7 +105,18 @@
       </div>
 
       <div class="settings-section">
-        <h4>Hinge</h4>
+        <div class="section-header">
+          <h4>Hinge</h4>
+          <button
+            id="resetHinge"
+            type="button"
+            class="reset-inline-btn"
+            title="Reset axis"
+            aria-label="Reset axis"
+          >
+            <span class="material-symbols-outlined icon-small">restart_alt</span>
+          </button>
+        </div>
         <div class="input-group">
           <div class="input-row mono">
             <span class="hinge-label"
@@ -188,11 +150,80 @@
             <input id="manualHingeFlip" type="checkbox" />
             Flip hinge line
           </label>
-          <div class="mono hinge-status" id="hingeStatus" role="status"></div>
-          <button id="resetHinge" type="button" class="reset-hinge-btn">
-            <span class="material-symbols-outlined icon-small">restart_alt</span>
-            <span>Reset axis</span>
-          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>Style</h4>
+        <div class="input-group">
+          <div class="paper-size-selector">
+            <div class="toggle-group">
+              <label
+                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
+              >
+              <label
+                ><input type="radio" name="paperSize" value="square" /> Square</label
+              >
+              <label
+                ><input type="radio" name="paperSize" value="custom" /> Custom</label
+              >
+            </div>
+            <div
+              id="customAspectInputs"
+              class="custom-aspect-inputs"
+              style="display: none"
+            >
+              <div class="input-row mono">
+                <label for="customWidth">W:</label>
+                <input
+                  id="customWidth"
+                  type="number"
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value="3"
+                  class="aspect-input"
+                />
+                <span>:</span>
+                <label for="customHeight">H:</label>
+                <input
+                  id="customHeight"
+                  type="number"
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value="4"
+                  class="aspect-input"
+                />
+              </div>
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showPaperBorder" checked />
+            Show paper border
+          </label>
+          <div class="input-row">
+            <label for="paperFrontColor">Front color</label>
+            <div class="color-picker-wrapper">
+              <input id="paperFrontColor" type="color" value="#ffffff" />
+              <div
+                class="color-picker-display"
+                id="paperFrontColorDisplay"
+                style="background-color: #ffffff"
+              ></div>
+            </div>
+          </div>
+          <div class="input-row">
+            <label for="paperBackColor">Back color</label>
+            <div class="color-picker-wrapper">
+              <input id="paperBackColor" type="color" value="#f0f0f0" />
+              <div
+                class="color-picker-display"
+                id="paperBackColorDisplay"
+                style="background-color: #f0f0f0"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -206,6 +237,11 @@
         <div id="gestureHelp"></div>
         <div class="mono" id="status" role="status" aria-live="polite"></div>
       </div>
+
+      <details class="debug-spoiler">
+        <summary>Debug</summary>
+        <div class="mono" id="debugStatus" role="status"></div>
+      </details>
 
       <div class="settings-footer">
         <a id="buyCoffee" href="https://www.buymeacoffee.com/maxwase" target="_blank">

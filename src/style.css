@@ -218,9 +218,22 @@ body {
 
 .input-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   font-size: 13px;
+  margin-left: 1px;
+}
+
+.input-row > label,
+.input-row > span:first-child,
+.input-row > .hinge-label {
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.input-row > input[type="range"],
+.input-row > .styled-range {
+  flex: 1;
 }
 
 .hinge-label span:last-child {
@@ -255,44 +268,44 @@ body {
   transform: scale(1.1);
 }
 
-.input-row input[type="range"] {
-  width: 120px;
-}
-
 .checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   cursor: pointer;
+  margin-left: -4px;
 }
 
-.reset-hinge-btn {
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-header h4 {
+  margin: 0;
+}
+
+.reset-inline-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 4px;
+  transition: color 0.2s;
+  border-radius: 4px;
 }
 
-.reset-hinge-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 1);
+.reset-inline-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.hinge-status {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.4;
-  padding: 8px 0;
+.reset-inline-btn .material-symbols-outlined {
+  font-size: 18px;
 }
 
 /* Paper Selector Styles */
@@ -324,6 +337,36 @@ body {
 
 .toggle-group input {
   display: none;
+}
+
+.custom-aspect-inputs {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.custom-aspect-inputs .input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.aspect-input {
+  width: 50px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: inherit;
+  font-size: 12px;
+  text-align: center;
+}
+
+.aspect-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .color-grid {
@@ -408,6 +451,39 @@ body {
 
 .color-picker-display:active {
   transform: scale(0.98);
+}
+
+/* Debug Spoiler */
+.debug-spoiler {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.debug-spoiler summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  user-select: none;
+}
+
+.debug-spoiler summary:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#debugStatus {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: pre-line;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
+  touch-action: auto;
+  pointer-events: auto;
 }
 
 /* Footer Section */
@@ -581,11 +657,6 @@ body {
   #toggleSettings span:not(.material-symbols-outlined),
   #toggleInfo span:not(.material-symbols-outlined) {
     font-size: 8px;
-  }
-
-  .reset-hinge-btn {
-    padding: 5px 8px;
-    font-size: 10px;
   }
 
   .settings-panel {

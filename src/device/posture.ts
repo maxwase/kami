@@ -1,4 +1,4 @@
-import type { SegmentRect, SegmentSource } from "./hinge";
+import type { SegmentRect } from "./hinge";
 import { getTauriPostureType } from "./tauri";
 import { Platform, resolveRuntimeInfo } from "./runtime";
 
@@ -15,20 +15,20 @@ export enum FoldState {
 }
 
 export interface HelpCopy {
-  fold: string;
+  controls: string;
   gesture: string;
 }
 
 export function helpCopyForSupport(support: PostureSupport): HelpCopy {
   if (support === PostureSupport.Available) {
     return {
-      fold: "<b>Fold</b>: close/open the device hinge to trigger a fold along the hinge line.",
-      gesture: "<b>One finger</b>: move. <b>Two fingers</b>: move + rotate.",
+      controls: "<b>Fold</b>: close/open the device hinge.",
+      gesture: "<b>One finger</b>: move.<br><b>Two fingers</b>: move + rotate.",
     };
   }
   return {
-    fold: "<b>Fold</b>: press Space.",
-    gesture: "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate.",
+    controls: "<b>Space</b>: fold.<br><b>F</b>: flip.<br><b>R</b>: reset.",
+    gesture: "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.",
   };
 }
 
@@ -55,7 +55,7 @@ export function resolvePostureSupport(): PostureSupport {
 /** Determine whether the device should be treated as folded. */
 export function resolveFoldState(
   postureType: string,
-  segments: { source: SegmentSource; segments: SegmentRect[] },
+  segments: SegmentRect[],
 ): FoldState {
   const t = postureType.toLowerCase();
   if (t === "continuous" || t === "flat" || t === "unknown") {
@@ -64,7 +64,7 @@ export function resolveFoldState(
   if (t === "folded" || t === "half-opened" || t === "flipped") {
     return FoldState.Folded;
   }
-  if (segments.segments.length >= 2) {
+  if (segments.length >= 2) {
     return FoldState.Folded;
   }
   return FoldState.Unfolded;
