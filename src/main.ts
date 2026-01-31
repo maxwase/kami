@@ -16,7 +16,6 @@ import { createIdCounter } from "./paper/ids";
 import {
   makePaper,
   resetPaper,
-  flipPaper,
   snapshotPaper,
   restorePaper,
   type Paper,
@@ -24,6 +23,7 @@ import {
   type PaperSnapshot,
 } from "./paper/model";
 import { buildFoldAnim, commitFold, FoldSide, type FoldAnim } from "./paper/fold";
+import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
 import { hitTestPaper } from "./paper/hitTest";
 import { attachGestureHandlers, InputLock } from "./input/gestures";
 import { drawTable } from "./render/background";
@@ -32,6 +32,7 @@ import {
   drawActiveOutline,
   drawFlatPaperFaces,
   drawFoldingPaper,
+  drawFlippingPaper,
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
@@ -48,6 +49,9 @@ const gestureHelpEl = getRequiredElement("gestureHelp", HTMLDivElement);
 const resetActiveBtn = getRequiredElement("resetActive", HTMLButtonElement);
 const undoBtn = getRequiredElement("undo", HTMLButtonElement);
 const foldFallbackBtn = getRequiredElement("foldFallback", HTMLButtonElement);
+const foldFallbackIcon = foldFallbackBtn.querySelector(
+  "span.material-symbols-outlined",
+) as HTMLSpanElement | null;
 const flipPaperBtn = getRequiredElement("flipPaper", HTMLButtonElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
@@ -91,6 +95,7 @@ function resize() {
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   hingeInfo = computeHingePoint(cssW, cssH);
+  updateFoldFallbackIcon();
 }
 window.addEventListener("resize", resize, { passive: true });
 window.addEventListener("orientationchange", resize, { passive: true });
@@ -113,6 +118,12 @@ if (platform === Platform.Web && device === Device.Phone) {
   );
 }
 resize();
+
+function updateFoldFallbackIcon(): void {
+  if (!foldFallbackIcon) return;
+  const isPortrait = !resolveScreenLandscape(cssW, cssH);
+  foldFallbackIcon.textContent = isPortrait ? "devices_fold_2" : "devices_fold";
+}
 
 const nextFaceId = createIdCounter(1);
 const nextPaperId = createIdCounter(1);
@@ -203,7 +214,10 @@ type FoldRuntime =
   | { phase: "idle" }
   | { phase: "animating"; anim: FoldAnim; hinge: Vec2; hingeDir: Vec2 };
 
+type FlipRuntime = { phase: "idle" } | { phase: "animating"; anim: FlipAnim };
+
 let foldRuntime: FoldRuntime = { phase: "idle" };
+let flipRuntime: FlipRuntime = { phase: "idle" };
 let deviceFolded = false;
 
 function normalizeScreenAngle(angle: number): number {
@@ -265,7 +279,7 @@ function getVhErrorPx(): number {
 }
 
 resetActiveBtn.onclick = () => {
-  if (foldRuntime.phase === "animating") return;
+  if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
@@ -278,7 +292,7 @@ resetActiveBtn.onclick = () => {
 };
 
 undoBtn.onclick = () => {
-  if (foldRuntime.phase === "animating") return;
+  if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const snap = undoStack.pop();
   if (!snap) return;
   restorePaper(getActivePaper(), snap);
@@ -298,7 +312,9 @@ attachGestureHandlers({
   setActivePaper,
   bringPaperToTop,
   getLockState: () =>
-    foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
+    foldRuntime.phase === "animating" || flipRuntime.phase === "animating"
+      ? InputLock.Locked
+      : InputLock.Unlocked,
   useAltRotate: true, // Enable alt+drag rotation
 });
 
@@ -316,13 +332,13 @@ foldFallbackBtn.onclick = () => {
 };
 
 flipPaperBtn.onclick = () => {
-  if (foldRuntime.phase === "animating") return;
+  if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
-  // Save state for undo
-  undoStack.push(snapshotPaper(paper));
-  updateUndoBtn(false);
-  // Flip the paper
-  flipPaper(paper);
+  // Start flip animation
+  flipRuntime = {
+    phase: "animating",
+    anim: buildFlipAnim(paper),
+  };
 };
 
 const helpCopy = helpCopyForSupport(postureSupport);
@@ -434,11 +450,15 @@ paperSizeRadios.forEach((radio) => {
 });
 
 // RGB Color pickers for front and back sides
-const paperFrontColorInput = document.getElementById("paperFrontColor") as HTMLInputElement;
+const paperFrontColorInput = document.getElementById(
+  "paperFrontColor",
+) as HTMLInputElement;
 const paperFrontColorDisplay = document.getElementById(
   "paperFrontColorDisplay",
 ) as HTMLDivElement;
-const paperBackColorInput = document.getElementById("paperBackColor") as HTMLInputElement;
+const paperBackColorInput = document.getElementById(
+  "paperBackColor",
+) as HTMLInputElement;
 const paperBackColorDisplay = document.getElementById(
   "paperBackColorDisplay",
 ) as HTMLDivElement;
@@ -584,7 +604,9 @@ function tick(now: number) {
       }
     }
     deviceFolded = foldedNow;
-    updateUndoBtn(foldRuntime.phase === "animating");
+    const isAnimating =
+      foldRuntime.phase === "animating" || flipRuntime.phase === "animating";
+    updateUndoBtn(isAnimating);
 
     if (foldRuntime.phase === "animating") {
       const activeAnim = foldRuntime.anim;
@@ -604,6 +626,23 @@ function tick(now: number) {
       }
     }
 
+    if (flipRuntime.phase === "animating") {
+      const activeAnim = flipRuntime.anim;
+      activeAnim.progress += dt / activeAnim.durationSeconds;
+      if (activeAnim.progress >= 1) {
+        activeAnim.progress = 1;
+        const paper = papers.find((p) => p.id === activeAnim.paperId);
+        if (paper) {
+          undoStack.push(snapshotPaper(paper));
+          updateUndoBtn(true);
+          commitFlip(paper, activeAnim);
+        } else {
+          updateUndoBtn(false);
+        }
+        flipRuntime = { phase: "idle" };
+      }
+    }
+
     drawTable(ctx, cssW, cssH, textures.wood);
     const displayHinge =
       foldRuntime.phase === "animating" ? foldRuntime.hinge : activeHinge;
@@ -620,16 +659,22 @@ function tick(now: number) {
       cssH,
     );
 
-    const activeAnim = foldRuntime.phase === "animating" ? foldRuntime.anim : undefined;
+    const activeFoldAnim =
+      foldRuntime.phase === "animating" ? foldRuntime.anim : undefined;
+    const activeFlipAnim =
+      flipRuntime.phase === "animating" ? flipRuntime.anim : undefined;
 
     for (const p of papers) {
-      if (activeAnim && activeAnim.paperId === p.id) {
-        drawFoldingPaper(ctx, p, activeAnim, textures.paper);
+      if (activeFoldAnim && activeFoldAnim.paperId === p.id) {
+        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper);
+      } else if (activeFlipAnim && activeFlipAnim.paperId === p.id) {
+        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper);
       } else {
         drawFlatPaperFaces(ctx, p, textures.paper);
       }
 
-      if (p.id === activePaperId && !activeAnim && options.showPaperBorder) {
+      const hasActiveAnim = activeFoldAnim || activeFlipAnim;
+      if (p.id === activePaperId && !hasActiveAnim && options.showPaperBorder) {
         drawActiveOutline(ctx, p);
       }
     }

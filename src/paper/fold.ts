@@ -113,6 +113,7 @@ export function buildFoldAnim(
         verts: pos,
         up: f.up,
         layer: f.layer,
+        outer: f.outer,
       };
       (foldSide === FoldSide.Front ? movingFaces : keepFaces).push(piece);
     }
@@ -122,6 +123,7 @@ export function buildFoldAnim(
         verts: neg,
         up: f.up,
         layer: f.layer,
+        outer: f.outer,
       };
       (foldSide === FoldSide.Back ? movingFaces : keepFaces).push(piece);
     }
@@ -161,16 +163,30 @@ export function commitFold(
 
   for (const f of anim.keepFaces) newFaces.push(f);
 
+  // Compute max layer among moving faces for layer inversion
+  let maxMovingLayer = 0;
+  for (const f of anim.movingFaces) {
+    maxMovingLayer = Math.max(maxMovingLayer, f.layer);
+  }
+
   for (const f of anim.movingFaces) {
     const reflected = f.verts.map((p) => reflectPoint(p, anim.lineLocal));
-    // For layer 0 (original paper): toggle side - we see the other side after folding
-    // For higher layers (already folded): keep same side - inner surface stays hidden
-    const newUp: PaperSide = f.layer === 0 ? toggleSide(f.up) : f.up;
+    // All faces toggle their visible side when folded - the whole stack rotates
+    // together, so we see the other side of every face after folding 180°
+    const newUp: PaperSide = toggleSide(f.up);
+
+    // When the stack folds over, the layer order inverts: what was on bottom
+    // is now on top. Assign layers to reflect this physical stacking.
+    const invertedLayer = maxMovingLayer - f.layer;
+    const newLayer = anim.foldedLayer + invertedLayer;
+
     const nf: Face = {
       id: nextFaceId(),
       verts: reflected,
       up: newUp,
-      layer: anim.foldedLayer,
+      layer: newLayer,
+      // Newly folded faces become inner surfaces (their back is now sandwiched)
+      outer: false,
     };
     newFaces.push(nf);
   }
