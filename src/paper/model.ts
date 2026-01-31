@@ -13,8 +13,6 @@ export interface Face {
   verts: Vec2[];
   up: PaperSide;
   layer: number;
-  /** Outer surfaces toggle their visible side when folded. Inner surfaces (sandwiched) don't. */
-  outer: boolean;
 }
 
 /** Single paper sheet composed of faces in local space. */
@@ -51,7 +49,6 @@ export function cloneFace(f: Face): Face {
     verts: f.verts.map((v) => ({ x: v.x, y: v.y })),
     up: f.up,
     layer: f.layer,
-    outer: f.outer,
   };
 }
 
@@ -87,7 +84,7 @@ export function makeRectFace(
     { x: hw, y: hh },
     { x: -hw, y: hh },
   ];
-  return { id: factory.nextFaceId(), verts, up, layer, outer: true };
+  return { id: factory.nextFaceId(), verts, up, layer };
 }
 
 /** Create a paper sheet with a single face. */
