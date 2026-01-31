@@ -373,8 +373,8 @@ function alignTextureToPaper(texture: CanvasPattern, paper: Paper): void {
  * Draw paper during a flip animation with 3D rotation effect.
  *
  * The flip rotates the entire paper around the vertical Y axis (at x=0),
- * like turning a book page. At 90° the paper is edge-on, then the back
- * side becomes visible as it completes the 180° rotation.
+ * like turning a book page from right to left. At 90° the paper is edge-on,
+ * then the back side becomes visible as it completes the 180° rotation.
  */
 export function drawFlippingPaper(
   ctx: CanvasRenderingContext2D,
@@ -384,13 +384,34 @@ export function drawFlippingPaper(
 ): void {
   alignTextureToPaper(texture, paper);
 
-  // Compute eased rotation angle (0 to PI for full flip)
+  // Compute eased rotation angle (0 to -PI for full flip, right to left in screen space)
   const progress = easeInOutCubic(anim.progress);
-  const angle = progress * Math.PI;
+  const angle = -progress * Math.PI;
 
-  // Rotation axis is the Y axis (vertical) at x=0 in local space
-  const axisDir: Vec3 = { x: 0, y: 1, z: 0 };
-  const axisPoint: Vec3 = { x: 0, y: 0, z: 0 };
+  // Compute the center of all faces for the axis point
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
+  for (const f of anim.originalFaces) {
+    for (const v of f.verts) {
+      minX = Math.min(minX, v.x);
+      maxX = Math.max(maxX, v.x);
+      minY = Math.min(minY, v.y);
+      maxY = Math.max(maxY, v.y);
+    }
+  }
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  // Rotation axis should be vertical in SCREEN space (so flip is always right-to-left visually)
+  // Transform screen vertical (0, 1) to local space by rotating by -paper.rot
+  const axisDirLocal = {
+    x: Math.sin(paper.rot),
+    y: Math.cos(paper.rot),
+  };
+  const axisDir: Vec3 = { x: axisDirLocal.x, y: axisDirLocal.y, z: 0 };
+  const axisPoint: Vec3 = { x: centerX, y: centerY, z: 0 };
 
   // Compute rotated surface normal for lighting
   const baseNormal = v3(0, 0, 1);

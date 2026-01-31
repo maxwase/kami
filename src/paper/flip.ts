@@ -45,9 +45,39 @@ export function buildFlipAnim(paper: Paper): FlipAnim {
 
 /** Apply the final flipped state to the paper. */
 export function commitFlip(paper: Paper, anim: FlipAnim): void {
+  // Compute the center of all faces for mirroring
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
   for (const f of paper.faces) {
-    // Mirror horizontally: negate x, keep y (like flipping a page)
-    f.verts = f.verts.map((v) => ({ x: -v.x, y: v.y }));
+    for (const v of f.verts) {
+      minX = Math.min(minX, v.x);
+      maxX = Math.max(maxX, v.x);
+      minY = Math.min(minY, v.y);
+      maxY = Math.max(maxY, v.y);
+    }
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+
+  // Flip axis is vertical in screen space, transform to local space
+  // Axis direction in local space: (sin(rot), cos(rot))
+  // Normal to axis (for reflection): (-cos(rot), sin(rot))
+  const nx = -Math.cos(paper.rot);
+  const ny = Math.sin(paper.rot);
+
+  for (const f of paper.faces) {
+    // Reflect each vertex across the axis line passing through (cx, cy)
+    f.verts = f.verts.map((v) => {
+      const dx = v.x - cx;
+      const dy = v.y - cy;
+      const dot = dx * nx + dy * ny;
+      return {
+        x: v.x - 2 * dot * nx,
+        y: v.y - 2 * dot * ny,
+      };
+    });
     // Toggle which side is facing up
     f.up = toggleSide(f.up);
     // Invert layer order: what was on bottom (layer 0) is now on top (highest layer)
