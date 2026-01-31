@@ -71,7 +71,7 @@ const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement
 const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
-const hingeStatusEl = getRequiredElement("hingeStatus", HTMLDivElement);
+const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
 
 let dpr = 1;
 let cssW = 0;
@@ -719,11 +719,14 @@ function tick(now: number) {
       }
     }
 
-    const statusParts = [`posture=${postureType}`];
+    const debugLines = [`posture: ${postureType}`];
     if (platform === Platform.Web && device === Device.Phone) {
-      statusParts.push(`accelMag=${accelMag.toFixed(2)} m/s²`);
+      debugLines.push(`accel: ${accelMag.toFixed(2)} m/s²`);
     }
-    hingeStatusEl.textContent = statusParts.join(" | ");
+    const debugText = debugLines.join("\n");
+    if (debugStatusEl.textContent !== debugText) {
+      debugStatusEl.textContent = debugText;
+    }
   } finally {
     requestAnimationFrame(tick);
   }
