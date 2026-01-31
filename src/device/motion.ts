@@ -16,8 +16,6 @@ export interface MotionTracker {
   getAccel: () => Vec2;
   /** Handler for devicemotion events. */
   handleEvent: (e: DeviceMotionEvent) => void;
-  /** Update axis multiplier and gain at runtime. */
-  updateConfig: (config: MotionConfig) => void;
 }
 
 /**
@@ -27,9 +25,9 @@ export interface MotionTracker {
  */
 export function createMotionTracker(config: MotionConfig = {}): MotionTracker {
   let accel: Vec2 = { x: 0, y: 0 };
-  let axisMultiplier: Vec2 = config.axisMultiplier ?? { x: 1, y: 1 };
-  let gain = config.gain ?? 1;
-  let smoothing = config.smoothing ?? 0.25;
+  const axisMultiplier: Vec2 = config.axisMultiplier ?? { x: 1, y: 1 };
+  const gain = config.gain ?? 1;
+  const smoothing = config.smoothing ?? 0.25;
 
   return {
     getAccel: () => ({
@@ -45,11 +43,6 @@ export function createMotionTracker(config: MotionConfig = {}): MotionTracker {
       if (typeof acc.y === "number") {
         accel = { x: accel.x, y: lerp(accel.y, acc.y, smoothing) };
       }
-    },
-    updateConfig: (cfg) => {
-      if (cfg.axisMultiplier) axisMultiplier = cfg.axisMultiplier;
-      if (typeof cfg.gain === "number") gain = cfg.gain;
-      if (typeof cfg.smoothing === "number") smoothing = cfg.smoothing;
     },
   };
 }

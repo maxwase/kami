@@ -23,6 +23,7 @@ import {
   type PaperSnapshot,
 } from "./paper/model";
 import { buildFoldAnim, commitFold, FoldSide, type FoldAnim } from "./paper/fold";
+import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
 import { hitTestPaper } from "./paper/hitTest";
 import { attachGestureHandlers, InputLock } from "./input/gestures";
 import { drawTable } from "./render/background";
@@ -31,6 +32,7 @@ import {
   drawActiveOutline,
   drawFlatPaperFaces,
   drawFoldingPaper,
+  drawFlippingPaper,
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
@@ -47,6 +49,10 @@ const gestureHelpEl = getRequiredElement("gestureHelp", HTMLDivElement);
 const resetActiveBtn = getRequiredElement("resetActive", HTMLButtonElement);
 const undoBtn = getRequiredElement("undo", HTMLButtonElement);
 const foldFallbackBtn = getRequiredElement("foldFallback", HTMLButtonElement);
+const foldFallbackIcon = foldFallbackBtn.querySelector(
+  "span.material-symbols-outlined",
+) as HTMLSpanElement | null;
+const flipPaperBtn = getRequiredElement("flipPaper", HTMLButtonElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
 const stableAccelRow = stableAccelInput.closest(".input-row");
@@ -62,12 +68,10 @@ const manualHingeFlip = getRequiredElement("manualHingeFlip", HTMLInputElement);
 const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
 const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
-const toggleStyleBtn = getRequiredElement("toggleStyle", HTMLButtonElement);
 const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
-const stylePanelEl = getRequiredElement("stylePanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
-const hingeStatusEl = getRequiredElement("hingeStatus", HTMLDivElement);
+const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
 
 let dpr = 1;
 let cssW = 0;
@@ -91,6 +95,7 @@ function resize() {
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   hingeInfo = computeHingePoint(cssW, cssH);
+  updateFoldFallbackIcon();
 }
 window.addEventListener("resize", resize, { passive: true });
 window.addEventListener("orientationchange", resize, { passive: true });
@@ -113,6 +118,12 @@ if (platform === Platform.Web && device === Device.Phone) {
   );
 }
 resize();
+
+function updateFoldFallbackIcon(): void {
+  if (!foldFallbackIcon) return;
+  const isPortrait = !resolveScreenLandscape(cssW, cssH);
+  foldFallbackIcon.textContent = isPortrait ? "devices_fold_2" : "devices_fold";
+}
 
 const nextFaceId = createIdCounter(1);
 const nextPaperId = createIdCounter(1);
@@ -203,7 +214,10 @@ type FoldRuntime =
   | { phase: "idle" }
   | { phase: "animating"; anim: FoldAnim; hinge: Vec2; hingeDir: Vec2 };
 
+type FlipRuntime = { phase: "idle" } | { phase: "animating"; anim: FlipAnim };
+
 let foldRuntime: FoldRuntime = { phase: "idle" };
+let flipRuntime: FlipRuntime = { phase: "idle" };
 let deviceFolded = false;
 
 function normalizeScreenAngle(angle: number): number {
@@ -243,8 +257,8 @@ function getScreenCenterInViewport(): Vec2 {
   };
 }
 
-/// Account for the bookmark and address bars on mobile browsers when
-/// visualViewport is unavailable.
+// Account for the bookmark and address bars on mobile browsers when
+// visualViewport is unavailable.
 function getVhErrorPx(): number {
   if (window.visualViewport) return 0;
 
@@ -265,7 +279,7 @@ function getVhErrorPx(): number {
 }
 
 resetActiveBtn.onclick = () => {
-  if (foldRuntime.phase === "animating") return;
+  if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
@@ -278,7 +292,7 @@ resetActiveBtn.onclick = () => {
 };
 
 undoBtn.onclick = () => {
-  if (foldRuntime.phase === "animating") return;
+  if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const snap = undoStack.pop();
   if (!snap) return;
   restorePaper(getActivePaper(), snap);
@@ -298,7 +312,9 @@ attachGestureHandlers({
   setActivePaper,
   bringPaperToTop,
   getLockState: () =>
-    foldRuntime.phase === "animating" ? InputLock.Locked : InputLock.Unlocked,
+    foldRuntime.phase === "animating" || flipRuntime.phase === "animating"
+      ? InputLock.Locked
+      : InputLock.Unlocked,
   useAltRotate: true, // Enable alt+drag rotation
 });
 
@@ -315,16 +331,21 @@ foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
 };
 
+flipPaperBtn.onclick = () => {
+  if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
+  const paper = getActivePaper();
+  // Start flip animation
+  flipRuntime = {
+    phase: "animating",
+    anim: buildFlipAnim(paper),
+  };
+};
+
 const helpCopy = helpCopyForSupport(postureSupport);
-foldHelpEl.innerHTML = helpCopy.fold;
-const gestureHelp =
-  device === Device.Laptop
-    ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.<br><b>F / Space / Enter</b>: fold."
-    : helpCopy.gesture.replace(". ", ".<br>");
-gestureHelpEl.innerHTML = gestureHelp;
+foldHelpEl.innerHTML = helpCopy.controls;
+gestureHelpEl.innerHTML = helpCopy.gesture;
 let settingsVisible = false;
 let infoVisible = false;
-let styleVisible = false;
 
 const syncSettingsVisibility = () => {
   settingsPanelEl.style.display = settingsVisible ? "flex" : "none";
@@ -336,53 +357,39 @@ const syncInfoVisibility = () => {
   toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
 
-const syncStyleVisibility = () => {
-  stylePanelEl.style.display = styleVisible ? "flex" : "none";
-  toggleStyleBtn.setAttribute("aria-pressed", styleVisible ? "true" : "false");
-};
-
-toggleStyleBtn.onclick = () => {
-  styleVisible = !styleVisible;
-  if (styleVisible) {
-    infoVisible = false;
-    settingsVisible = false;
-  }
-  syncStyleVisibility();
-  syncInfoVisibility();
-  syncSettingsVisibility();
-};
-
 toggleSettingsBtn.onclick = () => {
   settingsVisible = !settingsVisible;
   if (settingsVisible) {
     infoVisible = false;
-    styleVisible = false;
   }
   syncSettingsVisibility();
   syncInfoVisibility();
-  syncStyleVisibility();
 };
 
 toggleInfoBtn.onclick = () => {
   infoVisible = !infoVisible;
   if (infoVisible) {
     settingsVisible = false;
-    styleVisible = false;
   }
   syncInfoVisibility();
   syncSettingsVisibility();
-  syncStyleVisibility();
 };
 
 syncSettingsVisibility();
 syncInfoVisibility();
-syncStyleVisibility();
 
-// Keyboard shortcuts for folding (F, Enter, Space)
+// Keyboard shortcuts
 window.addEventListener("keydown", (e) => {
-  if ((e.code === "KeyF" || e.code === "Enter" || e.code === "Space") && !e.repeat) {
+  if (e.repeat) return;
+  if (e.code === "Space" || e.code === "Enter") {
     e.preventDefault();
     manualFoldQueued = true;
+  } else if (e.code === "KeyF") {
+    e.preventDefault();
+    flipPaperBtn.click();
+  } else if (e.code === "KeyR") {
+    e.preventDefault();
+    resetActiveBtn.click();
   }
 });
 
@@ -428,6 +435,8 @@ const handleHingeReset = (e: Event) => {
   e.preventDefault(); // Prevent ghost clicks or double firing
   manualHingeX.value = "50";
   manualHingeY.value = "50";
+  manualHingeFlip.checked = false;
+  manualHingeFlip.dispatchEvent(new Event("change"));
   updateManualHingePos();
 };
 
@@ -436,54 +445,122 @@ resetHingeBtn.addEventListener("touchend", handleHingeReset);
 
 // Paper Options Logic
 const paperSizeRadios = document.querySelectorAll('input[name="paperSize"]');
+const customAspectInputs = document.getElementById(
+  "customAspectInputs",
+) as HTMLDivElement;
+const customWidthInput = document.getElementById("customWidth") as HTMLInputElement;
+const customHeightInput = document.getElementById("customHeight") as HTMLInputElement;
+
+function getCustomAspect(): number {
+  const w = parseFloat(customWidthInput.value) || 1;
+  const h = parseFloat(customHeightInput.value) || 1;
+  return w / h;
+}
+
+function updateAspectFromRadio(value: string): void {
+  if (value === "a4") {
+    currentAspect = A4_ASPECT;
+    customAspectInputs.style.display = "none";
+  } else if (value === "square") {
+    currentAspect = 1.0;
+    customAspectInputs.style.display = "none";
+  } else if (value === "custom") {
+    currentAspect = getCustomAspect();
+    customAspectInputs.style.display = "block";
+  }
+}
+
 paperSizeRadios.forEach((radio) => {
   radio.addEventListener("change", (e) => {
     const target = e.target as HTMLInputElement;
-    currentAspect = target.value === "a4" ? A4_ASPECT : 1.0;
+    updateAspectFromRadio(target.value);
     // Trigger reset to apply new size
     resetActiveBtn.click();
   });
 });
 
-// RGB Color picker
-const paperColorInput = document.getElementById("paperColor") as HTMLInputElement;
-const paperColorDisplay = document.getElementById(
-  "paperColorDisplay",
+// Update aspect ratio when custom inputs change
+customWidthInput.addEventListener("input", () => {
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    currentAspect = getCustomAspect();
+    resetActiveBtn.click();
+  }
+});
+
+customHeightInput.addEventListener("input", () => {
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    currentAspect = getCustomAspect();
+    resetActiveBtn.click();
+  }
+});
+
+// RGB Color pickers for front and back sides
+const paperFrontColorInput = document.getElementById(
+  "paperFrontColor",
+) as HTMLInputElement;
+const paperFrontColorDisplay = document.getElementById(
+  "paperFrontColorDisplay",
+) as HTMLDivElement;
+const paperBackColorInput = document.getElementById(
+  "paperBackColor",
+) as HTMLInputElement;
+const paperBackColorDisplay = document.getElementById(
+  "paperBackColorDisplay",
 ) as HTMLDivElement;
 
-if (paperColorInput && paperColorDisplay) {
-  // Initialize display with current color
-  paperColorDisplay.style.backgroundColor = paperColorInput.value;
+/** Compute edge color based on front color brightness. */
+function computeEdgeColor(frontColor: string): string {
+  const r = parseInt(frontColor.slice(1, 3), 16);
+  const g = parseInt(frontColor.slice(3, 5), 16);
+  const b = parseInt(frontColor.slice(5, 7), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
+}
 
-  // Update when color changes
-  paperColorInput.addEventListener("input", () => {
-    const color = paperColorInput.value;
-    paperColorDisplay.style.backgroundColor = color;
+/** Update paper style from both color pickers. */
+function updatePaperColors(): void {
+  const paper = getActivePaper();
+  const frontColor = paperFrontColorInput.value;
+  const backColor = paperBackColorInput.value;
 
-    const paper = getActivePaper();
+  paper.style = {
+    front: frontColor,
+    back: backColor,
+    edge: computeEdgeColor(frontColor),
+  };
+}
 
-    // Simple darkening: reduce lightness by 10%
-    const darkerColor = adjustColorBrightness(color, -0.1);
+if (paperFrontColorInput && paperFrontColorDisplay) {
+  paperFrontColorDisplay.style.backgroundColor = paperFrontColorInput.value;
 
-    // Determine edge color based on brightness
-    const r = parseInt(color.slice(1, 3), 16);
-    const g = parseInt(color.slice(3, 5), 16);
-    const b = parseInt(color.slice(5, 7), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    const edgeColor = brightness > 128 ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.2)";
-
-    paper.style = {
-      front: color,
-      back: darkerColor,
-      edge: edgeColor,
-    };
+  paperFrontColorInput.addEventListener("input", () => {
+    paperFrontColorDisplay.style.backgroundColor = paperFrontColorInput.value;
+    updatePaperColors();
   });
 
-  // Click on display to open color picker
-  paperColorDisplay.addEventListener("click", () => {
-    // paperColorInput.click(); // This might not work in some browsers due to security
-    paperColorInput.showPicker?.(); // Try showPicker API
-    if (!paperColorInput.showPicker) paperColorInput.click(); // Fallback
+  paperFrontColorDisplay.addEventListener("click", () => {
+    paperFrontColorInput.showPicker?.();
+    if (!paperFrontColorInput.showPicker) paperFrontColorInput.click();
+  });
+}
+
+if (paperBackColorInput && paperBackColorDisplay) {
+  paperBackColorDisplay.style.backgroundColor = paperBackColorInput.value;
+
+  paperBackColorInput.addEventListener("input", () => {
+    paperBackColorDisplay.style.backgroundColor = paperBackColorInput.value;
+    updatePaperColors();
+  });
+
+  paperBackColorDisplay.addEventListener("click", () => {
+    paperBackColorInput.showPicker?.();
+    if (!paperBackColorInput.showPicker) paperBackColorInput.click();
   });
 }
 
@@ -494,22 +571,6 @@ if (showPaperBorderInput) {
   showPaperBorderInput.addEventListener("change", () => {
     updateOptions({ showPaperBorder: showPaperBorderInput.checked });
   });
-}
-
-function adjustColorBrightness(hex: string, percent: number): string {
-  // Convert hex to RGB
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  // Adjust brightness
-  const adjust = (val: number) => Math.max(0, Math.min(255, val + val * percent));
-  const newR = Math.round(adjust(r));
-  const newG = Math.round(adjust(g));
-  const newB = Math.round(adjust(b));
-
-  // Convert back to hex
-  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
 }
 
 let last = performance.now();
@@ -594,7 +655,9 @@ function tick(now: number) {
       }
     }
     deviceFolded = foldedNow;
-    updateUndoBtn(foldRuntime.phase === "animating");
+    const isAnimating =
+      foldRuntime.phase === "animating" || flipRuntime.phase === "animating";
+    updateUndoBtn(isAnimating);
 
     if (foldRuntime.phase === "animating") {
       const activeAnim = foldRuntime.anim;
@@ -614,6 +677,23 @@ function tick(now: number) {
       }
     }
 
+    if (flipRuntime.phase === "animating") {
+      const activeAnim = flipRuntime.anim;
+      activeAnim.progress += dt / activeAnim.durationSeconds;
+      if (activeAnim.progress >= 1) {
+        activeAnim.progress = 1;
+        const paper = papers.find((p) => p.id === activeAnim.paperId);
+        if (paper) {
+          undoStack.push(snapshotPaper(paper));
+          updateUndoBtn(true);
+          commitFlip(paper, activeAnim);
+        } else {
+          updateUndoBtn(false);
+        }
+        flipRuntime = { phase: "idle" };
+      }
+    }
+
     drawTable(ctx, cssW, cssH, textures.wood);
     const displayHinge =
       foldRuntime.phase === "animating" ? foldRuntime.hinge : activeHinge;
@@ -624,31 +704,40 @@ function tick(now: number) {
     drawHingeCrosshair(
       ctx,
       displayHinge,
-      hingeInfo.segments.segments,
+      hingeInfo.segments,
       displayHingeDir,
       cssW,
       cssH,
     );
 
-    const activeAnim = foldRuntime.phase === "animating" ? foldRuntime.anim : undefined;
+    const activeFoldAnim =
+      foldRuntime.phase === "animating" ? foldRuntime.anim : undefined;
+    const activeFlipAnim =
+      flipRuntime.phase === "animating" ? flipRuntime.anim : undefined;
 
     for (const p of papers) {
-      if (activeAnim && activeAnim.paperId === p.id) {
-        drawFoldingPaper(ctx, p, activeAnim, textures.paper);
+      if (activeFoldAnim && activeFoldAnim.paperId === p.id) {
+        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper);
+      } else if (activeFlipAnim && activeFlipAnim.paperId === p.id) {
+        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper);
       } else {
         drawFlatPaperFaces(ctx, p, textures.paper);
       }
 
-      if (p.id === activePaperId && !activeAnim && options.showPaperBorder) {
+      const hasActiveAnim = activeFoldAnim || activeFlipAnim;
+      if (p.id === activePaperId && !hasActiveAnim && options.showPaperBorder) {
         drawActiveOutline(ctx, p);
       }
     }
 
-    const statusParts = [`posture=${postureType}`];
+    const debugLines = [`posture: ${postureType}`];
     if (platform === Platform.Web && device === Device.Phone) {
-      statusParts.push(`accelMag=${accelMag.toFixed(2)} m/s²`);
+      debugLines.push(`accel: ${accelMag.toFixed(2)} m/s²`);
     }
-    hingeStatusEl.textContent = statusParts.join(" | ");
+    const debugText = debugLines.join("\n");
+    if (debugStatusEl.textContent !== debugText) {
+      debugStatusEl.textContent = debugText;
+    }
   } finally {
     requestAnimationFrame(tick);
   }

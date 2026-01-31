@@ -25,7 +25,6 @@ export interface Paper {
   faces: Face[];
   baseW: number;
   baseH: number;
-  isDragging: boolean;
 }
 
 export interface PaperSnapshot {
@@ -106,7 +105,6 @@ export function makePaper(
     faces: [makeRectFace(factory, w, h, "front", 0)],
     baseW: w,
     baseH: h,
-    isDragging: false,
   };
 }
 
@@ -115,3 +113,8 @@ export function resetPaper(p: Paper, factory: PaperFactory): void {
   p.rot = 0;
   p.scale = 1;
 }
+
+/**
+ * Flip the paper over horizontally (like turning a book page from right to left).
+ * Mirrors around the paper's center along the screen-vertical axis, revealing the back side.
+ */
