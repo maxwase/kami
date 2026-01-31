@@ -164,8 +164,7 @@ export function drawFoldingPaper(
     const screenVerts = projLocal.map((pl) => localToScreen(paper, pl));
 
     // During animation, ALL faces in the moving stack toggle at 90° - they
-    // rotate together as a rigid body. (The outer flag only affects commit-time
-    // behavior, not animation - it determines if `up` gets toggled when committed)
+    // rotate together as a rigid body.
     const visibleSide: PaperSide = viewingBackOfStack
       ? f.up === "front"
         ? "back"

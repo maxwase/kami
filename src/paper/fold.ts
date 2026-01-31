@@ -113,7 +113,6 @@ export function buildFoldAnim(
         verts: pos,
         up: f.up,
         layer: f.layer,
-        outer: f.outer,
       };
       (foldSide === FoldSide.Front ? movingFaces : keepFaces).push(piece);
     }
@@ -123,7 +122,6 @@ export function buildFoldAnim(
         verts: neg,
         up: f.up,
         layer: f.layer,
-        outer: f.outer,
       };
       (foldSide === FoldSide.Back ? movingFaces : keepFaces).push(piece);
     }
@@ -185,8 +183,6 @@ export function commitFold(
       verts: reflected,
       up: newUp,
       layer: newLayer,
-      // Newly folded faces become inner surfaces (their back is now sandwiched)
-      outer: false,
     };
     newFaces.push(nf);
   }

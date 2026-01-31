@@ -31,7 +31,6 @@ export function buildFlipAnim(paper: Paper): FlipAnim {
     verts: f.verts.map((v) => ({ x: v.x, y: v.y })),
     up: f.up,
     layer: f.layer,
-    outer: f.outer,
   }));
 
   return {
@@ -83,7 +82,5 @@ export function commitFlip(paper: Paper, anim: FlipAnim): void {
     // Invert layer order: what was on bottom (layer 0) is now on top (highest layer)
     // what was on top (highest layer) is now on bottom (layer 0)
     f.layer = anim.maxLayer - f.layer;
-    // After flip, all faces are outer surfaces (no sandwiched inner surfaces)
-    f.outer = true;
   }
 }
