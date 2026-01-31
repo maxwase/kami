@@ -4,8 +4,9 @@ import type { Vec2 } from "../math/vec2";
 import { mul3, norm3, rotateAroundAxis, rotatePointAroundLine, v3 } from "../math/vec3";
 import type { Vec3 } from "../math/vec3";
 import { localToScreen } from "../paper/space";
-import type { Paper, PaperSide } from "../paper/model";
+import type { Face, Paper, PaperSide } from "../paper/model";
 import { FoldSide, type FoldAnim } from "../paper/fold";
+import type { FlipAnim } from "../paper/flip";
 
 /**
  * Perspective foreshortening factor for 3D projection.
@@ -107,7 +108,40 @@ export function drawFoldingPaper(
   const baseNormal = v3(0, 0, 1);
   const normalRot = rotateAroundAxis(baseNormal, axisDirLocal3, signedAngle);
 
-  // Collect all faces into a single list for unified Z-sorting
+  // Past 90° rotation, we're viewing the "back" of the moving stack.
+  // Use progress > 0.5 for a stable threshold (avoids floating-point issues with normalRot.z ≈ 0)
+  const viewingBackOfStack = progress > 0.5;
+
+  // Compute max layers for proper sorting
+  const maxKeepLayer = anim.keepFaces.reduce((m, f) => Math.max(m, f.layer), 0);
+  const maxMovingLayer = anim.movingFaces.reduce((m, f) => Math.max(m, f.layer), 0);
+
+  // Pre-compute rotated geometry for all moving faces
+  // We need a single representative z for the entire moving stack to ensure
+  // it sorts as a coherent unit (the stack is a rigid body)
+  const movingGeometry: { face: Face; pts3: Vec3[]; zAvg: number }[] = [];
+  let stackZMax = 0;
+
+  for (const f of anim.movingFaces) {
+    const pts3 = f.verts.map((p) =>
+      rotatePointAroundLine(
+        { x: p.x, y: p.y, z: 0 },
+        axisPointLocal3,
+        axisDirLocal3,
+        signedAngle,
+      ),
+    );
+    const zAvg = pts3.reduce((s, p) => s + p.z, 0) / Math.max(1, pts3.length);
+    stackZMax = Math.max(stackZMax, Math.abs(zAvg));
+    movingGeometry.push({ face: f, pts3, zAvg });
+  }
+
+  // Use fold direction for consistent z sign (avoids floating-point instability near 0)
+  // Add minimum value to ensure moving faces are always sorted separately from keep faces
+  const zSign = anim.foldSide === FoldSide.Front ? 1 : -1;
+  const stackZSigned = zSign * Math.max(stackZMax, 0.01);
+
+  // Collect all faces into a single list for unified sorting
   const items: RenderItem[] = [];
 
   // Add stationary (keep) faces - they remain flat at Z=0
@@ -124,54 +158,50 @@ export function drawFoldingPaper(
   }
 
   // Add moving faces with 3D rotation applied
-  for (const f of anim.movingFaces) {
-    // Rotate vertices around fold line using Rodrigues rotation
-    const pts3 = f.verts.map((p) =>
-      rotatePointAroundLine(
-        { x: p.x, y: p.y, z: 0 },
-        axisPointLocal3,
-        axisDirLocal3,
-        signedAngle,
-      ),
-    );
-
-    // Compute average Z for depth sorting
-    const zAvg = pts3.reduce((s, p) => s + p.z, 0) / Math.max(1, pts3.length);
-
+  for (const { face: f, pts3 } of movingGeometry) {
     // Project 3D back to 2D with perspective
     const projLocal = pts3.map(project3To2Local);
     const screenVerts = projLocal.map((pl) => localToScreen(paper, pl));
 
-    // Determine visible side based on layer:
-    // - Layer 0 (original paper): toggle at 90° - we see other side as it flips
-    // - Higher layers (already folded): always show f.up - inner surface stays hidden
-    let visibleSide: PaperSide;
-    if (f.layer === 0) {
-      // Original paper: show other side when rotated past 90°
-      visibleSide = normalRot.z >= 0 ? f.up : (f.up === "front" ? "back" : "front");
-    } else {
-      // Already folded: inner surface stays hidden
-      visibleSide = f.up;
-    }
-    // Flip normal for lighting when face rotates past 90° (facing away)
-    const visibleNormal: Vec3 = normalRot.z >= 0 ? normalRot : mul3(normalRot, -1);
+    // During animation, ALL faces in the moving stack toggle at 90° - they
+    // rotate together as a rigid body. (The outer flag only affects commit-time
+    // behavior, not animation - it determines if `up` gets toggled when committed)
+    const visibleSide: PaperSide = viewingBackOfStack
+      ? f.up === "front"
+        ? "back"
+        : "front"
+      : f.up;
+
+    // Flip normal for lighting when viewing back of stack
+    const visibleNormal: Vec3 = viewingBackOfStack ? mul3(normalRot, -1) : normalRot;
     const color = visibleSide === "front" ? paper.style.front : paper.style.back;
+
+    // Compute render layer for sorting:
+    // - Moving faces always end up on top of keep faces (they fold over)
+    // - Past 90°, layer order inverts (bottom becomes top of the stack)
+    const baseOffset = maxKeepLayer + 1;
+    const effectiveLayer = viewingBackOfStack ? maxMovingLayer - f.layer : f.layer;
+    const renderLayer = baseOffset + effectiveLayer;
 
     items.push({
       screenVerts,
-      zAvg,
-      layer: f.layer,
+      zAvg: stackZSigned, // All moving faces use same z for coherent stack sorting
+      layer: renderLayer,
       color,
       normal: visibleNormal,
     });
   }
 
-  // Sort by Z depth (primary) and layer (secondary) for painter's algorithm
-  // Draw far faces first (lower Z), use layer as tie-breaker
+  // Sort for painter's algorithm (back-to-front rendering):
+  // - Primary: sort by z depth (lower z = further from viewer, drawn first)
+  // - Secondary: sort by layer (preserves stacking order for faces at same depth)
+  const Z_EPSILON = 0.001;
   items.sort((a, b) => {
     const zDiff = a.zAvg - b.zAvg;
-    if (Math.abs(zDiff) > 0.001) return zDiff;
-    return a.layer - b.layer;
+    if (Math.abs(zDiff) >= Z_EPSILON) {
+      return zDiff; // Different z: sort by depth
+    }
+    return a.layer - b.layer; // Same z: preserve layer order
   });
 
   for (const it of items) {
@@ -337,4 +367,90 @@ function alignTextureToPaper(texture: CanvasPattern, paper: Paper): void {
   m.rotateSelf((paper.rot * 180) / Math.PI);
   m.scaleSelf(paper.scale, paper.scale);
   texture.setTransform(m);
+}
+
+/**
+ * Draw paper during a flip animation with 3D rotation effect.
+ *
+ * The flip rotates the entire paper around the vertical Y axis (at x=0),
+ * like turning a book page. At 90° the paper is edge-on, then the back
+ * side becomes visible as it completes the 180° rotation.
+ */
+export function drawFlippingPaper(
+  ctx: CanvasRenderingContext2D,
+  paper: Paper,
+  anim: FlipAnim,
+  texture: CanvasPattern,
+): void {
+  alignTextureToPaper(texture, paper);
+
+  // Compute eased rotation angle (0 to PI for full flip)
+  const progress = easeInOutCubic(anim.progress);
+  const angle = progress * Math.PI;
+
+  // Rotation axis is the Y axis (vertical) at x=0 in local space
+  const axisDir: Vec3 = { x: 0, y: 1, z: 0 };
+  const axisPoint: Vec3 = { x: 0, y: 0, z: 0 };
+
+  // Compute rotated surface normal for lighting
+  const baseNormal = v3(0, 0, 1);
+  const normalRot = rotateAroundAxis(baseNormal, axisDir, angle);
+
+  // Use the normal's z-component to determine which "side" we're viewing
+  // This is the same threshold used for color switching
+  const viewingBackSide = normalRot.z < 0;
+
+  // Collect faces for rendering
+  const items: RenderItem[] = [];
+  const faces = [...anim.originalFaces].sort((a, b) => a.layer - b.layer);
+
+  for (const f of faces) {
+    // Rotate each vertex around the Y axis
+    const pts3 = f.verts.map((p) =>
+      rotatePointAroundLine({ x: p.x, y: p.y, z: 0 }, axisPoint, axisDir, angle),
+    );
+
+    // Project 3D back to 2D with perspective
+    const projLocal = pts3.map(project3To2Local);
+    const screenVerts = projLocal.map((pl) => localToScreen(paper, pl));
+
+    // Determine visible side: show other side when viewing back
+    const visibleSide: PaperSide = viewingBackSide
+      ? f.up === "front"
+        ? "back"
+        : "front"
+      : f.up;
+
+    // Flip normal for lighting when viewing back side
+    const visibleNormal: Vec3 = viewingBackSide ? mul3(normalRot, -1) : normalRot;
+    const color = visibleSide === "front" ? paper.style.front : paper.style.back;
+
+    // Compute render layer: when viewing back, invert the layer order
+    const renderLayer = viewingBackSide ? anim.maxLayer - f.layer : f.layer;
+
+    items.push({
+      screenVerts,
+      zAvg: 0, // Not used for sorting anymore
+      layer: renderLayer,
+      color,
+      normal: visibleNormal,
+    });
+  }
+
+  // Sort by layer
+  items.sort((a, b) => a.layer - b.layer);
+
+  // When viewing the back side, only render the top layer (center)
+  // to prevent underlying faces from showing through
+  if (viewingBackSide) {
+    const maxLayer = Math.max(...items.map((it) => it.layer));
+    const topFaces = items.filter((it) => it.layer === maxLayer);
+    for (const it of topFaces) {
+      shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
+    }
+  } else {
+    for (const it of items) {
+      shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
+    }
+  }
 }

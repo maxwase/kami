@@ -13,6 +13,8 @@ export interface Face {
   verts: Vec2[];
   up: PaperSide;
   layer: number;
+  /** Outer surfaces toggle their visible side when folded. Inner surfaces (sandwiched) don't. */
+  outer: boolean;
 }
 
 /** Single paper sheet composed of faces in local space. */
@@ -50,6 +52,7 @@ export function cloneFace(f: Face): Face {
     verts: f.verts.map((v) => ({ x: v.x, y: v.y })),
     up: f.up,
     layer: f.layer,
+    outer: f.outer,
   };
 }
 
@@ -85,7 +88,7 @@ export function makeRectFace(
     { x: hw, y: hh },
     { x: -hw, y: hh },
   ];
-  return { id: factory.nextFaceId(), verts, up, layer };
+  return { id: factory.nextFaceId(), verts, up, layer, outer: true };
 }
 
 /** Create a paper sheet with a single face. */
@@ -117,17 +120,25 @@ export function resetPaper(p: Paper, factory: PaperFactory): void {
 }
 
 /**
- * Flip the paper over by rotating 180° around the origin.
- * Left-top becomes right-bottom, revealing the other side.
+ * Flip the paper over horizontally (like turning a book page).
+ * Mirrors across the Y axis: left becomes right, revealing the back side.
  */
 export function flipPaper(p: Paper): void {
+  // Find max layer for inversion
+  let maxLayer = 0;
   for (const f of p.faces) {
-    // Rotate 180° around origin (negate both x and y)
-    f.verts = f.verts.map((v) => ({ x: -v.x, y: -v.y }));
+    maxLayer = Math.max(maxLayer, f.layer);
+  }
+
+  for (const f of p.faces) {
+    // Mirror horizontally: negate x, keep y (like flipping a page)
+    f.verts = f.verts.map((v) => ({ x: -v.x, y: v.y }));
     // Toggle which side is facing up
     f.up = toggleSide(f.up);
-    // Reset layer to 0 - after flip, all visible surfaces are "outer" surfaces
-    // This ensures the fold logic treats them correctly
-    f.layer = 0;
+    // Invert layer order: what was on bottom (layer 0) is now on top (highest layer)
+    // what was on top (highest layer) is now on bottom (layer 0)
+    f.layer = maxLayer - f.layer;
+    // After flip, all faces are outer surfaces (no sandwiched inner surfaces)
+    f.outer = true;
   }
 }
