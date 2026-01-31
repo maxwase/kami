@@ -378,11 +378,18 @@ toggleInfoBtn.onclick = () => {
 syncSettingsVisibility();
 syncInfoVisibility();
 
-// Keyboard shortcuts for folding (F, Enter, Space)
+// Keyboard shortcuts
 window.addEventListener("keydown", (e) => {
-  if ((e.code === "KeyF" || e.code === "Enter" || e.code === "Space") && !e.repeat) {
+  if (e.repeat) return;
+  if (e.code === "Space" || e.code === "Enter") {
     e.preventDefault();
     manualFoldQueued = true;
+  } else if (e.code === "KeyF") {
+    e.preventDefault();
+    flipPaperBtn.click();
+  } else if (e.code === "KeyR") {
+    e.preventDefault();
+    resetActiveBtn.click();
   }
 });
 

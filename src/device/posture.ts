@@ -27,8 +27,7 @@ export function helpCopyForSupport(support: PostureSupport): HelpCopy {
     };
   }
   return {
-    controls:
-      "<b>Space</b>: fold.<br><b>F</b>: flip.<br><b>R</b>: reset.",
+    controls: "<b>Space</b>: fold.<br><b>F</b>: flip.<br><b>R</b>: reset.",
     gesture: "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.",
   };
 }
