@@ -15,20 +15,21 @@ export enum FoldState {
 }
 
 export interface HelpCopy {
-  fold: string;
+  controls: string;
   gesture: string;
 }
 
 export function helpCopyForSupport(support: PostureSupport): HelpCopy {
   if (support === PostureSupport.Available) {
     return {
-      fold: "<b>Fold</b>: close/open the device hinge to trigger a fold along the hinge line.",
-      gesture: "<b>One finger</b>: move. <b>Two fingers</b>: move + rotate.",
+      controls: "<b>Fold</b>: close/open the device hinge.",
+      gesture: "<b>One finger</b>: move.<br><b>Two fingers</b>: move + rotate.",
     };
   }
   return {
-    fold: "<b>Fold</b>: press Space.",
-    gesture: "<b>Drag</b>: move. <b>Alt/Opt + drag</b>: rotate.",
+    controls:
+      "<b>Space</b>: fold.<br><b>F</b>: flip.<br><b>R</b>: reset.",
+    gesture: "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.",
   };
 }
 

@@ -342,12 +342,8 @@ flipPaperBtn.onclick = () => {
 };
 
 const helpCopy = helpCopyForSupport(postureSupport);
-foldHelpEl.innerHTML = helpCopy.fold;
-const gestureHelp =
-  device === Device.Laptop
-    ? "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.<br><b>F / Space / Enter</b>: fold."
-    : helpCopy.gesture.replace(". ", ".<br>");
-gestureHelpEl.innerHTML = gestureHelp;
+foldHelpEl.innerHTML = helpCopy.controls;
+gestureHelpEl.innerHTML = helpCopy.gesture;
 let settingsVisible = false;
 let infoVisible = false;
 
@@ -432,6 +428,8 @@ const handleHingeReset = (e: Event) => {
   e.preventDefault(); // Prevent ghost clicks or double firing
   manualHingeX.value = "50";
   manualHingeY.value = "50";
+  manualHingeFlip.checked = false;
+  manualHingeFlip.dispatchEvent(new Event("change"));
   updateManualHingePos();
 };
 
@@ -440,7 +438,9 @@ resetHingeBtn.addEventListener("touchend", handleHingeReset);
 
 // Paper Options Logic
 const paperSizeRadios = document.querySelectorAll('input[name="paperSize"]');
-const customAspectInputs = document.getElementById("customAspectInputs") as HTMLDivElement;
+const customAspectInputs = document.getElementById(
+  "customAspectInputs",
+) as HTMLDivElement;
 const customWidthInput = document.getElementById("customWidth") as HTMLInputElement;
 const customHeightInput = document.getElementById("customHeight") as HTMLInputElement;
 
@@ -474,7 +474,9 @@ paperSizeRadios.forEach((radio) => {
 
 // Update aspect ratio when custom inputs change
 customWidthInput.addEventListener("input", () => {
-  const selectedRadio = document.querySelector('input[name="paperSize"]:checked') as HTMLInputElement;
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
   if (selectedRadio?.value === "custom") {
     currentAspect = getCustomAspect();
     resetActiveBtn.click();
@@ -482,7 +484,9 @@ customWidthInput.addEventListener("input", () => {
 });
 
 customHeightInput.addEventListener("input", () => {
-  const selectedRadio = document.querySelector('input[name="paperSize"]:checked') as HTMLInputElement;
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
   if (selectedRadio?.value === "custom") {
     currentAspect = getCustomAspect();
     resetActiveBtn.click();
