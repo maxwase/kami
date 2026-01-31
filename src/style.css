@@ -288,13 +288,6 @@ body {
   color: rgba(255, 255, 255, 1);
 }
 
-.hinge-status {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.4;
-  padding: 8px 0;
-}
-
 /* Paper Selector Styles */
 .toggle-group {
   display: flex;
@@ -438,6 +431,39 @@ body {
 
 .color-picker-display:active {
   transform: scale(0.98);
+}
+
+/* Debug Spoiler */
+.debug-spoiler {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.debug-spoiler summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  user-select: none;
+}
+
+.debug-spoiler summary:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#debugStatus {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: pre-line;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
+  touch-action: auto;
+  pointer-events: auto;
 }
 
 /* Footer Section */
