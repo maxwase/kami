@@ -35,7 +35,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   } = opts;
 
   interface PointerState {
-    id: number;
     pos: Vec2;
   }
   const pointers = new Map<number, PointerState>();
@@ -74,7 +73,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
     canvas.setPointerCapture(e.pointerId);
     const pos = getPointerPos(e);
-    pointers.set(e.pointerId, { id: e.pointerId, pos });
+    pointers.set(e.pointerId, { pos });
 
     const hit = getPaperAt(pos);
     if (hit) {

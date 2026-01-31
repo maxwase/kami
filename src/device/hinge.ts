@@ -8,19 +8,10 @@ export interface SegmentRect {
   bottom: number;
   width: number;
   height: number;
-  x: number;
-  y: number;
 }
 
-export type SegmentSource =
-  | "viewportSegments"
-  | "visualViewportFunction"
-  | "visualViewportProperty"
-  | "windowSegments";
-
 export interface HingeInfo {
-  hinge: Vec2;
-  segments: { source: SegmentSource; segments: SegmentRect[] };
+  segments: SegmentRect[];
   hingeDir: Vec2;
 }
 
@@ -29,7 +20,7 @@ interface WindowWithSegments extends Window {
   getWindowSegments?: () => SegmentRect[] | null | undefined;
 }
 
-/** Resolve the hinge position and direction from viewport segments or fallback. */
+/** Resolve the hinge direction and viewport segments (when available). */
 export function computeHingePoint(canvasCssW: number, canvasCssH: number): HingeInfo {
   const wAny = window as WindowWithSegments;
 
@@ -41,12 +32,7 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
       }
       const viewportSegments = readSegments(viewportSegmentsRaw);
       if (viewportSegments.length > 0) {
-        return buildHingeInfo(
-          "viewportSegments",
-          viewportSegments,
-          canvasCssW,
-          canvasCssH,
-        );
+        return buildHingeInfo(viewportSegments, canvasCssW, canvasCssH);
       }
     }
 
@@ -62,12 +48,7 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
           throw new Error("visualViewport.segments() did not return an array");
         }
         const funcSegments = readSegments(fromFunc);
-        return buildHingeInfo(
-          "visualViewportFunction",
-          funcSegments,
-          canvasCssW,
-          canvasCssH,
-        );
+        return buildHingeInfo(funcSegments, canvasCssW, canvasCssH);
       }
 
       if (
@@ -76,12 +57,7 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
       ) {
         const valueSegments = readSegments(visualViewport.segments);
         if (valueSegments.length > 0) {
-          return buildHingeInfo(
-            "visualViewportProperty",
-            valueSegments,
-            canvasCssW,
-            canvasCssH,
-          );
+          return buildHingeInfo(valueSegments, canvasCssW, canvasCssH);
         }
       }
     }
@@ -93,7 +69,7 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
       }
       const windowSegments = readSegments(raw);
       if (windowSegments.length > 0) {
-        return buildHingeInfo("windowSegments", windowSegments, canvasCssW, canvasCssH);
+        return buildHingeInfo(windowSegments, canvasCssW, canvasCssH);
       }
     }
   } catch (err) {
@@ -101,29 +77,20 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
     console.warn(err);
   }
 
-  const fallback = {
-    center: { x: canvasCssW / 2, y: canvasCssH / 2 },
-    width: canvasCssW,
-    height: canvasCssH,
-  };
   return {
-    hinge: fallback.center,
-    segments: { source: "viewportSegments", segments: [] },
-    hingeDir: fallbackHingeDir(getScreenAngleDeg(), fallback.width, fallback.height),
+    segments: [],
+    hingeDir: fallbackHingeDir(getScreenAngleDeg(), canvasCssW, canvasCssH),
   };
 }
 
 function buildHingeInfo(
-  source: SegmentSource,
   segments: SegmentRect[],
   canvasCssW: number,
   canvasCssH: number,
 ): HingeInfo {
-  const { hinge, dir } = hingeFromSegments(segments, canvasCssW, canvasCssH);
   return {
-    hinge,
-    segments: { source, segments },
-    hingeDir: dir,
+    segments,
+    hingeDir: hingeDirFromSegments(segments, canvasCssW, canvasCssH),
   };
 }
 
@@ -138,18 +105,13 @@ function readSegments(source: SegmentRect[]): SegmentRect[] {
 }
 
 /**
- * Derive a hinge anchor and direction vector from provided screen segments.
- * Falls back to the canvas center and orientation-derived direction
- * when fewer than two segments are present.
+ * Derive a hinge direction vector from provided screen segments.
+ * Falls back to an orientation-derived direction when fewer than two segments exist.
  */
-function hingeFromSegments(
-  segs: SegmentRect[],
-  w: number,
-  h: number,
-): { hinge: Vec2; dir: Vec2 } {
+function hingeDirFromSegments(segs: SegmentRect[], w: number, h: number): Vec2 {
   const ratioDir = fallbackHingeDir(getScreenAngleDeg(), w, h);
   if (segs.length < 2) {
-    return { hinge: { x: w / 2, y: h / 2 }, dir: ratioDir };
+    return ratioDir;
   }
 
   const byLeft = [...segs].sort((a, b) => a.left - b.left);
@@ -164,15 +126,13 @@ function hingeFromSegments(
   const gapY = bT.top - aT.bottom;
 
   if (gapX > 0 && gapX >= gapY) {
-    const hingeX = aL.right + gapX * 0.5;
-    return { hinge: { x: hingeX, y: h / 2 }, dir: { x: 0, y: 1 } };
+    return { x: 0, y: 1 };
   }
   if (gapY > 0 && gapY > gapX) {
-    const hingeY = aT.bottom + gapY * 0.5;
-    return { hinge: { x: w / 2, y: hingeY }, dir: { x: 1, y: 0 } };
+    return { x: 1, y: 0 };
   }
 
-  return { hinge: { x: w / 2, y: h / 2 }, dir: ratioDir };
+  return ratioDir;
 }
 
 function hingeDirForAngle(angleDeg: number): Vec2 {
