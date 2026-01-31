@@ -326,6 +326,36 @@ body {
   display: none;
 }
 
+.custom-aspect-inputs {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.custom-aspect-inputs .input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.aspect-input {
+  width: 50px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: inherit;
+  font-size: 12px;
+  text-align: center;
+}
+
+.aspect-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .color-grid {
   display: flex;
   flex-wrap: wrap;

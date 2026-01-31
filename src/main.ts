@@ -440,13 +440,53 @@ resetHingeBtn.addEventListener("touchend", handleHingeReset);
 
 // Paper Options Logic
 const paperSizeRadios = document.querySelectorAll('input[name="paperSize"]');
+const customAspectInputs = document.getElementById("customAspectInputs") as HTMLDivElement;
+const customWidthInput = document.getElementById("customWidth") as HTMLInputElement;
+const customHeightInput = document.getElementById("customHeight") as HTMLInputElement;
+
+function getCustomAspect(): number {
+  const w = parseFloat(customWidthInput.value) || 1;
+  const h = parseFloat(customHeightInput.value) || 1;
+  return w / h;
+}
+
+function updateAspectFromRadio(value: string): void {
+  if (value === "a4") {
+    currentAspect = A4_ASPECT;
+    customAspectInputs.style.display = "none";
+  } else if (value === "square") {
+    currentAspect = 1.0;
+    customAspectInputs.style.display = "none";
+  } else if (value === "custom") {
+    currentAspect = getCustomAspect();
+    customAspectInputs.style.display = "block";
+  }
+}
+
 paperSizeRadios.forEach((radio) => {
   radio.addEventListener("change", (e) => {
     const target = e.target as HTMLInputElement;
-    currentAspect = target.value === "a4" ? A4_ASPECT : 1.0;
+    updateAspectFromRadio(target.value);
     // Trigger reset to apply new size
     resetActiveBtn.click();
   });
+});
+
+// Update aspect ratio when custom inputs change
+customWidthInput.addEventListener("input", () => {
+  const selectedRadio = document.querySelector('input[name="paperSize"]:checked') as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    currentAspect = getCustomAspect();
+    resetActiveBtn.click();
+  }
+});
+
+customHeightInput.addEventListener("input", () => {
+  const selectedRadio = document.querySelector('input[name="paperSize"]:checked') as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    currentAspect = getCustomAspect();
+    resetActiveBtn.click();
+  }
 });
 
 // RGB Color pickers for front and back sides
