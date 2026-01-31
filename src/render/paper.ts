@@ -458,20 +458,11 @@ export function drawFlippingPaper(
     });
   }
 
-  // Sort by layer
+  // Sort by layer and render all faces
+  // Layer inversion when viewing back side already handles correct stacking order
   items.sort((a, b) => a.layer - b.layer);
 
-  // When viewing the back side, only render the top layer (center)
-  // to prevent underlying faces from showing through
-  if (viewingBackSide) {
-    const maxLayer = Math.max(...items.map((it) => it.layer));
-    const topFaces = items.filter((it) => it.layer === maxLayer);
-    for (const it of topFaces) {
-      shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
-    }
-  } else {
-    for (const it of items) {
-      shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
-    }
+  for (const it of items) {
+    shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
   }
 }
