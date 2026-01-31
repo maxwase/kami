@@ -257,8 +257,8 @@ function getScreenCenterInViewport(): Vec2 {
   };
 }
 
-/// Account for the bookmark and address bars on mobile browsers when
-/// visualViewport is unavailable.
+// Account for the bookmark and address bars on mobile browsers when
+// visualViewport is unavailable.
 function getVhErrorPx(): number {
   if (window.visualViewport) return 0;
 
@@ -704,7 +704,7 @@ function tick(now: number) {
     drawHingeCrosshair(
       ctx,
       displayHinge,
-      hingeInfo.segments.segments,
+      hingeInfo.segments,
       displayHingeDir,
       cssW,
       cssH,

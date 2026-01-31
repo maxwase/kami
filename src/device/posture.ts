@@ -1,4 +1,4 @@
-import type { SegmentRect, SegmentSource } from "./hinge";
+import type { SegmentRect } from "./hinge";
 import { getTauriPostureType } from "./tauri";
 import { Platform, resolveRuntimeInfo } from "./runtime";
 
@@ -55,7 +55,7 @@ export function resolvePostureSupport(): PostureSupport {
 /** Determine whether the device should be treated as folded. */
 export function resolveFoldState(
   postureType: string,
-  segments: { source: SegmentSource; segments: SegmentRect[] },
+  segments: SegmentRect[],
 ): FoldState {
   const t = postureType.toLowerCase();
   if (t === "continuous" || t === "flat" || t === "unknown") {
@@ -64,7 +64,7 @@ export function resolveFoldState(
   if (t === "folded" || t === "half-opened" || t === "flipped") {
     return FoldState.Folded;
   }
-  if (segments.segments.length >= 2) {
+  if (segments.length >= 2) {
     return FoldState.Folded;
   }
   return FoldState.Unfolded;
