@@ -339,6 +339,25 @@ body {
   display: none;
 }
 
+.toggle-button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.toggle-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .custom-aspect-inputs {
   margin-top: 8px;
   padding: 8px;
