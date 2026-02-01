@@ -174,12 +174,15 @@ body {
 
 /* --- Settings Panel --- */
 .settings-panel {
+  --settings-top: 104px;
   position: fixed;
-  top: 104px; /* Position below button container with 16px gap (16 + 8 + 56 + 8 + 16) */
+  top: var(--settings-top); /* Position below button container */
   right: 16px;
   width: 300px;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - var(--settings-top) - 12px - env(safe-area-inset-bottom, 0));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   background: rgba(20, 20, 20, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -192,6 +195,15 @@ body {
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0));
+}
+
+@supports (height: 100dvh) {
+  .settings-panel {
+    max-height: calc(
+      100dvh - var(--settings-top) - 12px - env(safe-area-inset-bottom, 0)
+    );
+  }
 }
 
 .settings-panel h3 {
@@ -344,14 +356,17 @@ body {
   border: none;
   background: transparent;
   color: inherit;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: normal;
+  line-height: 1.2;
   gap: 6px;
   cursor: pointer;
   font: inherit;
+  text-align: center;
 }
 
 .toggle-button:hover {
@@ -368,8 +383,9 @@ body {
 .custom-aspect-inputs .input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .aspect-input {
@@ -381,6 +397,10 @@ body {
   color: inherit;
   font-size: 12px;
   text-align: center;
+}
+
+.custom-aspect-inputs .input-row label {
+  min-width: 0;
 }
 
 .aspect-input:focus {
@@ -630,11 +650,16 @@ body {
   }
 
   .settings-panel {
+    --settings-top: 16px;
     left: 12px;
     right: 12px;
-    top: 16px;
     width: auto;
-    max-height: calc(100vh - 140px);
+  }
+}
+
+@media (max-aspect-ratio: 3 / 4) {
+  .settings-panel {
+    --settings-top: 12px;
   }
 }
 
@@ -680,5 +705,11 @@ body {
 
   .settings-panel {
     padding: 14px;
+  }
+
+  .toggle-button {
+    font-size: 12px;
+    padding: 6px 6px;
+    gap: 4px;
   }
 }
