@@ -73,10 +73,19 @@ const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
 
+type GtagFunction = (...args: unknown[]) => void;
+
+function trackEvent(name: string, params?: Record<string, unknown>): void {
+  const gtag = (window as Window & { gtag?: GtagFunction }).gtag;
+  gtag?.("event", name, params);
+}
+
 let dpr = 1;
 let cssW = 0;
 let cssH = 0;
 let hingeInfo: HingeInfo = computeHingePoint(0, 0);
+let lastPostureType: string | null = null;
+let foldCount = 0;
 
 function resize() {
   dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -624,6 +633,16 @@ function tick(now: number) {
     const accel = motion.getAccel();
     const accelMag = Math.hypot(accel.x, accel.y);
     const isStable = motionActive && accelMag <= options.stableAccel;
+    if (postureType !== lastPostureType) {
+      lastPostureType = postureType;
+      trackEvent("posture_change", {
+        posture_type: postureType,
+        hinge_x: Math.round(activeHinge.x),
+        hinge_y: Math.round(activeHinge.y),
+        screen_angle: Number(screenAngle.toFixed(1)),
+        stable: isStable,
+      });
+    }
     const foldSide = resolveFoldSide(
       activeHingeDir,
       isStable,
@@ -669,6 +688,14 @@ function tick(now: number) {
           undoStack.push(snapshotPaper(paper));
           updateUndoBtn(true);
           commitFold(paper, activeAnim, nextFaceId);
+          foldCount += 1;
+          trackEvent("fold_complete", {
+            fold_count: foldCount,
+            fold_side: activeAnim.foldSide === FoldSide.Front ? "front" : "back",
+            hinge_x: Math.round(foldRuntime.hinge.x),
+            hinge_y: Math.round(foldRuntime.hinge.y),
+            duration_ms: Math.round(activeAnim.durationSeconds * 1000),
+          });
         } else {
           // Invalid animation target; reset to a safe state.
           updateUndoBtn(false);
