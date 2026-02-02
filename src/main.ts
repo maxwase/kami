@@ -80,6 +80,9 @@ function trackEvent(name: string, params?: Record<string, unknown>): void {
   gtag?.("event", name, params);
 }
 
+// Expose trackEvent globally for use in other modules
+(window as Window & { trackEvent?: typeof trackEvent }).trackEvent = trackEvent;
+
 let dpr = 1;
 let cssW = 0;
 let cssH = 0;
@@ -290,6 +293,7 @@ function getVhErrorPx(): number {
 resetActiveBtn.onclick = () => {
   if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
+  const prevFaceCount = paper.faces.length;
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
   const size = orientPaperSize(computePaperSize(cssW, cssH, currentAspect), cssW, cssH);
@@ -298,6 +302,12 @@ resetActiveBtn.onclick = () => {
   resetPaper(paper, factory);
   const center = getScreenCenterInViewport();
   paper.pos = { x: center.x, y: center.y };
+
+  trackEvent("paper_reset", {
+    previous_face_count: prevFaceCount,
+    aspect_ratio: currentAspect.toFixed(3),
+    fold_count_session: foldCount,
+  });
 };
 
 undoBtn.onclick = () => {
@@ -306,6 +316,11 @@ undoBtn.onclick = () => {
   if (!snap) return;
   restorePaper(getActivePaper(), snap);
   updateUndoBtn(false);
+
+  trackEvent("undo_action", {
+    remaining_undo_steps: undoStack.length,
+    fold_count_session: foldCount,
+  });
 };
 
 attachGestureHandlers({
@@ -338,6 +353,10 @@ if (postureSupport === PostureSupport.Unavailable) {
 foldFallbackBtn.style.display = "inline-block";
 foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
+  trackEvent("fold_triggered", {
+    trigger_method: "button",
+    fold_count_session: foldCount,
+  });
 };
 
 flipPaperBtn.onclick = () => {
@@ -373,6 +392,10 @@ toggleSettingsBtn.onclick = () => {
   }
   syncSettingsVisibility();
   syncInfoVisibility();
+  trackEvent("panel_toggled", {
+    panel: "settings",
+    visible: settingsVisible,
+  });
 };
 
 toggleInfoBtn.onclick = () => {
@@ -382,6 +405,10 @@ toggleInfoBtn.onclick = () => {
   }
   syncInfoVisibility();
   syncSettingsVisibility();
+  trackEvent("panel_toggled", {
+    panel: "info",
+    visible: infoVisible,
+  });
 };
 
 syncSettingsVisibility();
@@ -393,11 +420,23 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "Space" || e.code === "Enter") {
     e.preventDefault();
     manualFoldQueued = true;
+    trackEvent("fold_triggered", {
+      trigger_method: e.code === "Space" ? "keyboard_space" : "keyboard_enter",
+      fold_count_session: foldCount,
+    });
   } else if (e.code === "KeyF") {
     e.preventDefault();
+    trackEvent("keyboard_shortcut", {
+      key: "f",
+      action: "flip",
+    });
     flipPaperBtn.click();
   } else if (e.code === "KeyR") {
     e.preventDefault();
+    trackEvent("keyboard_shortcut", {
+      key: "r",
+      action: "reset",
+    });
     resetActiveBtn.click();
   }
 });
@@ -409,9 +448,20 @@ function updateStableAccelFromUi() {
   stableAccelValue.textContent = `${options.stableAccel.toFixed(2)} m/s²`;
 }
 
+stableAccelInput.addEventListener("change", () => {
+  updateStableAccelFromUi();
+  trackEvent("setting_changed", {
+    setting: "stability_threshold",
+    value: options.stableAccel,
+  });
+});
 stableAccelInput.addEventListener("input", updateStableAccelFromUi);
 invertFoldDirectionInput.addEventListener("change", () => {
   updateOptions({ invertFoldDirection: invertFoldDirectionInput.checked });
+  trackEvent("setting_changed", {
+    setting: "invert_fold_direction",
+    value: invertFoldDirectionInput.checked,
+  });
 });
 const updateManualHingePos = () => {
   updateOptions({
@@ -423,8 +473,24 @@ const updateManualHingePos = () => {
 };
 manualHingeX.addEventListener("input", updateManualHingePos);
 manualHingeY.addEventListener("input", updateManualHingePos);
+manualHingeX.addEventListener("change", () => {
+  trackEvent("setting_changed", {
+    setting: "hinge_x",
+    value: Number(manualHingeX.value),
+  });
+});
+manualHingeY.addEventListener("change", () => {
+  trackEvent("setting_changed", {
+    setting: "hinge_y",
+    value: Number(manualHingeY.value),
+  });
+});
 manualHingeFlip.addEventListener("change", () => {
   updateOptions({ manualHingeDirFlip: manualHingeFlip.checked });
+  trackEvent("setting_changed", {
+    setting: "hinge_flip",
+    value: manualHingeFlip.checked,
+  });
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
@@ -447,6 +513,7 @@ const handleHingeReset = (e: Event) => {
   manualHingeFlip.checked = false;
   manualHingeFlip.dispatchEvent(new Event("change"));
   updateManualHingePos();
+  trackEvent("hinge_reset");
 };
 
 resetHingeBtn.addEventListener("click", handleHingeReset);
@@ -483,12 +550,29 @@ paperSizeRadios.forEach((radio) => {
   radio.addEventListener("change", (e) => {
     const target = e.target as HTMLInputElement;
     updateAspectFromRadio(target.value);
+    trackEvent("paper_size_changed", {
+      size_type: target.value,
+      aspect_ratio: currentAspect.toFixed(3),
+    });
     // Trigger reset to apply new size
     resetActiveBtn.click();
   });
 });
 
 // Update aspect ratio when custom inputs change
+customWidthInput.addEventListener("change", () => {
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    trackEvent("paper_size_changed", {
+      size_type: "custom",
+      aspect_ratio: getCustomAspect().toFixed(3),
+      custom_width: parseFloat(customWidthInput.value),
+      custom_height: parseFloat(customHeightInput.value),
+    });
+  }
+});
 customWidthInput.addEventListener("input", () => {
   const selectedRadio = document.querySelector(
     'input[name="paperSize"]:checked',
@@ -499,6 +583,19 @@ customWidthInput.addEventListener("input", () => {
   }
 });
 
+customHeightInput.addEventListener("change", () => {
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    trackEvent("paper_size_changed", {
+      size_type: "custom",
+      aspect_ratio: getCustomAspect().toFixed(3),
+      custom_width: parseFloat(customWidthInput.value),
+      custom_height: parseFloat(customHeightInput.value),
+    });
+  }
+});
 customHeightInput.addEventListener("input", () => {
   const selectedRadio = document.querySelector(
     'input[name="paperSize"]:checked',
@@ -553,6 +650,13 @@ if (paperFrontColorInput && paperFrontColorDisplay) {
     updatePaperColors();
   });
 
+  paperFrontColorInput.addEventListener("change", () => {
+    trackEvent("color_changed", {
+      side: "front",
+      color: paperFrontColorInput.value,
+    });
+  });
+
   paperFrontColorDisplay.addEventListener("click", () => {
     paperFrontColorInput.showPicker?.();
     if (!paperFrontColorInput.showPicker) paperFrontColorInput.click();
@@ -567,6 +671,13 @@ if (paperBackColorInput && paperBackColorDisplay) {
     updatePaperColors();
   });
 
+  paperBackColorInput.addEventListener("change", () => {
+    trackEvent("color_changed", {
+      side: "back",
+      color: paperBackColorInput.value,
+    });
+  });
+
   paperBackColorDisplay.addEventListener("click", () => {
     paperBackColorInput.showPicker?.();
     if (!paperBackColorInput.showPicker) paperBackColorInput.click();
@@ -579,6 +690,10 @@ const showPaperBorderInput = document.getElementById(
 if (showPaperBorderInput) {
   showPaperBorderInput.addEventListener("change", () => {
     updateOptions({ showPaperBorder: showPaperBorderInput.checked });
+    trackEvent("setting_changed", {
+      setting: "show_paper_border",
+      value: showPaperBorderInput.checked,
+    });
   });
 }
 
@@ -641,6 +756,7 @@ function tick(now: number) {
         hinge_y: Math.round(activeHinge.y),
         screen_angle: Number(screenAngle.toFixed(1)),
         stable: isStable,
+        accel: accel,
       });
     }
     const foldSide = resolveFoldSide(
@@ -714,6 +830,11 @@ function tick(now: number) {
           undoStack.push(snapshotPaper(paper));
           updateUndoBtn(true);
           commitFlip(paper, activeAnim);
+          trackEvent("flip_complete", {
+            face_count: paper.faces.length,
+            fold_count_session: foldCount,
+            duration_ms: Math.round(activeAnim.durationSeconds * 1000),
+          });
         } else {
           updateUndoBtn(false);
         }
@@ -772,6 +893,18 @@ function tick(now: number) {
 
 void (async function bootstrap() {
   textures = await loadTextures(ctx);
+
+  // Track session start with device context
+  trackEvent("session_start", {
+    platform: platform === Platform.Tauri ? "tauri" : "web",
+    device_type: device === Device.Laptop ? "laptop" : "phone",
+    posture_support:
+      postureSupport === PostureSupport.Available ? "available" : "unavailable",
+    screen_width: cssW,
+    screen_height: cssH,
+    device_pixel_ratio: dpr,
+  });
+
   requestAnimationFrame(tick);
 })();
 

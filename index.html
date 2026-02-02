@@ -401,6 +401,7 @@
         const openCookiePreferences = document.getElementById("openCookiePreferences");
         if (openCookiePreferences) {
           openCookiePreferences.addEventListener("click", () => {
+            gtag("event", "cookie_preferences_opened");
             // Ensure the banner is initialized
             if (window.silktideCookieBannerManager?.initCookieBanner) {
               window.silktideCookieBannerManager.initCookieBanner();
@@ -408,6 +409,27 @@
             // Open the modal via the existing banner control
             const cookieIcon = document.getElementById("silktide-cookie-icon");
             cookieIcon?.click();
+          });
+        }
+
+        // Track outbound link clicks
+        const buyCoffeeLink = document.getElementById("buyCoffee");
+        if (buyCoffeeLink) {
+          buyCoffeeLink.addEventListener("click", () => {
+            gtag("event", "outbound_link", {
+              link_type: "buy_me_a_coffee",
+              link_url: buyCoffeeLink.href,
+            });
+          });
+        }
+
+        const repoLink = document.getElementById("repoLink");
+        if (repoLink) {
+          repoLink.addEventListener("click", () => {
+            gtag("event", "outbound_link", {
+              link_type: "github",
+              link_url: repoLink.href,
+            });
           });
         }
       });
