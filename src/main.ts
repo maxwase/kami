@@ -1,14 +1,15 @@
 import "./style.css";
+import "viewportsegments-polyfill";
 import { clamp } from "./math/scalars";
 import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
 import { computeHingePoint, type HingeInfo } from "./device/hinge";
 import { createMotionTracker } from "./device/motion";
 import {
-  FoldState,
   helpCopyForSupport,
+  HingeState,
   PostureSupport,
   readDevicePostureType,
-  resolveFoldState,
+  resolveHingeState,
   resolvePostureSupport,
 } from "./device/posture";
 import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
@@ -113,11 +114,26 @@ window.addEventListener("resize", resize, { passive: true });
 window.addEventListener("orientationchange", resize, { passive: true });
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", resize, { passive: true });
+  window.visualViewport.addEventListener("scroll", resize, { passive: true });
 }
 if (window.screen?.orientation) {
   window.screen.orientation.addEventListener("change", resize, {
     passive: true,
   });
+}
+// Recompute segments when the foldable changes posture or the hinge gap moves.
+interface ChangeTarget {
+  addEventListener?: EventTarget["addEventListener"];
+}
+const viewportSegmentsTarget = (window as Window & { viewport?: ChangeTarget })
+  .viewport;
+if (typeof viewportSegmentsTarget?.addEventListener === "function") {
+  viewportSegmentsTarget.addEventListener("change", resize, { passive: true });
+}
+const devicePostureTarget = (navigator as Navigator & { devicePosture?: ChangeTarget })
+  .devicePosture;
+if (typeof devicePostureTarget?.addEventListener === "function") {
+  devicePostureTarget.addEventListener("change", resize, { passive: true });
 }
 if (platform === Platform.Web && device === Device.Phone) {
   window.addEventListener(
@@ -180,12 +196,31 @@ function orientPaperSize(
   return isPortrait ? size : { w: size.h, h: size.w };
 }
 
+// Open inner screen = near-square/wide; closed cover screen = tall and narrow.
+// Device posture can't tell them apart (both report "continuous"), so use the
+// aspect ratio.
+function isOpenFoldableScreen(): boolean {
+  if (platform !== Platform.Web || device !== Device.Phone) return false;
+  return cssH > 0 && cssW / cssH > 0.7;
+}
+
+// Orient the sheet horizontal (landscape) when the foldable is open, otherwise
+// match the screen. Driven by dimensions, not rotation, so the result is the
+// same whether the viewport itself reads portrait or landscape.
+function orientedPaperSize(
+  viewW: number,
+  viewH: number,
+  aspect: number,
+): { w: number; h: number } {
+  const base = computePaperSize(viewW, viewH, aspect);
+  if (isOpenFoldableScreen()) {
+    return { w: Math.max(base.w, base.h), h: Math.min(base.w, base.h) };
+  }
+  return orientPaperSize(base, viewW, viewH);
+}
+
 const initialCenter = getScreenCenterInViewport();
-const initialSize = orientPaperSize(
-  computePaperSize(cssW, cssH, currentAspect),
-  cssW,
-  cssH,
-);
+const initialSize = orientedPaperSize(cssW, cssH, currentAspect);
 const papers: Paper[] = [
   makePaper(
     factory,
@@ -296,7 +331,7 @@ resetActiveBtn.onclick = () => {
   const prevFaceCount = paper.faces.length;
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
-  const size = orientPaperSize(computePaperSize(cssW, cssH, currentAspect), cssW, cssH);
+  const size = orientedPaperSize(cssW, cssH, currentAspect);
   paper.baseW = size.w;
   paper.baseH = size.h;
   resetPaper(paper, factory);
@@ -704,46 +739,46 @@ function tick(now: number) {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
 
-    let hingeBaseDir = hingeInfo.hingeDir;
-    if (platform === Platform.Tauri && device === Device.Laptop) {
-      hingeBaseDir = { x: -1, y: 0 };
-    } else if (
-      platform === Platform.Web &&
-      device === Device.Phone &&
-      resolveScreenLandscape(cssW, cssH)
-    ) {
-      hingeBaseDir = { x: 0, y: 1 };
-    }
-    const activeHingeDir =
-      platform === Platform.Tauri && device === Device.Laptop
-        ? hingeBaseDir
-        : platform === Platform.Web &&
-            device === Device.Phone &&
-            resolveScreenLandscape(cssW, cssH)
-          ? hingeBaseDir
-          : options.manualHingeDirFlip
-            ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
-            : hingeBaseDir;
-    const hingeY =
-      platform === Platform.Tauri && device === Device.Laptop
-        ? cssH
-        : cssH * options.manualHingePos.y;
-    const activeHinge: Vec2 = {
-      x:
-        platform === Platform.Tauri && device === Device.Laptop
-          ? cssW / 2
-          : cssW * options.manualHingePos.x,
-      y: hingeY,
-    };
+    // Read segments fresh each frame: viewport.segments can update without
+    // firing an event our listeners catch, which otherwise delays detection.
+    hingeInfo = computeHingePoint(cssW, cssH);
+
     const postureType =
       postureSupport === PostureSupport.Available
         ? readDevicePostureType()
         : "fallback";
-    const foldedNow =
-      postureSupport === PostureSupport.Available
-        ? resolveFoldState(postureType, hingeInfo.segments) === FoldState.Folded ||
-          manualFoldQueued
-        : manualFoldQueued;
+    const hingeState = resolveHingeState(postureType, hingeInfo.segments);
+    // Detected physical crease (book mode) wins over the manual sliders.
+    const detectedPoint =
+      hingeState === HingeState.Creased ? hingeInfo.hingePoint : undefined;
+    const isTauriLaptop = platform === Platform.Tauri && device === Device.Laptop;
+    const manualHinge: Vec2 = {
+      x: cssW * options.manualHingePos.x,
+      y: cssH * options.manualHingePos.y,
+    };
+
+    let activeHinge: Vec2;
+    let activeHingeDir: Vec2;
+    if (isTauriLaptop) {
+      activeHingeDir = { x: -1, y: 0 };
+      activeHinge = { x: cssW / 2, y: cssH };
+    } else if (detectedPoint) {
+      activeHingeDir = hingeInfo.hingeDir;
+      activeHinge = detectedPoint;
+    } else {
+      // No detected crease: derive the line from orientation. hingeInfo.hingeDir
+      // is angle-aware (hingeDirForAngle), so this respects device rotation.
+      // manualHingeDirFlip stays a user override.
+      activeHingeDir = options.manualHingeDirFlip
+        ? perp2(hingeInfo.hingeDir) // rotate 90° to flip line orientation
+        : hingeInfo.hingeDir;
+      activeHinge = manualHinge;
+    }
+
+    // Auto-fold on the fresh posture signal (folded-type = Creased or Closed),
+    // not on segments alone: this device has a continuous screen that reports a
+    // single segment, so a segment-only trigger lags or never fires.
+    const foldedNow = hingeState !== HingeState.Flat || manualFoldQueued;
     const screenAngle = normalizeScreenAngle(getScreenAngleDeg());
     const accel = motion.getAccel();
     const accelMag = Math.hypot(accel.x, accel.y);
@@ -878,9 +913,26 @@ function tick(now: number) {
       }
     }
 
-    const debugLines = [`posture: ${postureType}`];
+    const segs = hingeInfo.segments;
+    const pt = hingeInfo.hingePoint;
+    const landscape = resolveScreenLandscape(cssW, cssH);
+    const debugLines = [
+      `state:${hingeState} posture:${postureType}`,
+      `vp:${cssW}x${cssH} ${landscape ? "land" : "port"} @${screenAngle}°`,
+      `segs:${segs.length}`,
+      ...segs.map(
+        (s, i) =>
+          ` [${i}] x${Math.round(s.left)} y${Math.round(s.top)} ${Math.round(
+            s.width,
+          )}x${Math.round(s.height)}`,
+      ),
+      `segDir:${hingeInfo.hingeDir.x},${hingeInfo.hingeDir.y} pt:${
+        pt ? `${Math.round(pt.x)},${Math.round(pt.y)}` : "-"
+      }`,
+      `useDir:${activeHingeDir.x.toFixed(0)},${activeHingeDir.y.toFixed(0)}`,
+    ];
     if (platform === Platform.Web && device === Device.Phone) {
-      debugLines.push(`accel: ${accelMag.toFixed(2)} m/s²`);
+      debugLines.push(`accel:${accelMag.toFixed(2)}`);
     }
     const debugText = debugLines.join("\n");
     if (debugStatusEl.textContent !== debugText) {
