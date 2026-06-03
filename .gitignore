@@ -1,3 +1,11 @@
 node_modules
 dist
 src-tauri/target
+
+# Android signing keys - NEVER commit
+android/*.keystore
+android/*.jks
+android/*.keystore.pw
+twa-manifest.json
+*.aab
+*.apk

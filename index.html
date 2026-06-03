@@ -3,19 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>kami: Origami Simulator — Fold Paper with Your Device</title>
     <meta
       name="description"
-      content="Interactive origami folding demo that responds to device posture."
+      content="kami is a free interactive origami and paper-folding simulator that reacts to your device posture — fold the lid of a foldable phone or laptop and watch the paper fold along. Runs in your browser, no install needed."
     />
+    <meta
+      name="keywords"
+      content="origami, paper folding, simulator, foldable phone, device posture, interactive, paper fold, hinge, web app"
+    />
+    <meta name="author" content="maxwase" />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#201a14" />
-    <title>kami: Origami simulator</title>
+    <link rel="canonical" href="https://kami.maxwase.eu/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="kami" />
+    <meta
+      property="og:title"
+      content="kami: Origami Simulator — Fold Paper with Your Device"
+    />
+    <meta
+      property="og:description"
+      content="A free interactive origami simulator that reacts to your device posture. Fold a foldable phone or laptop lid and the paper folds along."
+    />
+    <meta property="og:url" content="https://kami.maxwase.eu/" />
+    <meta property="og:image" content="https://kami.maxwase.eu/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="kami origami simulator" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="kami: Origami Simulator — Fold Paper with Your Device"
+    />
+    <meta
+      name="twitter:description"
+      content="A free interactive origami simulator that reacts to your device posture."
+    />
+    <meta name="twitter:image" content="https://kami.maxwase.eu/og.png" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "kami: Origami Simulator",
+        "url": "https://kami.maxwase.eu/",
+        "description": "Interactive origami and paper-folding simulator that responds to device posture.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires JavaScript and HTML5 Canvas.",
+        "image": "https://kami.maxwase.eu/icon.png",
+        "author": { "@type": "Person", "name": "maxwase" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+
     <!-- Add Material Symbols Font -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
     />
-    <meta property="og:image" content="https://maxwase.github.io/kami/og.png" />
     <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="apple-touch-icon" href="pwa-192x192.png" />
     <link
       rel="stylesheet"
       id="silktide-consent-manager-css"
@@ -25,6 +79,18 @@
       /* Hide floating cookie icon; settings menu provides entry point */
       #silktide-cookie-icon {
         display: none !important;
+      }
+      /* Off-screen content for search engines and screen readers */
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
     </style>
     <script src="cookie-banner/silktide-consent-manager.js"></script>
@@ -116,7 +182,7 @@
         text: {
           banner: {
             description:
-              '<p>We use cookies on our site to enhance your user experience, provide personalized content, and analyze our traffic. <a href="https://maxwase.github.io/kami/cookie-policy" target="_blank">Cookie Policy.</a></p>',
+              '<p>We use cookies on our site to enhance your user experience, provide personalized content, and analyze our traffic. <a href="https://kami.maxwase.eu/cookie-policy" target="_blank">Cookie Policy.</a></p>',
             acceptAllButtonText: "Accept all",
             acceptAllButtonAccessibleLabel: "Accept all cookies",
             rejectNonEssentialButtonText: "Reject non-essential",
@@ -137,6 +203,17 @@
   </head>
 
   <body>
+    <header class="visually-hidden">
+      <h1>kami — Interactive Origami &amp; Paper-Folding Simulator</h1>
+      <p>
+        kami is a free, open-source origami simulator that responds to your
+        device's physical posture. Fold a foldable phone or close a laptop lid
+        and the on-screen paper folds along the hinge. You can also fold and
+        flip manually, change paper size and colors, and undo your folds. It
+        runs in any modern web browser — no install or account required — and as
+        a native macOS app.
+      </p>
+    </header>
     <canvas id="c"></canvas>
 
     <!-- Control Footer (Top Left/Right on desktop, Bottom on portrait) -->
@@ -358,14 +435,14 @@
           </div>
           <div class="toggle-group">
             <a
-              href="https://maxwase.github.io/kami/privacy"
+              href="https://kami.maxwase.eu/privacy"
               target="_blank"
               rel="noopener"
               class="footer-link"
               >Privacy Policy</a
             >
             <a
-              href="https://maxwase.github.io/kami/cookie-policy"
+              href="https://kami.maxwase.eu/cookie-policy"
               target="_blank"
               rel="noopener"
               class="footer-link"

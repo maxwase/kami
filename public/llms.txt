@@ -1,0 +1,23 @@
+# kami: Origami Simulator
+
+> kami is a free, open-source interactive origami and paper-folding simulator that responds to physical device posture. Fold a foldable phone or close a laptop lid and the on-screen paper folds along the hinge. It runs in any modern browser and as a native macOS app.
+
+kami uses the Device Posture API, viewport segments, and accelerometer input to detect hinge angle, then animates a folding paper sheet with polygon clipping and 3D canvas rendering. No account, install, or payment required.
+
+## Use
+
+- [App](https://kami.maxwase.eu/): Launch the simulator in your browser
+- [Source code](https://github.com/maxwase/kami): Full source on GitHub (TypeScript + Rust/Tauri)
+
+## Features
+
+- Responds to foldable phones, laptop lids, and device posture changes
+- Manual fold and flip controls when no hinge sensor is present
+- Adjustable paper size (A4, square, custom aspect), colors, and border
+- Undo support and motion-stability tuning
+- Works offline as an installable PWA; native macOS build via Tauri
+
+## Legal
+
+- [Privacy Policy](https://kami.maxwase.eu/privacy/)
+- [Cookie Policy](https://kami.maxwase.eu/cookie-policy/)

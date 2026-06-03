@@ -1,0 +1,5 @@
+Contact: https://github.com/maxwase/kami/security/advisories/new
+Contact: https://github.com/maxwase/kami/issues
+Expires: 2027-06-03T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://kami.maxwase.eu/.well-known/security.txt
