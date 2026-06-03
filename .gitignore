@@ -3,9 +3,16 @@ dist
 src-tauri/target
 
 # Android signing keys - NEVER commit
-android/*.keystore
-android/*.jks
-android/*.keystore.pw
+*.keystore
+*.jks
+*.keystore.pw
 twa-manifest.json
+
+# Android / Gradle build outputs
+.gradle/
+build/
+app/build/
 *.aab
 *.apk
+*.apk.idsig
+manifest-checksum.txt

@@ -5,9 +5,9 @@
     ],
     "target": {
       "namespace": "android_app",
-      "package_name": "eu.maxwase.kami",
+      "package_name": "eu.maxwase.kami.twa",
       "sha256_cert_fingerprints": [
-        "2A:19:EC:F2:44:B3:27:CE:2D:87:F2:32:2E:3B:A6:D0:CD:65:20:D2:AE:8F:63:02:6B:28:D8:EB:5E:DB:12:8F"
+        "39:1C:63:1E:C7:24:80:1C:15:8E:82:D8:EA:91:41:B6:10:A9:95:55:A6:F0:8E:E2:B3:69:3A:D6:69:76:0C:4E"
       ]
     }
   }
