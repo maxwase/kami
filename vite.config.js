@@ -21,8 +21,18 @@ const pwaPlugins = isTauri
             "Interactive origami folding demo that responds to device posture.",
           theme_color: "#201a14",
           background_color: "#201a14",
-          display: "standalone",
+          display: "fullscreen",
           orientation: "any",
+          // Lets the browser relate this PWA to the Play Store app so the
+          // install prompt can be suppressed when the native app is installed
+          // (checked at runtime via navigator.getInstalledRelatedApps()).
+          related_applications: [
+            {
+              platform: "play",
+              id: "eu.maxwase.kami.twa",
+              url: "https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa",
+            },
+          ],
           icons: [
             { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
             { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },

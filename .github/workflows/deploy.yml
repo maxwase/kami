@@ -41,12 +41,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
-        # v3 tars hidden files (.well-known, .nojekyll); v4 inherits
-        # upload-artifact@v4's include-hidden-files:false and drops them.
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           # Upload dist folder
           path: "./dist"
+          # Without this, hidden entries (.well-known, .nojekyll) are dropped
+          # from the artifact and assetlinks.json 404s on Pages.
+          include-hidden-files: true
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

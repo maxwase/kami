@@ -132,9 +132,29 @@
       // One per session: lets you segment opens by surface in GA4.
       gtag("event", "app_open", { launch_context: getLaunchContext() });
 
+      // True once we confirm the Play Store (TWA) app is installed.
+      var nativeAppInstalled = false;
+      if (navigator.getInstalledRelatedApps) {
+        navigator
+          .getInstalledRelatedApps()
+          .then(function (apps) {
+            nativeAppInstalled = apps.some(function (a) {
+              return a.id === "eu.maxwase.kami.twa";
+            });
+          })
+          .catch(function () {});
+      }
+
       // Install funnel (browser-driven PWA install; Play Store has its own stats).
-      window.addEventListener("beforeinstallprompt", function () {
+      window.addEventListener("beforeinstallprompt", function (e) {
+        // Don't promote the PWA install when the native app is already there.
+        if (nativeAppInstalled) {
+          e.preventDefault();
+          return;
+        }
         gtag("event", "pwa_install_available");
+        // Expose the deferred prompt for any custom install button to use.
+        window.deferredInstallPrompt = e;
       });
       window.addEventListener("appinstalled", function () {
         gtag("event", "pwa_installed");
