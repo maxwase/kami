@@ -38,7 +38,7 @@ const pwaPlugins = isTauri
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: isTauri ? "./" : "/kami/",
+  base: isTauri ? "./" : "/",
   plugins: pwaPlugins,
   clearScreen: false,
   server: {
