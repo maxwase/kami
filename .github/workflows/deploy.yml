@@ -41,13 +41,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        # MUST stay on v3. v4's internal tar drops hidden entries
+        # (.well-known, .nojekyll) — even with include-hidden-files:true —
+        # which makes assetlinks.json 404 and re-shows the TWA browser header.
+        uses: actions/upload-pages-artifact@v3
         with:
           # Upload dist folder
           path: "./dist"
-          # Without this, hidden entries (.well-known, .nojekyll) are dropped
-          # from the artifact and assetlinks.json 404s on Pages.
-          include-hidden-files: true
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
