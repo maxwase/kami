@@ -115,6 +115,30 @@
     <script>
       gtag("js", new Date());
       gtag("config", "G-C507EG5TKF");
+
+      // How was the app launched: installed TWA, installed PWA, or browser tab.
+      function getLaunchContext() {
+        if (document.referrer.startsWith("android-app://")) return "twa";
+        if (
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.matchMedia("(display-mode: fullscreen)").matches ||
+          window.navigator.standalone === true
+        ) {
+          return "pwa";
+        }
+        return "browser";
+      }
+
+      // One per session: lets you segment opens by surface in GA4.
+      gtag("event", "app_open", { launch_context: getLaunchContext() });
+
+      // Install funnel (browser-driven PWA install; Play Store has its own stats).
+      window.addEventListener("beforeinstallprompt", function () {
+        gtag("event", "pwa_install_available");
+      });
+      window.addEventListener("appinstalled", function () {
+        gtag("event", "pwa_installed");
+      });
     </script>
     <script>
       silktideCookieBannerManager.updateCookieBannerConfig({
