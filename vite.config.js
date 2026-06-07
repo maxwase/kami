@@ -52,6 +52,7 @@ const pwaPlugins = isTauri
             /^\/privacy/,
             /^\/cookie-policy/,
             /^\/\.well-known/,
+            /\.(txt|xml|json)$/,
           ],
         },
       }),
