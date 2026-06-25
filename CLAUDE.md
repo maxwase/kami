@@ -72,3 +72,20 @@ The fold system uses layers to track paper stacking:
 - **Layer > 0**: Already folded faces - inner surface stays hidden (doesn't toggle)
 
 This prevents inner surfaces from becoming visible after multiple folds. The `commitFold` function in `fold.ts` and rendering logic in `render/paper.ts` both check `f.layer === 0` to determine fold behavior.
+
+### Fold animation depth ordering (moving stack is ALWAYS on top)
+
+`commitFold` always assigns the folded flap the highest layer (`foldedLayer = maxLayer + 1`), so after a fold the flat render draws the moving flap **on top of** the stationary ("keep") faces — the model only ever folds _onto the top_.
+
+`drawFoldingPaper` must stay consistent with that committed state, so it sorts the moving stack above the keep faces for the entire animation: `stackZSigned = Math.max(stackZMax, 0.01)` (always positive; keep faces are at `z = 0`). Internal ordering _within_ the moving stack is handled separately by `renderLayer`.
+
+Do **not** derive this depth sign from `foldSide` (which only says which half moves) or from the flap's actual rotated z. Either makes the flap render _behind_ the keep faces for some fold directions: the stationary texture then stays visible "through" the descending flap during the animation and **pops** to covered the instant `commitFold` runs. This was invisible with plain paper (both halves look identical) but obvious once a sheet carries an image texture. See the long comment at `stackZSigned` in `render/paper.ts` for the full rationale.
+
+## Paper materials & textures
+
+`Paper.material` (`"color" | "paper" | "banner"`, in `paper/model.ts`) selects the front surface:
+
+- **`color`** — the tiled `paper.jpg` pattern tinted by the front/back color pickers (the UI "Color" mode).
+- **`paper`** / **`banner`** — an image (plain paper photo / Kami Play Store banner) UV-mapped onto the sheet so it folds for real (the two "Texture" mode options).
+
+Image textures fold correctly because each `Face` carries a `mat: Mat2x3` (`geom/affine.ts`) mapping its local coords to texture UV space. The map is intrinsic to the material: clipping leaves it unchanged, and folds/flips compose a reflection into it (`composeAffine`), so UVs stay attached to the paper. `render/paper.ts:drawImageMappedPoly` fan-triangulates each face and draws the image per triangle via an affine that composes onto the canvas DPR transform. `baseLocalToUvAffine` rotates the (portrait) image 90° on landscape sheets so it fills without squashing. Only `up === "front"` faces show the image; backs render plain.

@@ -253,12 +253,11 @@
     <header class="visually-hidden">
       <h1>kami — Interactive Origami &amp; Paper-Folding Simulator</h1>
       <p>
-        kami is a free, open-source origami simulator that responds to your
-        device's physical posture. Fold a foldable phone or close a laptop lid
-        and the on-screen paper folds along the hinge. You can also fold and
-        flip manually, change paper size and colors, and undo your folds. It
-        runs in any modern web browser — no install or account required — and as
-        a native macOS app.
+        kami is a free, open-source origami simulator that responds to your device's
+        physical posture. Fold a foldable phone or close a laptop lid and the on-screen
+        paper folds along the hinge. You can also fold and flip manually, change paper
+        size and colors, and undo your folds. It runs in any modern web browser — no
+        install or account required — and as a native macOS app.
       </p>
     </header>
     <canvas id="c"></canvas>
@@ -398,6 +397,28 @@
       <div class="settings-section">
         <h4>Style</h4>
         <div class="input-group">
+          <div class="paper-material-selector">
+            <div class="toggle-group">
+              <label
+                ><input type="radio" name="paperColorMode" value="color" checked />
+                Color</label
+              >
+              <label
+                ><input type="radio" name="paperColorMode" value="texture" />
+                Texture</label
+              >
+            </div>
+            <div id="paperTextureOptions" class="toggle-group" style="display: none">
+              <label
+                ><input type="radio" name="paperTexture" value="paper" checked /> Plain
+                paper</label
+              >
+              <label
+                ><input type="radio" name="paperTexture" value="banner" /> Kami
+                banner</label
+              >
+            </div>
+          </div>
           <div class="paper-size-selector">
             <div class="toggle-group">
               <label
@@ -444,26 +465,28 @@
             <input type="checkbox" id="showPaperBorder" checked />
             Show paper border
           </label>
-          <div class="input-row">
-            <label for="paperFrontColor">Front color</label>
-            <div class="color-picker-wrapper">
-              <input id="paperFrontColor" type="color" value="#ffffff" />
-              <div
-                class="color-picker-display"
-                id="paperFrontColorDisplay"
-                style="background-color: #ffffff"
-              ></div>
+          <div id="paperColorPickers">
+            <div class="input-row">
+              <label for="paperFrontColor">Front color</label>
+              <div class="color-picker-wrapper">
+                <input id="paperFrontColor" type="color" value="#ffffff" />
+                <div
+                  class="color-picker-display"
+                  id="paperFrontColorDisplay"
+                  style="background-color: #ffffff"
+                ></div>
+              </div>
             </div>
-          </div>
-          <div class="input-row">
-            <label for="paperBackColor">Back color</label>
-            <div class="color-picker-wrapper">
-              <input id="paperBackColor" type="color" value="#f0f0f0" />
-              <div
-                class="color-picker-display"
-                id="paperBackColorDisplay"
-                style="background-color: #f0f0f0"
-              ></div>
+            <div class="input-row">
+              <label for="paperBackColor">Back color</label>
+              <div class="color-picker-wrapper">
+                <input id="paperBackColor" type="color" value="#f0f0f0" />
+                <div
+                  class="color-picker-display"
+                  id="paperBackColorDisplay"
+                  style="background-color: #f0f0f0"
+                ></div>
+              </div>
             </div>
           </div>
         </div>
@@ -481,18 +504,10 @@
             </button>
           </div>
           <div class="toggle-group">
-            <a
-              href="/privacy/"
-              target="_blank"
-              rel="noopener"
-              class="footer-link"
+            <a href="/privacy/" target="_blank" rel="noopener" class="footer-link"
               >Privacy Policy</a
             >
-            <a
-              href="/cookie-policy/"
-              target="_blank"
-              rel="noopener"
-              class="footer-link"
+            <a href="/cookie-policy/" target="_blank" rel="noopener" class="footer-link"
               >Cookie Policy</a
             >
           </div>
