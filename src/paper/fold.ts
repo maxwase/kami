@@ -2,6 +2,7 @@ import { norm2, rotate2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import { reflectPoint, makeLine } from "../geom/line2";
 import type { Line2 } from "../geom/line2";
+import { composeAffine, reflectionAffine } from "../geom/affine";
 import { clipPolyHalfPlane, polyArea, signedPolyArea } from "../geom/polygon";
 import { toggleSide } from "./model";
 import type { Face, Paper, PaperSide } from "./model";
@@ -113,6 +114,8 @@ export function buildFoldAnim(
         verts: pos,
         up: f.up,
         layer: f.layer,
+        // Clipping does not change the plane map, so the piece inherits it.
+        mat: { ...f.mat },
       };
       (foldSide === FoldSide.Front ? movingFaces : keepFaces).push(piece);
     }
@@ -122,6 +125,7 @@ export function buildFoldAnim(
         verts: neg,
         up: f.up,
         layer: f.layer,
+        mat: { ...f.mat },
       };
       (foldSide === FoldSide.Back ? movingFaces : keepFaces).push(piece);
     }
@@ -167,6 +171,7 @@ export function commitFold(
     maxMovingLayer = Math.max(maxMovingLayer, f.layer);
   }
 
+  const reflectMat = reflectionAffine(anim.lineLocal);
   for (const f of anim.movingFaces) {
     const reflected = f.verts.map((p) => reflectPoint(p, anim.lineLocal));
     // All faces toggle their visible side when folded - the whole stack rotates
@@ -183,6 +188,10 @@ export function commitFold(
       verts: reflected,
       up: newUp,
       layer: newLayer,
+      // New local coords are the reflected positions; compose the reflection
+      // into the map so UV stays attached to the material (reflection is an
+      // involution, so reflect⁻¹ === reflect).
+      mat: composeAffine(f.mat, reflectMat),
     };
     newFaces.push(nf);
   }

@@ -22,6 +22,7 @@ import {
   type Paper,
   type PaperStyle,
   type PaperSnapshot,
+  type PaperMaterial,
 } from "./paper/model";
 import { buildFoldAnim, commitFold, FoldSide, type FoldAnim } from "./paper/fold";
 import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
@@ -34,12 +35,20 @@ import {
   drawFlatPaperFaces,
   drawFoldingPaper,
   drawFlippingPaper,
+  PLAY_STORE_URL,
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
 import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
 
 const { platform, device } = resolveRuntimeInfo();
+
+// Show the Play Store badge on the paper for browser visitors who don't have
+// the native app. Both globals are set by the inline script in index.html.
+type LaunchContextFn = () => string;
+const getLaunchCtx = (window as Window & { getLaunchContext?: LaunchContextFn })
+  .getLaunchContext;
+const isBrowserVisit = (getLaunchCtx?.() ?? "browser") === "browser";
 
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
@@ -234,6 +243,14 @@ const papers: Paper[] = [
 
 let activePaperId = papers[0].id;
 
+// Browser visitors who don't have the native app start on the banner material
+// (now folding for real). Native/app users start on plain paper.
+const nativeAppInstalled = (window as Window & { nativeAppInstalled?: boolean })
+  .nativeAppInstalled;
+if (isBrowserVisit && !nativeAppInstalled) {
+  papers[0].material = "banner";
+}
+
 function getActivePaper(): Paper {
   const p = papers.find((pp) => pp.id === activePaperId);
   if (p) return p;
@@ -243,6 +260,21 @@ function getActivePaper(): Paper {
 
 function setActivePaper(p: Paper): void {
   activePaperId = p.id;
+}
+
+/**
+ * True when the sheet is an unfolded banner showing its image (front) side, so
+ * the Play Store ad is tappable. Derived from the sheet's own state — not the
+ * session fold counter — so it correctly returns after a paper reset, an undo,
+ * or a flip back to the front. Unfolded means a single face; a fold splits the
+ * sheet into 2+ faces, a flip toggles the single face's up side.
+ */
+function bannerTappable(paper: Paper): boolean {
+  return (
+    paper.material === "banner" &&
+    paper.faces.length === 1 &&
+    paper.faces[0].up === "front"
+  );
 }
 
 function bringPaperToTop(p: Paper): void {
@@ -375,6 +407,61 @@ attachGestureHandlers({
       ? InputLock.Locked
       : InputLock.Unlocked,
   useAltRotate: true, // Enable alt+drag rotation
+});
+
+// Play Store banner tap-to-open. A tap opens the store; dragging to reposition
+// the sheet does not. This is detected on pointerup (which always fires) by how
+// far the pointer travelled while pressed — NOT via the click event, because the
+// browser suppresses click once the pointer moves during a press (the gesture
+// handler captures the pointer and moves the sheet with it). Relying on click
+// meant any sheet movement killed clickability. Now only folding removes it.
+const TAP_SLOP_PX = 10;
+let tapStart: { x: number; y: number } | null = null;
+let tapMaxMove = 0;
+canvasEl.addEventListener("pointerdown", (e) => {
+  tapStart = { x: e.clientX, y: e.clientY };
+  tapMaxMove = 0;
+});
+canvasEl.addEventListener("pointermove", (e) => {
+  if (!tapStart) return;
+  tapMaxMove = Math.max(
+    tapMaxMove,
+    Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y),
+  );
+});
+const endTap = () => {
+  tapStart = null;
+  tapMaxMove = 0;
+};
+canvasEl.addEventListener("pointercancel", endTap);
+canvasEl.addEventListener("pointerup", (e) => {
+  const started = tapStart !== null;
+  const moved = tapMaxMove;
+  endTap();
+  const nativeInstalled = (window as Window & { nativeAppInstalled?: boolean })
+    .nativeAppInstalled;
+  const tapPaper = getActivePaper();
+  // Moving or rotating the sheet keeps it clickable; folding, or flipping to the
+  // (plain) back, removes it. bannerTappable derives this from the sheet's own
+  // state, so reset/undo/flip-back restore it correctly.
+  if (
+    !isBrowserVisit ||
+    nativeInstalled ||
+    foldRuntime.phase !== "idle" ||
+    flipRuntime.phase !== "idle" ||
+    !bannerTappable(tapPaper)
+  )
+    return;
+  if (!started || moved > TAP_SLOP_PX) return; // a drag, not a tap
+  const rect = canvasEl.getBoundingClientRect();
+  const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  for (let i = papers.length - 1; i >= 0; i--) {
+    if (hitTestPaper(papers[i], pos)) {
+      window.open(PLAY_STORE_URL, "_blank", "noopener");
+      trackEvent("playstore_banner_tapped");
+      break;
+    }
+  }
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
@@ -719,6 +806,73 @@ if (paperBackColorInput && paperBackColorDisplay) {
   });
 }
 
+// Paper material selector: top-level Color vs. Texture, with two texture
+// options (plain paper / Kami banner). "color" uses the tiled pattern + the
+// color pickers; the textures are UV-mapped images that fold for real.
+const paperColorModeRadios = document.querySelectorAll<HTMLInputElement>(
+  'input[name="paperColorMode"]',
+);
+const paperTextureRadios = document.querySelectorAll<HTMLInputElement>(
+  'input[name="paperTexture"]',
+);
+const paperTextureOptionsEl = document.getElementById("paperTextureOptions");
+const paperColorPickersEl = document.getElementById("paperColorPickers");
+
+type PaperMaterialValue = "color" | "paper" | "banner";
+
+/** Show texture options only in Texture mode; color pickers only in Color mode. */
+function syncMaterialUiVisibility(mode: "color" | "texture"): void {
+  if (paperTextureOptionsEl) {
+    paperTextureOptionsEl.style.display = mode === "texture" ? "flex" : "none";
+  }
+  if (paperColorPickersEl) {
+    paperColorPickersEl.style.display = mode === "color" ? "block" : "none";
+  }
+}
+
+/** Currently selected texture option (paper or banner). */
+function selectedTexture(): "paper" | "banner" {
+  const checked = [...paperTextureRadios].find((r) => r.checked);
+  return checked?.value === "banner" ? "banner" : "paper";
+}
+
+// Reflect the active paper's starting material in the UI (browser visitors
+// default to the banner texture).
+function initMaterialUi(): void {
+  const material = getActivePaper().material as PaperMaterialValue;
+  const mode = material === "color" ? "color" : "texture";
+  paperColorModeRadios.forEach((r) => (r.checked = r.value === mode));
+  if (material !== "color") {
+    paperTextureRadios.forEach((r) => (r.checked = r.value === material));
+  }
+  syncMaterialUiVisibility(mode);
+}
+initMaterialUi();
+
+paperColorModeRadios.forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.checked) return;
+    const mode = target.value === "texture" ? "texture" : "color";
+    syncMaterialUiVisibility(mode);
+    getActivePaper().material = mode === "color" ? "color" : selectedTexture();
+    trackEvent("paper_color_mode_changed", {
+      mode,
+      texture: mode === "texture" ? selectedTexture() : null,
+    });
+  });
+});
+
+paperTextureRadios.forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.checked) return;
+    const texture: PaperMaterialValue = target.value === "banner" ? "banner" : "paper";
+    getActivePaper().material = texture;
+    trackEvent("paper_texture_changed", { texture });
+  });
+});
+
 const showPaperBorderInput = document.getElementById(
   "showPaperBorder",
 ) as HTMLInputElement;
@@ -730,6 +884,17 @@ if (showPaperBorderInput) {
       value: showPaperBorderInput.checked,
     });
   });
+}
+
+/**
+ * The front-face image for a material, or undefined for "color" (which renders
+ * the tiled pattern + color instead). Texture materials are UV-mapped so they
+ * fold for real.
+ */
+function frontImageForMaterial(material: PaperMaterial): HTMLImageElement | undefined {
+  if (material === "banner") return textures.banner;
+  if (material === "paper") return textures.paperImg;
+  return undefined;
 }
 
 let last = performance.now();
@@ -898,13 +1063,29 @@ function tick(now: number) {
     const activeFlipAnim =
       flipRuntime.phase === "animating" ? flipRuntime.anim : undefined;
 
+    const nativeInstalled = (window as Window & { nativeAppInstalled?: boolean })
+      .nativeAppInstalled;
+    const activePaper = getActivePaper();
+    // The banner is tappable (opens the Play Store) whenever the banner texture
+    // is selected and the sheet is unfolded — moving/rotating the sheet does not
+    // remove it (the hit test follows the sheet); only folding does. Restricted
+    // to browser visitors without the native app, where the store link applies.
+    const bannerClickable =
+      isBrowserVisit &&
+      !nativeInstalled &&
+      foldRuntime.phase === "idle" &&
+      flipRuntime.phase === "idle" &&
+      bannerTappable(activePaper);
+    canvasEl.style.cursor = bannerClickable ? "pointer" : "";
+
     for (const p of papers) {
+      const frontImage = frontImageForMaterial(p.material);
       if (activeFoldAnim && activeFoldAnim.paperId === p.id) {
-        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper);
+        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper, frontImage);
       } else if (activeFlipAnim && activeFlipAnim.paperId === p.id) {
-        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper);
+        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper, frontImage);
       } else {
-        drawFlatPaperFaces(ctx, p, textures.paper);
+        drawFlatPaperFaces(ctx, p, textures.paper, frontImage);
       }
 
       const hasActiveAnim = activeFoldAnim || activeFlipAnim;

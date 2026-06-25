@@ -43,6 +43,7 @@ foldable experience (tested via `adb reverse tcp:4173 tcp:4173` →
 ## Section A — PWA via `vite-plugin-pwa`
 
 ### Approach
+
 Add `vite-plugin-pwa` (devDependency) and the `VitePWA({...})` plugin to
 `vite.config.js`. Workbox (bundled with the plugin) generates the service
 worker and precaches Vite's hashed output, so the precache list never drifts
@@ -50,6 +51,7 @@ from the build. The plugin inherits Vite's `base`, so the `/kami/` GitHub Pages
 path and `start_url`/`scope` resolve automatically.
 
 ### Configuration
+
 - `registerType: 'autoUpdate'` — SW updates apply on next load, no prompt UI.
 - **Disabled under Tauri**: gate the plugin behind the existing `isTauri` check
   in `vite.config.js` (Tauri loads from disk and needs no service worker).
@@ -67,6 +69,7 @@ path and `start_url`/`scope` resolve automatically.
   banner, buymeacoffee, Google Fonts) are left network-only (no runtime caching).
 
 ### Icons
+
 The existing `public/icons/` assets are platform-specific (Android `mipmap-*`,
 iOS `AppIcon-*`) and not PWA-shaped. Generate three square PNGs from the
 existing `public/icon.png` using macOS `sips` (no new dependency), commit to
@@ -81,6 +84,7 @@ padding; if it looks clipped on device, regenerate with padding (deferred until
 the on-device check).
 
 ### Registration
+
 The plugin auto-injects SW registration into the built `index.html`; no manual
 service-worker file and no manual `<link rel="manifest">` are written by hand.
 
@@ -89,6 +93,7 @@ service-worker file and no manual `<link rel="manifest">` are written by hand.
 ## Section B — Reliable crease + device states + orientation
 
 ### B0. Wire the dead dependency
+
 `viewportsegments-polyfill` is already in `package.json` but **imported
 nowhere**, so the Viewport Segments path in `hinge.ts` only fires on browsers
 with native support. Fix:
@@ -104,11 +109,11 @@ segment environment variables but not the JS API.
 Add `resolveHingeState(postureType, segments)` to `src/device/posture.ts`
 returning a new `HingeState` enum:
 
-| State | Condition | Crease source | Auto-fold | Buttons |
-|-------|-----------|---------------|-----------|---------|
-| `Flat` (open)    | posture `continuous`/`flat`/`unknown`, `<2` segments | manual sliders + orientation fallback | no | yes |
-| `Creased` (book) | **`≥2` segments** | **detected gap center + direction** | **yes, on posture change** | yes |
-| `Closed` (shut)  | posture `folded`/`half-opened`/`flipped`, `<2` segments | last-known / manual fallback | no | **yes (only fold path)** |
+| State            | Condition                                               | Crease source                         | Auto-fold                  | Buttons                  |
+| ---------------- | ------------------------------------------------------- | ------------------------------------- | -------------------------- | ------------------------ |
+| `Flat` (open)    | posture `continuous`/`flat`/`unknown`, `<2` segments    | manual sliders + orientation fallback | no                         | yes                      |
+| `Creased` (book) | **`≥2` segments**                                       | **detected gap center + direction**   | **yes, on posture change** | yes                      |
+| `Closed` (shut)  | posture `folded`/`half-opened`/`flipped`, `<2` segments | last-known / manual fallback          | no                         | **yes (only fold path)** |
 
 Resolution order: `segments.length >= 2` → `Creased`; else folded-type posture →
 `Closed`; else → `Flat`.
@@ -155,6 +160,7 @@ viewport, so segment CSS coords map directly to canvas CSS coords.
 ### B4. `main.ts` integration
 
 In `tick()`:
+
 - Compute `state = resolveHingeState(postureType, hingeInfo.segments)`.
 - `activeHinge` **position**: when `state === Creased` and `hingeInfo.hingePoint`
   exists, use `hingePoint`; otherwise `cssW/cssH * options.manualHingePos`
@@ -188,6 +194,7 @@ result. Guard each listener with feature checks (objects may be absent).
   `Closed`.
 
 ### Unchanged
+
 Accelerometer fold-side logic (`createMotionTracker`, `resolveFoldSide`) is
 untouched.
 

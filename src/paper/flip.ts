@@ -1,5 +1,6 @@
 import type { Paper } from "./model";
 import { toggleSide } from "./model";
+import { composeAffine, mirrorAffine } from "../geom/affine";
 
 /** Animation duration for flip in seconds. */
 const FLIP_DURATION_SECONDS = 0.5;
@@ -31,6 +32,7 @@ export function buildFlipAnim(paper: Paper): FlipAnim {
     verts: f.verts.map((v) => ({ x: v.x, y: v.y })),
     up: f.up,
     layer: f.layer,
+    mat: { ...f.mat },
   }));
 
   return {
@@ -66,6 +68,10 @@ export function commitFlip(paper: Paper, anim: FlipAnim): void {
   const nx = -Math.cos(paper.rot);
   const ny = Math.sin(paper.rot);
 
+  // Same mirror, expressed as an affine, so the material map stays in lockstep
+  // with the mirrored geometry.
+  const mirrorMat = mirrorAffine({ x: cx, y: cy }, { x: nx, y: ny });
+
   for (const f of paper.faces) {
     // Reflect each vertex across the axis line passing through (cx, cy)
     f.verts = f.verts.map((v) => {
@@ -77,6 +83,7 @@ export function commitFlip(paper: Paper, anim: FlipAnim): void {
         y: v.y - 2 * dot * ny,
       };
     });
+    f.mat = composeAffine(f.mat, mirrorMat);
     // Toggle which side is facing up
     f.up = toggleSide(f.up);
     // Invert layer order: what was on bottom (layer 0) is now on top (highest layer)
