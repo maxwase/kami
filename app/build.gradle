@@ -55,10 +55,10 @@ android {
     namespace "eu.maxwase.kami.twa"
     defaultConfig {
         applicationId "eu.maxwase.kami.twa"
-        minSdkVersion 21
-        targetSdkVersion 35
-        versionCode 6
-        versionName "6"
+        minSdkVersion 23
+        targetSdkVersion 36
+        versionCode 7
+        versionName "7"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
@@ -224,6 +224,6 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     
-        implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
+        implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.2'
     
 }
