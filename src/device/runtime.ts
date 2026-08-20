@@ -1,7 +1,9 @@
 import { isTauri } from "@tauri-apps/api/core";
+import { Capacitor } from "@capacitor/core";
 
 export enum Platform {
   Tauri = "tauri",
+  Capacitor = "capacitor",
   Web = "web",
 }
 
@@ -16,7 +18,11 @@ export interface RuntimeInfo {
 }
 
 export function resolveRuntimeInfo(): RuntimeInfo {
-  const platform = isTauri() ? Platform.Tauri : Platform.Web;
+  const platform = Capacitor.isNativePlatform()
+    ? Platform.Capacitor
+    : isTauri()
+      ? Platform.Tauri
+      : Platform.Web;
 
   let device = Device.Laptop;
   if (typeof navigator !== "undefined") {

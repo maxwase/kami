@@ -36,6 +36,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build Tauri app bundle
         run: pnpm tauri build --bundles dmg
+        env:
+          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
       - name: Upload macOS app artifact
         uses: actions/upload-artifact@v4
         with:
