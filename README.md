@@ -4,14 +4,17 @@
 
 Kami is a paper-folding simulation built to be driven by a physical hinge, using folding device APIs when available.
 
-Try it online at https://maxwase.github.io/kami
+Try it online at https://kami.maxwase.eu
 
 > [!IMPORTANT]
 > [Posture API](https://developer.mozilla.org/en-US/docs/Web/API/Device_Posture_API) only works in a limited set of browsers! Check out the compatibility [here](https://developer.mozilla.org/en-US/docs/Web/API/Device_Posture_API#browser_compatibility).
 
 ## See it in action
 
-https://github.com/user-attachments/assets/56427f60-d67c-44de-a087-7d626d0598f2
+
+https://github.com/user-attachments/assets/4016a644-f623-45a2-959b-9e070c18d7c2
+
+
 
 # Features
 
