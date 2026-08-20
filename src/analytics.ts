@@ -112,6 +112,10 @@ export function initAnalytics(): void {
       capture_unhandled_rejections: true,
       capture_console_errors: false,
     },
+    // The whole app is a <canvas>, so rrweb's canvas capture (opt-in, since
+    // it doesn't record pixels by default) balloons a session to tens of MB
+    // here — even at 4fps/0.4 quality one session hit ~74MB and stalled
+    // processing. Left off; session replay will show a blank canvas.
   });
   initialized = true;
 

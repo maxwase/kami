@@ -1016,20 +1016,24 @@ function tick(now: number) {
 }
 
 void (async function bootstrap() {
-  textures = await loadTextures(ctx);
+  try {
+    textures = await loadTextures(ctx);
 
-  // Track session start with device context. `platform` is added automatically
-  // by trackEvent() from resolveRuntimeInfo() - no need to pass it here.
-  trackEvent("session_start", {
-    device_type: device === Device.Laptop ? "laptop" : "phone",
-    posture_support:
-      postureSupport === PostureSupport.Available ? "available" : "unavailable",
-    screen_width: cssW,
-    screen_height: cssH,
-    device_pixel_ratio: dpr,
-  });
-
-  requestAnimationFrame(tick);
+    // Track session start with device context. `platform` is added automatically
+    // by trackEvent() from resolveRuntimeInfo() - no need to pass it here.
+    trackEvent("session_start", {
+      device_type: device === Device.Laptop ? "laptop" : "phone",
+      posture_support:
+        postureSupport === PostureSupport.Available ? "available" : "unavailable",
+      screen_width: cssW,
+      screen_height: cssH,
+      device_pixel_ratio: dpr,
+    });
+  } finally {
+    // Never let a bootstrap failure (texture load, analytics, etc.) leave
+    // the canvas permanently blank — the render loop must always start.
+    requestAnimationFrame(tick);
+  }
 })();
 
 function getRequiredElement<T extends HTMLElement>(
