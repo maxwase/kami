@@ -2,12 +2,7 @@ import { add2, mul2, rotate2, sub2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import type { Paper } from "../paper/model";
 import { localToScreen } from "../paper/space";
-
-type TrackEventFn = (name: string, params?: Record<string, unknown>) => void;
-
-function getTrackEvent(): TrackEventFn | undefined {
-  return (window as Window & { trackEvent?: TrackEventFn }).trackEvent;
-}
+import { trackEvent } from "../analytics";
 
 export const InputLock = {
   Locked: "locked",
@@ -180,8 +175,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     // Track gesture completion
     if (gestureType && gestureStartTime > 0) {
       const duration = Math.round(performance.now() - gestureStartTime);
-      const trackEvent = getTrackEvent();
-      trackEvent?.("gesture_used", {
+      trackEvent("gesture_used", {
         gesture_type: gestureType,
         duration_ms: duration,
       });
