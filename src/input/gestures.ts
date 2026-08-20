@@ -2,6 +2,7 @@ import { add2, mul2, rotate2, sub2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import type { Paper } from "../paper/model";
 import { localToScreen } from "../paper/space";
+import { trackEvent } from "../analytics";
 
 export const InputLock = {
   Locked: "locked",
@@ -48,6 +49,10 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   let rotateAnchorLocal: Vec2 | undefined;
   let rotateAnchorScreen: Vec2 | undefined;
 
+  // Gesture tracking state
+  let gestureType: "drag" | "pinch_rotate" | "alt_rotate" | null = null;
+  let gestureStartTime = 0;
+
   const getPaperLocalCentroid = (paper: Paper): Vec2 => {
     let sumX = 0;
     let sumY = 0;
@@ -89,6 +94,8 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       pinchLastMid = mid;
       pinchLastAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       dragOffset = undefined;
+      gestureType = "pinch_rotate";
+      gestureStartTime = performance.now();
       return;
     }
 
@@ -102,10 +109,14 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       );
       rotateStartRot = paper.rot;
       dragOffset = undefined;
+      gestureType = "alt_rotate";
+      gestureStartTime = performance.now();
       return;
     }
 
     dragOffset = sub2(pos, paper.pos);
+    gestureType = "drag";
+    gestureStartTime = performance.now();
   };
 
   const onPointerMove = (e: PointerEvent) => {
@@ -161,6 +172,15 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   const onPointerUp = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
 
+    // Track gesture completion
+    if (gestureType && gestureStartTime > 0) {
+      const duration = Math.round(performance.now() - gestureStartTime);
+      trackEvent("gesture_used", {
+        gesture_type: gestureType,
+        duration_ms: duration,
+      });
+    }
+
     if (pointers.size < 2) {
       pinchLastMid = undefined;
     }
@@ -172,6 +192,8 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
 
     dragOffset = undefined;
+    gestureType = null;
+    gestureStartTime = 0;
   };
 
   const onPointerCancel = () => {
@@ -181,6 +203,8 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     rotatePointerId = undefined;
     rotateAnchorLocal = undefined;
     rotateAnchorScreen = undefined;
+    gestureType = null;
+    gestureStartTime = 0;
   };
 
   canvas.addEventListener("pointerdown", onPointerDown);

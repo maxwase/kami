@@ -1,14 +1,15 @@
 import "./style.css";
+import "viewportsegments-polyfill";
 import { clamp } from "./math/scalars";
 import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
 import { computeHingePoint, type HingeInfo } from "./device/hinge";
 import { createMotionTracker } from "./device/motion";
 import {
-  FoldState,
   helpCopyForSupport,
+  HingeState,
   PostureSupport,
   readDevicePostureType,
-  resolveFoldState,
+  resolveHingeState,
   resolvePostureSupport,
 } from "./device/posture";
 import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
@@ -37,6 +38,18 @@ import {
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
 import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
+import {
+  initAnalytics,
+  trackEvent,
+  getAnalyticsConsent,
+  setAnalyticsConsent,
+  FoldTrigger,
+  FoldSource,
+  PaperSide,
+  Panel,
+} from "./analytics";
+
+initAnalytics();
 
 const { platform, device } = resolveRuntimeInfo();
 
@@ -72,11 +85,72 @@ const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
+const analyticsConsentEl = getRequiredElement("analyticsConsent", HTMLDivElement);
+const consentAcceptBtn = getRequiredElement("consentAccept", HTMLButtonElement);
+const consentDeclineBtn = getRequiredElement("consentDecline", HTMLButtonElement);
+const analyticsPreferencesBtn = getRequiredElement(
+  "analyticsPreferences",
+  HTMLButtonElement,
+);
+const buyCoffeeLink = getRequiredElement("buyCoffee", HTMLAnchorElement);
+const repoLink = getRequiredElement("repoLink", HTMLAnchorElement);
+
+// --- Analytics consent gate (opt-in; identical across web/TWA/iOS/macOS) ---
+function showAnalyticsConsent(): void {
+  analyticsConsentEl.style.display = "flex";
+}
+function hideAnalyticsConsent(): void {
+  analyticsConsentEl.style.display = "none";
+}
+if (getAnalyticsConsent() === "unset") {
+  showAnalyticsConsent();
+}
+consentAcceptBtn.onclick = () => {
+  setAnalyticsConsent(true);
+  hideAnalyticsConsent();
+  trackEvent("analytics_consent_changed", { granted: true });
+};
+consentDeclineBtn.onclick = () => {
+  setAnalyticsConsent(false);
+  hideAnalyticsConsent();
+};
+analyticsPreferencesBtn.onclick = () => {
+  showAnalyticsConsent();
+};
+
+// How was the app launched: installed TWA, installed PWA, or browser tab.
+function getLaunchContext(): "twa" | "pwa" | "browser" {
+  if (document.referrer.startsWith("android-app://")) return "twa";
+  if (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  ) {
+    return "pwa";
+  }
+  return "browser";
+}
+trackEvent("app_open", { launch_context: getLaunchContext() });
+
+buyCoffeeLink.addEventListener("click", () => {
+  trackEvent("outbound_link", {
+    link_type: "buy_me_a_coffee",
+    link_url: buyCoffeeLink.href,
+  });
+});
+repoLink.addEventListener("click", () => {
+  trackEvent("outbound_link", {
+    link_type: "github",
+    link_url: repoLink.href,
+  });
+});
 
 let dpr = 1;
 let cssW = 0;
 let cssH = 0;
 let hingeInfo: HingeInfo = computeHingePoint(0, 0);
+let lastPostureType: string | null = null;
+let foldCount = 0;
 
 function resize() {
   dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -101,11 +175,26 @@ window.addEventListener("resize", resize, { passive: true });
 window.addEventListener("orientationchange", resize, { passive: true });
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", resize, { passive: true });
+  window.visualViewport.addEventListener("scroll", resize, { passive: true });
 }
 if (window.screen?.orientation) {
   window.screen.orientation.addEventListener("change", resize, {
     passive: true,
   });
+}
+// Recompute segments when the foldable changes posture or the hinge gap moves.
+interface ChangeTarget {
+  addEventListener?: EventTarget["addEventListener"];
+}
+const viewportSegmentsTarget = (window as Window & { viewport?: ChangeTarget })
+  .viewport;
+if (typeof viewportSegmentsTarget?.addEventListener === "function") {
+  viewportSegmentsTarget.addEventListener("change", resize, { passive: true });
+}
+const devicePostureTarget = (navigator as Navigator & { devicePosture?: ChangeTarget })
+  .devicePosture;
+if (typeof devicePostureTarget?.addEventListener === "function") {
+  devicePostureTarget.addEventListener("change", resize, { passive: true });
 }
 if (platform === Platform.Web && device === Device.Phone) {
   window.addEventListener(
@@ -168,12 +257,31 @@ function orientPaperSize(
   return isPortrait ? size : { w: size.h, h: size.w };
 }
 
+// Open inner screen = near-square/wide; closed cover screen = tall and narrow.
+// Device posture can't tell them apart (both report "continuous"), so use the
+// aspect ratio.
+function isOpenFoldableScreen(): boolean {
+  if (platform !== Platform.Web || device !== Device.Phone) return false;
+  return cssH > 0 && cssW / cssH > 0.7;
+}
+
+// Orient the sheet horizontal (landscape) when the foldable is open, otherwise
+// match the screen. Driven by dimensions, not rotation, so the result is the
+// same whether the viewport itself reads portrait or landscape.
+function orientedPaperSize(
+  viewW: number,
+  viewH: number,
+  aspect: number,
+): { w: number; h: number } {
+  const base = computePaperSize(viewW, viewH, aspect);
+  if (isOpenFoldableScreen()) {
+    return { w: Math.max(base.w, base.h), h: Math.min(base.w, base.h) };
+  }
+  return orientPaperSize(base, viewW, viewH);
+}
+
 const initialCenter = getScreenCenterInViewport();
-const initialSize = orientPaperSize(
-  computePaperSize(cssW, cssH, currentAspect),
-  cssW,
-  cssH,
-);
+const initialSize = orientedPaperSize(cssW, cssH, currentAspect);
 const papers: Paper[] = [
   makePaper(
     factory,
@@ -212,7 +320,13 @@ function updateUndoBtn(isAnimating: boolean): void {
 
 type FoldRuntime =
   | { phase: "idle" }
-  | { phase: "animating"; anim: FoldAnim; hinge: Vec2; hingeDir: Vec2 };
+  | {
+      phase: "animating";
+      anim: FoldAnim;
+      hinge: Vec2;
+      hingeDir: Vec2;
+      foldSource: FoldSource;
+    };
 
 type FlipRuntime = { phase: "idle" } | { phase: "animating"; anim: FlipAnim };
 
@@ -281,14 +395,21 @@ function getVhErrorPx(): number {
 resetActiveBtn.onclick = () => {
   if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
+  const prevFaceCount = paper.faces.length;
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
-  const size = orientPaperSize(computePaperSize(cssW, cssH, currentAspect), cssW, cssH);
+  const size = orientedPaperSize(cssW, cssH, currentAspect);
   paper.baseW = size.w;
   paper.baseH = size.h;
   resetPaper(paper, factory);
   const center = getScreenCenterInViewport();
   paper.pos = { x: center.x, y: center.y };
+
+  trackEvent("paper_reset", {
+    previous_face_count: prevFaceCount,
+    aspect_ratio: currentAspect.toFixed(3),
+    fold_count: foldCount,
+  });
 };
 
 undoBtn.onclick = () => {
@@ -297,6 +418,11 @@ undoBtn.onclick = () => {
   if (!snap) return;
   restorePaper(getActivePaper(), snap);
   updateUndoBtn(false);
+
+  trackEvent("undo_action", {
+    remaining_undo_steps: undoStack.length,
+    fold_count: foldCount,
+  });
 };
 
 attachGestureHandlers({
@@ -329,6 +455,11 @@ if (postureSupport === PostureSupport.Unavailable) {
 foldFallbackBtn.style.display = "inline-block";
 foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
+  trackEvent("fold_triggered", {
+    trigger_method: FoldTrigger.Button,
+    fold_source: FoldSource.Software,
+    fold_count: foldCount,
+  });
 };
 
 flipPaperBtn.onclick = () => {
@@ -364,6 +495,10 @@ toggleSettingsBtn.onclick = () => {
   }
   syncSettingsVisibility();
   syncInfoVisibility();
+  trackEvent("panel_toggled", {
+    panel: Panel.Settings,
+    visible: settingsVisible,
+  });
 };
 
 toggleInfoBtn.onclick = () => {
@@ -373,6 +508,10 @@ toggleInfoBtn.onclick = () => {
   }
   syncInfoVisibility();
   syncSettingsVisibility();
+  trackEvent("panel_toggled", {
+    panel: Panel.Info,
+    visible: infoVisible,
+  });
 };
 
 syncSettingsVisibility();
@@ -384,11 +523,25 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "Space" || e.code === "Enter") {
     e.preventDefault();
     manualFoldQueued = true;
+    trackEvent("fold_triggered", {
+      trigger_method:
+        e.code === "Space" ? FoldTrigger.KeyboardSpace : FoldTrigger.KeyboardEnter,
+      fold_source: FoldSource.Software,
+      fold_count: foldCount,
+    });
   } else if (e.code === "KeyF") {
     e.preventDefault();
+    trackEvent("keyboard_shortcut", {
+      key: "f",
+      action: "flip",
+    });
     flipPaperBtn.click();
   } else if (e.code === "KeyR") {
     e.preventDefault();
+    trackEvent("keyboard_shortcut", {
+      key: "r",
+      action: "reset",
+    });
     resetActiveBtn.click();
   }
 });
@@ -400,9 +553,16 @@ function updateStableAccelFromUi() {
   stableAccelValue.textContent = `${options.stableAccel.toFixed(2)} m/s²`;
 }
 
+stableAccelInput.addEventListener("change", () => {
+  updateStableAccelFromUi();
+  trackEvent("stability_threshold_changed", { value: options.stableAccel });
+});
 stableAccelInput.addEventListener("input", updateStableAccelFromUi);
 invertFoldDirectionInput.addEventListener("change", () => {
   updateOptions({ invertFoldDirection: invertFoldDirectionInput.checked });
+  trackEvent("invert_fold_direction_changed", {
+    enabled: invertFoldDirectionInput.checked,
+  });
 });
 const updateManualHingePos = () => {
   updateOptions({
@@ -414,8 +574,15 @@ const updateManualHingePos = () => {
 };
 manualHingeX.addEventListener("input", updateManualHingePos);
 manualHingeY.addEventListener("input", updateManualHingePos);
+manualHingeX.addEventListener("change", () => {
+  trackEvent("hinge_manual_adjusted", { axis: "x", value: Number(manualHingeX.value) });
+});
+manualHingeY.addEventListener("change", () => {
+  trackEvent("hinge_manual_adjusted", { axis: "y", value: Number(manualHingeY.value) });
+});
 manualHingeFlip.addEventListener("change", () => {
   updateOptions({ manualHingeDirFlip: manualHingeFlip.checked });
+  trackEvent("hinge_flip_changed", { enabled: manualHingeFlip.checked });
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
@@ -438,6 +605,7 @@ const handleHingeReset = (e: Event) => {
   manualHingeFlip.checked = false;
   manualHingeFlip.dispatchEvent(new Event("change"));
   updateManualHingePos();
+  trackEvent("hinge_reset");
 };
 
 resetHingeBtn.addEventListener("click", handleHingeReset);
@@ -474,12 +642,29 @@ paperSizeRadios.forEach((radio) => {
   radio.addEventListener("change", (e) => {
     const target = e.target as HTMLInputElement;
     updateAspectFromRadio(target.value);
+    trackEvent("paper_size_changed", {
+      size_type: target.value,
+      aspect_ratio: currentAspect.toFixed(3),
+    });
     // Trigger reset to apply new size
     resetActiveBtn.click();
   });
 });
 
 // Update aspect ratio when custom inputs change
+customWidthInput.addEventListener("change", () => {
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    trackEvent("paper_size_changed", {
+      size_type: "custom",
+      aspect_ratio: getCustomAspect().toFixed(3),
+      custom_width: parseFloat(customWidthInput.value),
+      custom_height: parseFloat(customHeightInput.value),
+    });
+  }
+});
 customWidthInput.addEventListener("input", () => {
   const selectedRadio = document.querySelector(
     'input[name="paperSize"]:checked',
@@ -490,6 +675,19 @@ customWidthInput.addEventListener("input", () => {
   }
 });
 
+customHeightInput.addEventListener("change", () => {
+  const selectedRadio = document.querySelector(
+    'input[name="paperSize"]:checked',
+  ) as HTMLInputElement;
+  if (selectedRadio?.value === "custom") {
+    trackEvent("paper_size_changed", {
+      size_type: "custom",
+      aspect_ratio: getCustomAspect().toFixed(3),
+      custom_width: parseFloat(customWidthInput.value),
+      custom_height: parseFloat(customHeightInput.value),
+    });
+  }
+});
 customHeightInput.addEventListener("input", () => {
   const selectedRadio = document.querySelector(
     'input[name="paperSize"]:checked',
@@ -544,6 +742,13 @@ if (paperFrontColorInput && paperFrontColorDisplay) {
     updatePaperColors();
   });
 
+  paperFrontColorInput.addEventListener("change", () => {
+    trackEvent("color_changed", {
+      side: PaperSide.Front,
+      color: paperFrontColorInput.value,
+    });
+  });
+
   paperFrontColorDisplay.addEventListener("click", () => {
     paperFrontColorInput.showPicker?.();
     if (!paperFrontColorInput.showPicker) paperFrontColorInput.click();
@@ -558,6 +763,13 @@ if (paperBackColorInput && paperBackColorDisplay) {
     updatePaperColors();
   });
 
+  paperBackColorInput.addEventListener("change", () => {
+    trackEvent("color_changed", {
+      side: PaperSide.Back,
+      color: paperBackColorInput.value,
+    });
+  });
+
   paperBackColorDisplay.addEventListener("click", () => {
     paperBackColorInput.showPicker?.();
     if (!paperBackColorInput.showPicker) paperBackColorInput.click();
@@ -570,6 +782,9 @@ const showPaperBorderInput = document.getElementById(
 if (showPaperBorderInput) {
   showPaperBorderInput.addEventListener("change", () => {
     updateOptions({ showPaperBorder: showPaperBorderInput.checked });
+    trackEvent("show_paper_border_changed", {
+      enabled: showPaperBorderInput.checked,
+    });
   });
 }
 
@@ -580,50 +795,61 @@ function tick(now: number) {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
 
-    let hingeBaseDir = hingeInfo.hingeDir;
-    if (platform === Platform.Tauri && device === Device.Laptop) {
-      hingeBaseDir = { x: -1, y: 0 };
-    } else if (
-      platform === Platform.Web &&
-      device === Device.Phone &&
-      resolveScreenLandscape(cssW, cssH)
-    ) {
-      hingeBaseDir = { x: 0, y: 1 };
-    }
-    const activeHingeDir =
-      platform === Platform.Tauri && device === Device.Laptop
-        ? hingeBaseDir
-        : platform === Platform.Web &&
-            device === Device.Phone &&
-            resolveScreenLandscape(cssW, cssH)
-          ? hingeBaseDir
-          : options.manualHingeDirFlip
-            ? perp2(hingeBaseDir) // rotate 90° to flip line orientation
-            : hingeBaseDir;
-    const hingeY =
-      platform === Platform.Tauri && device === Device.Laptop
-        ? cssH
-        : cssH * options.manualHingePos.y;
-    const activeHinge: Vec2 = {
-      x:
-        platform === Platform.Tauri && device === Device.Laptop
-          ? cssW / 2
-          : cssW * options.manualHingePos.x,
-      y: hingeY,
-    };
+    // Read segments fresh each frame: viewport.segments can update without
+    // firing an event our listeners catch, which otherwise delays detection.
+    hingeInfo = computeHingePoint(cssW, cssH);
+
     const postureType =
       postureSupport === PostureSupport.Available
         ? readDevicePostureType()
         : "fallback";
-    const foldedNow =
-      postureSupport === PostureSupport.Available
-        ? resolveFoldState(postureType, hingeInfo.segments) === FoldState.Folded ||
-          manualFoldQueued
-        : manualFoldQueued;
+    const hingeState = resolveHingeState(postureType, hingeInfo.segments);
+    // Detected physical crease (book mode) wins over the manual sliders.
+    const detectedPoint =
+      hingeState === HingeState.Creased ? hingeInfo.hingePoint : undefined;
+    const isTauriLaptop = platform === Platform.Tauri && device === Device.Laptop;
+    const manualHinge: Vec2 = {
+      x: cssW * options.manualHingePos.x,
+      y: cssH * options.manualHingePos.y,
+    };
+
+    let activeHinge: Vec2;
+    let activeHingeDir: Vec2;
+    if (isTauriLaptop) {
+      activeHingeDir = { x: -1, y: 0 };
+      activeHinge = { x: cssW / 2, y: cssH };
+    } else if (detectedPoint) {
+      activeHingeDir = hingeInfo.hingeDir;
+      activeHinge = detectedPoint;
+    } else {
+      // No detected crease: derive the line from orientation. hingeInfo.hingeDir
+      // is angle-aware (hingeDirForAngle), so this respects device rotation.
+      // manualHingeDirFlip stays a user override.
+      activeHingeDir = options.manualHingeDirFlip
+        ? perp2(hingeInfo.hingeDir) // rotate 90° to flip line orientation
+        : hingeInfo.hingeDir;
+      activeHinge = manualHinge;
+    }
+
+    // Auto-fold on the fresh posture signal (folded-type = Creased or Closed),
+    // not on segments alone: this device has a continuous screen that reports a
+    // single segment, so a segment-only trigger lags or never fires.
+    const foldedNow = hingeState !== HingeState.Flat || manualFoldQueued;
     const screenAngle = normalizeScreenAngle(getScreenAngleDeg());
     const accel = motion.getAccel();
     const accelMag = Math.hypot(accel.x, accel.y);
     const isStable = motionActive && accelMag <= options.stableAccel;
+    if (postureType !== lastPostureType) {
+      lastPostureType = postureType;
+      trackEvent("posture_change", {
+        posture_type: postureType,
+        hinge_x: Math.round(activeHinge.x),
+        hinge_y: Math.round(activeHinge.y),
+        screen_angle: Number(screenAngle.toFixed(1)),
+        stable: isStable,
+        accel: accel,
+      });
+    }
     const foldSide = resolveFoldSide(
       activeHingeDir,
       isStable,
@@ -631,6 +857,9 @@ function tick(now: number) {
       options.invertFoldDirection,
     );
 
+    const foldSource: FoldSource = manualFoldQueued
+      ? FoldSource.Software
+      : FoldSource.Physical;
     if (manualFoldQueued && foldedNow) {
       manualFoldQueued = false;
     }
@@ -651,7 +880,18 @@ function tick(now: number) {
           anim: buildResult.anim,
           hinge: activeHinge,
           hingeDir: activeHingeDir,
+          foldSource,
         };
+        // Button/keyboard paths already emit fold_triggered at the moment the
+        // user acts (see foldFallbackBtn.onclick and the Space/Enter keydown
+        // handler) - only the physical hinge path has no earlier trigger point.
+        if (foldSource === FoldSource.Physical) {
+          trackEvent("fold_triggered", {
+            trigger_method: FoldTrigger.Hinge,
+            fold_source: FoldSource.Physical,
+            fold_count: foldCount,
+          });
+        }
       }
     }
     deviceFolded = foldedNow;
@@ -669,6 +909,16 @@ function tick(now: number) {
           undoStack.push(snapshotPaper(paper));
           updateUndoBtn(true);
           commitFold(paper, activeAnim, nextFaceId);
+          foldCount += 1;
+          trackEvent("fold_complete", {
+            fold_count: foldCount,
+            fold_side:
+              activeAnim.foldSide === FoldSide.Front ? PaperSide.Front : PaperSide.Back,
+            fold_source: foldRuntime.foldSource,
+            hinge_x: Math.round(foldRuntime.hinge.x),
+            hinge_y: Math.round(foldRuntime.hinge.y),
+            duration_ms: Math.round(activeAnim.durationSeconds * 1000),
+          });
         } else {
           // Invalid animation target; reset to a safe state.
           updateUndoBtn(false);
@@ -687,6 +937,11 @@ function tick(now: number) {
           undoStack.push(snapshotPaper(paper));
           updateUndoBtn(true);
           commitFlip(paper, activeAnim);
+          trackEvent("flip_complete", {
+            face_count: paper.faces.length,
+            fold_count: foldCount,
+            duration_ms: Math.round(activeAnim.durationSeconds * 1000),
+          });
         } else {
           updateUndoBtn(false);
         }
@@ -730,9 +985,26 @@ function tick(now: number) {
       }
     }
 
-    const debugLines = [`posture: ${postureType}`];
+    const segs = hingeInfo.segments;
+    const pt = hingeInfo.hingePoint;
+    const landscape = resolveScreenLandscape(cssW, cssH);
+    const debugLines = [
+      `state:${hingeState} posture:${postureType}`,
+      `vp:${cssW}x${cssH} ${landscape ? "land" : "port"} @${screenAngle}°`,
+      `segs:${segs.length}`,
+      ...segs.map(
+        (s, i) =>
+          ` [${i}] x${Math.round(s.left)} y${Math.round(s.top)} ${Math.round(
+            s.width,
+          )}x${Math.round(s.height)}`,
+      ),
+      `segDir:${hingeInfo.hingeDir.x},${hingeInfo.hingeDir.y} pt:${
+        pt ? `${Math.round(pt.x)},${Math.round(pt.y)}` : "-"
+      }`,
+      `useDir:${activeHingeDir.x.toFixed(0)},${activeHingeDir.y.toFixed(0)}`,
+    ];
     if (platform === Platform.Web && device === Device.Phone) {
-      debugLines.push(`accel: ${accelMag.toFixed(2)} m/s²`);
+      debugLines.push(`accel:${accelMag.toFixed(2)}`);
     }
     const debugText = debugLines.join("\n");
     if (debugStatusEl.textContent !== debugText) {
@@ -744,8 +1016,24 @@ function tick(now: number) {
 }
 
 void (async function bootstrap() {
-  textures = await loadTextures(ctx);
-  requestAnimationFrame(tick);
+  try {
+    textures = await loadTextures(ctx);
+
+    // Track session start with device context. `platform` is added automatically
+    // by trackEvent() from resolveRuntimeInfo() - no need to pass it here.
+    trackEvent("session_start", {
+      device_type: device === Device.Laptop ? "laptop" : "phone",
+      posture_support:
+        postureSupport === PostureSupport.Available ? "available" : "unavailable",
+      screen_width: cssW,
+      screen_height: cssH,
+      device_pixel_ratio: dpr,
+    });
+  } finally {
+    // Never let a bootstrap failure (texture load, analytics, etc.) leave
+    // the canvas permanently blank — the render loop must always start.
+    requestAnimationFrame(tick);
+  }
 })();
 
 function getRequiredElement<T extends HTMLElement>(

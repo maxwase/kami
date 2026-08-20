@@ -9,9 +9,14 @@ export enum PostureSupport {
   Unavailable = "unavailable",
 }
 
-export enum FoldState {
-  Folded = "folded",
-  Unfolded = "unfolded",
+/** Physical device state derived from posture and viewport segments. */
+export enum HingeState {
+  /** Open and flat: no crease. Crease line follows the manual sliders. */
+  Flat = "flat",
+  /** Spanning the hinge (book mode): crease detected from the segment gap. */
+  Creased = "creased",
+  /** Folded shut: no usable segments. Operable only via the buttons. */
+  Closed = "closed",
 }
 
 export interface HelpCopy {
@@ -52,20 +57,21 @@ export function resolvePostureSupport(): PostureSupport {
     : PostureSupport.Unavailable;
 }
 
-/** Determine whether the device should be treated as folded. */
-export function resolveFoldState(
+/**
+ * Resolve the physical device state. Two or more viewport segments mean a
+ * crease is visible (book mode); a folded-type posture without segments means
+ * the device is shut; everything else is flat/open.
+ */
+export function resolveHingeState(
   postureType: string,
   segments: SegmentRect[],
-): FoldState {
-  const t = postureType.toLowerCase();
-  if (t === "continuous" || t === "flat" || t === "unknown") {
-    return FoldState.Unfolded;
-  }
-  if (t === "folded" || t === "half-opened" || t === "flipped") {
-    return FoldState.Folded;
-  }
+): HingeState {
   if (segments.length >= 2) {
-    return FoldState.Folded;
+    return HingeState.Creased;
   }
-  return FoldState.Unfolded;
+  const t = postureType.toLowerCase();
+  if (t === "folded" || t === "half-opened" || t === "flipped") {
+    return HingeState.Closed;
+  }
+  return HingeState.Flat;
 }
