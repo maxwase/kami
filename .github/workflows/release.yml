@@ -17,6 +17,13 @@ jobs:
     permissions:
       contents: write
 
+  android:
+    needs: [ci]
+    uses: ./.github/workflows/android.yml
+    secrets: inherit
+    permissions:
+      contents: write
+
   cd:
     needs: [ci]
     uses: ./.github/workflows/deploy.yml

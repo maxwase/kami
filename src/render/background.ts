@@ -3,7 +3,7 @@ export function drawTable(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  wood: HTMLImageElement,
+  wood: CanvasImageSource,
 ): void {
   ctx.drawImage(wood, 0, 0, w, h);
 

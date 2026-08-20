@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "eu.maxwase.kami.twa",
+      "sha256_cert_fingerprints": [
+        "24:B9:5D:20:43:50:EC:FE:49:EE:AA:C1:54:CA:2C:8C:20:A0:6F:1C:DD:26:C1:8F:A1:66:0F:14:2F:6A:EB:67",
+        "1F:12:C1:A3:07:3C:CC:94:F9:CB:04:EB:A5:F4:58:FA:42:B0:F2:5B:9B:81:A5:4E:21:B2:00:FD:7A:7A:B2:96"
+      ]
+    }
+  }
+]
