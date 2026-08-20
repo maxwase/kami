@@ -2,6 +2,12 @@ node_modules
 dist
 src-tauri/target
 
+# IDE
+.idea/
+
+# Local Android SDK path - machine-specific, never commit
+local.properties
+
 # Environment variables - never commit
 .env
 .env.local

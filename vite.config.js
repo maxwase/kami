@@ -45,7 +45,7 @@ const pwaPlugins = isTauri
           ],
         },
         workbox: {
-          globPatterns: ["**/*.{js,css,html,png,svg}"],
+          globPatterns: ["**/*.{js,css,html,png,svg,jpg}"],
           // These are real static pages, not SPA routes — don't serve the
           // app shell for them via the navigate fallback.
           navigateFallbackDenylist: [
@@ -84,7 +84,7 @@ export default defineConfig({
   envPrefix: ["VITE_", "TAURI_ENV_*"],
   build: isTauri
     ? {
-        target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
+        target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari15",
         minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
         sourcemap: Boolean(process.env.TAURI_ENV_DEBUG),
       }
