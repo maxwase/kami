@@ -20,4 +20,3 @@ kami uses the Device Posture API, viewport segments, and accelerometer input to 
 ## Legal
 
 - [Privacy Policy](https://kami.maxwase.eu/privacy/)
-- [Cookie Policy](https://kami.maxwase.eu/cookie-policy/)

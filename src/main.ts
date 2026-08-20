@@ -38,6 +38,14 @@ import {
 import { loadTextures, type TextureSet } from "./render/textures";
 import { options, updateOptions } from "./config/options";
 import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
+import {
+  initAnalytics,
+  trackEvent,
+  getAnalyticsConsent,
+  setAnalyticsConsent,
+} from "./analytics";
+
+initAnalytics();
 
 const { platform, device } = resolveRuntimeInfo();
 
@@ -73,16 +81,77 @@ const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
+const analyticsConsentEl = getRequiredElement("analyticsConsent", HTMLDivElement);
+const consentAcceptBtn = getRequiredElement("consentAccept", HTMLButtonElement);
+const consentDeclineBtn = getRequiredElement("consentDecline", HTMLButtonElement);
+const analyticsPreferencesBtn = getRequiredElement(
+  "analyticsPreferences",
+  HTMLButtonElement,
+);
+const buyCoffeeLink = getRequiredElement("buyCoffee", HTMLAnchorElement);
+const repoLink = getRequiredElement("repoLink", HTMLAnchorElement);
 
-type GtagFunction = (...args: unknown[]) => void;
-
-function trackEvent(name: string, params?: Record<string, unknown>): void {
-  const gtag = (window as Window & { gtag?: GtagFunction }).gtag;
-  gtag?.("event", name, params);
+// --- Analytics consent gate (opt-in; identical across web/TWA/iOS/macOS) ---
+function showAnalyticsConsent(): void {
+  analyticsConsentEl.style.display = "flex";
 }
+function hideAnalyticsConsent(): void {
+  analyticsConsentEl.style.display = "none";
+}
+if (getAnalyticsConsent() === "unset") {
+  showAnalyticsConsent();
+}
+consentAcceptBtn.onclick = () => {
+  setAnalyticsConsent(true);
+  hideAnalyticsConsent();
+  trackEvent("analytics_consent_changed", { granted: true });
+};
+consentDeclineBtn.onclick = () => {
+  setAnalyticsConsent(false);
+  hideAnalyticsConsent();
+};
+analyticsPreferencesBtn.onclick = () => {
+  showAnalyticsConsent();
+};
 
-// Expose trackEvent globally for use in other modules
-(window as Window & { trackEvent?: typeof trackEvent }).trackEvent = trackEvent;
+// How was the app launched: installed TWA, installed PWA, or browser tab.
+function getLaunchContext(): "twa" | "pwa" | "browser" {
+  if (document.referrer.startsWith("android-app://")) return "twa";
+  if (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  ) {
+    return "pwa";
+  }
+  return "browser";
+}
+trackEvent("app_open", { launch_context: getLaunchContext() });
+
+buyCoffeeLink.addEventListener("click", () => {
+  trackEvent("outbound_link", {
+    link_type: "buy_me_a_coffee",
+    link_url: buyCoffeeLink.href,
+  });
+});
+repoLink.addEventListener("click", () => {
+  trackEvent("outbound_link", {
+    link_type: "github",
+    link_url: repoLink.href,
+  });
+});
+
+// Expose an untyped trackEvent globally for use in other modules (e.g.
+// gestures.ts) that can't import the typed EventMap directly.
+(
+  window as Window & {
+    trackEvent?: (name: string, params?: Record<string, unknown>) => void;
+  }
+).trackEvent = (name, params) =>
+  (trackEvent as (name: string, params?: Record<string, unknown>) => void)(
+    name,
+    params,
+  );
 
 let dpr = 1;
 let cssW = 0;

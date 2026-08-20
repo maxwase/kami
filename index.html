@@ -73,16 +73,7 @@
     />
     <link rel="icon" type="image/png" href="icon.png" />
     <link rel="apple-touch-icon" href="pwa-192x192.png" />
-    <link
-      rel="stylesheet"
-      id="silktide-consent-manager-css"
-      href="cookie-banner/silktide-consent-manager.css"
-    />
     <style>
-      /* Hide floating cookie icon; settings menu provides entry point */
-      #silktide-cookie-icon {
-        display: none !important;
-      }
       /* Off-screen content for search engines and screen readers */
       .visually-hidden {
         position: absolute;
@@ -95,170 +86,78 @@
         white-space: nowrap;
         border: 0;
       }
+
+      /* --- Analytics consent prompt --- */
+      .analytics-consent {
+        display: none;
+        position: fixed;
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        z-index: 30;
+        max-width: 420px;
+        margin: 0 auto;
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 16px;
+        color: #fff;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        gap: 12px;
+        flex-direction: column;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial;
+      }
+      .analytics-consent p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .analytics-consent-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .analytics-consent-actions button {
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: inherit;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      .analytics-consent-actions button:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .analytics-consent-actions #consentAccept {
+        background: rgba(255, 255, 255, 0.85);
+        color: #201a14;
+        font-weight: 600;
+      }
+      .analytics-consent-actions #consentAccept:hover {
+        background: #fff;
+      }
     </style>
-    <script src="cookie-banner/silktide-consent-manager.js"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-
-      gtag("consent", "default", {
-        ad_storage: "denied",
-        ad_user_data: "denied",
-        ad_personalization: "denied",
-        analytics_storage: "denied",
-      });
-    </script>
-    <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-C507EG5TKF"
-    ></script>
-    <script>
-      gtag("js", new Date());
-      gtag("config", "G-C507EG5TKF");
-
-      // How was the app launched: installed TWA, installed PWA, or browser tab.
-      function getLaunchContext() {
-        if (document.referrer.startsWith("android-app://")) return "twa";
-        if (
-          window.matchMedia("(display-mode: standalone)").matches ||
-          window.matchMedia("(display-mode: fullscreen)").matches ||
-          window.navigator.standalone === true
-        ) {
-          return "pwa";
-        }
-        return "browser";
-      }
-
-      // One per session: lets you segment opens by surface in GA4.
-      gtag("event", "app_open", { launch_context: getLaunchContext() });
-
-      // True once we confirm the Play Store (TWA) app is installed.
-      var nativeAppInstalled = false;
-      if (navigator.getInstalledRelatedApps) {
-        navigator
-          .getInstalledRelatedApps()
-          .then(function (apps) {
-            nativeAppInstalled = apps.some(function (a) {
-              return a.id === "eu.maxwase.kami.twa";
-            });
-          })
-          .catch(function () {});
-      }
-
-      // Install funnel (browser-driven PWA install; Play Store has its own stats).
-      window.addEventListener("beforeinstallprompt", function (e) {
-        // Don't promote the PWA install when the native app is already there.
-        if (nativeAppInstalled) {
-          e.preventDefault();
-          return;
-        }
-        gtag("event", "pwa_install_available");
-        // Expose the deferred prompt for any custom install button to use.
-        window.deferredInstallPrompt = e;
-      });
-      window.addEventListener("appinstalled", function () {
-        gtag("event", "pwa_installed");
-      });
-    </script>
-    <script>
-      silktideCookieBannerManager.updateCookieBannerConfig({
-        background: {
-          showBackground: true,
-        },
-        cookieIcon: {
-          position: "bottomLeft",
-        },
-        cookieTypes: [
-          {
-            id: "necessary",
-            name: "Necessary",
-            description:
-              "<p>These cookies are necessary for the website to function properly and cannot be switched off. They help with things like logging in and setting your privacy preferences.</p>",
-            required: true,
-            onAccept: function () {
-              console.log("Add logic for the required Necessary here");
-            },
-          },
-          {
-            id: "analytics",
-            name: "Analytics",
-            description:
-              "<p>These cookies help us improve the site by tracking which pages are most popular and how visitors move around the site.</p>",
-            defaultValue: true,
-            onAccept: function () {
-              gtag("consent", "update", {
-                analytics_storage: "granted",
-              });
-              dataLayer.push({
-                event: "consent_accepted_analytics",
-              });
-            },
-            onReject: function () {
-              gtag("consent", "update", {
-                analytics_storage: "denied",
-              });
-            },
-          },
-          {
-            id: "advertising",
-            name: "Advertising",
-            description:
-              "<p>These cookies provide extra features and personalization to improve your experience. They may be set by us or by partners whose services we use.</p>",
-            onAccept: function () {
-              gtag("consent", "update", {
-                ad_storage: "granted",
-                ad_user_data: "granted",
-                ad_personalization: "granted",
-              });
-              dataLayer.push({
-                event: "consent_accepted_advertising",
-              });
-            },
-            onReject: function () {
-              gtag("consent", "update", {
-                ad_storage: "denied",
-                ad_user_data: "denied",
-                ad_personalization: "denied",
-              });
-            },
-          },
-        ],
-        text: {
-          banner: {
-            description:
-              '<p>We use cookies on our site to enhance your user experience, provide personalized content, and analyze our traffic. <a href="/cookie-policy/" target="_blank">Cookie Policy.</a></p>',
-            acceptAllButtonText: "Accept all",
-            acceptAllButtonAccessibleLabel: "Accept all cookies",
-            rejectNonEssentialButtonText: "Reject non-essential",
-            rejectNonEssentialButtonAccessibleLabel: "Reject non-essential",
-            preferencesButtonText: "Preferences",
-            preferencesButtonAccessibleLabel: "Toggle preferences",
-          },
-          preferences: {
-            title: "Customize your cookie preferences",
-            description:
-              "<p>We respect your right to privacy. You can choose not to allow some types of cookies. Your cookie preferences will apply across our website.</p>",
-            creditLinkText: "Get this banner for free",
-            creditLinkAccessibleLabel: "Get this banner for free",
-          },
-        },
-      });
-    </script>
   </head>
 
   <body>
     <header class="visually-hidden">
       <h1>kami — Interactive Origami &amp; Paper-Folding Simulator</h1>
       <p>
-        kami is a free, open-source origami simulator that responds to your
-        device's physical posture. Fold a foldable phone or close a laptop lid
-        and the on-screen paper folds along the hinge. You can also fold and
-        flip manually, change paper size and colors, and undo your folds. It
-        runs in any modern web browser — no install or account required — and as
-        a native macOS app.
+        kami is a free, open-source origami simulator that responds to your device's
+        physical posture. Fold a foldable phone or close a laptop lid and the on-screen
+        paper folds along the hinge. You can also fold and flip manually, change paper
+        size and colors, and undo your folds. It runs in any modern web browser — no
+        install or account required — and as a native macOS app.
       </p>
     </header>
     <canvas id="c"></canvas>
@@ -473,27 +372,16 @@
         <h4>Privacy</h4>
         <div class="input-group">
           <div class="toggle-group">
-            <button id="openCookiePreferences" type="button" class="toggle-button">
+            <button id="analyticsPreferences" type="button" class="toggle-button">
               <span class="material-symbols-outlined icon-small" aria-hidden="true"
-                >cookie</span
+                >analytics</span
               >
-              <span>Cookie preferences</span>
+              <span>Analytics preferences</span>
             </button>
           </div>
           <div class="toggle-group">
-            <a
-              href="/privacy/"
-              target="_blank"
-              rel="noopener"
-              class="footer-link"
+            <a href="/privacy/" target="_blank" rel="noopener" class="footer-link"
               >Privacy Policy</a
-            >
-            <a
-              href="/cookie-policy/"
-              target="_blank"
-              rel="noopener"
-              class="footer-link"
-              >Cookie Policy</a
             >
           </div>
         </div>
@@ -536,44 +424,17 @@
       </div>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const openCookiePreferences = document.getElementById("openCookiePreferences");
-        if (openCookiePreferences) {
-          openCookiePreferences.addEventListener("click", () => {
-            gtag("event", "cookie_preferences_opened");
-            // Ensure the banner is initialized
-            if (window.silktideCookieBannerManager?.initCookieBanner) {
-              window.silktideCookieBannerManager.initCookieBanner();
-            }
-            // Open the modal via the existing banner control
-            const cookieIcon = document.getElementById("silktide-cookie-icon");
-            cookieIcon?.click();
-          });
-        }
+    <!-- First-run analytics consent prompt (also reopened via Settings ->
+         Analytics preferences). Plain HTML/CSS, no 3rd-party script, shown
+         identically on web/TWA/iOS/macOS. -->
+    <div id="analyticsConsent" class="analytics-consent" style="display: none">
+      <p>Allow anonymous analytics to help improve kami?</p>
+      <div class="analytics-consent-actions">
+        <button id="consentDecline" type="button">Decline</button>
+        <button id="consentAccept" type="button">Allow</button>
+      </div>
+    </div>
 
-        // Track outbound link clicks
-        const buyCoffeeLink = document.getElementById("buyCoffee");
-        if (buyCoffeeLink) {
-          buyCoffeeLink.addEventListener("click", () => {
-            gtag("event", "outbound_link", {
-              link_type: "buy_me_a_coffee",
-              link_url: buyCoffeeLink.href,
-            });
-          });
-        }
-
-        const repoLink = document.getElementById("repoLink");
-        if (repoLink) {
-          repoLink.addEventListener("click", () => {
-            gtag("event", "outbound_link", {
-              link_type: "github",
-              link_url: repoLink.href,
-            });
-          });
-        }
-      });
-    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

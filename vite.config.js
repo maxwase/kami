@@ -50,7 +50,6 @@ const pwaPlugins = isTauri
           // app shell for them via the navigate fallback.
           navigateFallbackDenylist: [
             /^\/privacy/,
-            /^\/cookie-policy/,
             /^\/\.well-known/,
             /\.(txt|xml|json)$/,
           ],
@@ -61,9 +60,9 @@ const pwaPlugins = isTauri
 // https://vitejs.dev/config/
 export default defineConfig({
   base: isTauri ? "./" : "/",
-  // Web is a multi-page static site (app at /, plus standalone policy pages).
-  // MPA mode disables the SPA fallback so /privacy/ and /cookie-policy/ resolve
-  // to their own index.html in dev and build — matches GitHub Pages serving.
+  // Web is a multi-page static site (app at /, plus a standalone policy page).
+  // MPA mode disables the SPA fallback so /privacy/ resolves to its own
+  // index.html in dev and build — matches GitHub Pages serving.
   appType: isTauri ? "spa" : "mpa",
   plugins: pwaPlugins,
   clearScreen: false,
@@ -94,7 +93,6 @@ export default defineConfig({
           input: {
             main: resolve(rootDir, "index.html"),
             privacy: resolve(rootDir, "privacy/index.html"),
-            cookies: resolve(rootDir, "cookie-policy/index.html"),
           },
         },
       },
