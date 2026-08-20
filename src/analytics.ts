@@ -6,25 +6,55 @@ const apiHost = import.meta.env.VITE_POSTHOG_HOST as string | undefined;
 
 const CONSENT_STORAGE_KEY = "kami_analytics_consent";
 
+export enum FoldTrigger {
+  Button = "button",
+  KeyboardSpace = "keyboard_space",
+  KeyboardEnter = "keyboard_enter",
+  Hinge = "hinge",
+}
+
+export enum FoldSource {
+  Physical = "physical",
+  Software = "software",
+}
+
+export enum PaperSide {
+  Front = "front",
+  Back = "back",
+}
+
+export enum Panel {
+  Settings = "settings",
+  Info = "info",
+}
+
 interface EventMap {
   paper_reset: {
     previous_face_count: number;
     aspect_ratio: string;
-    fold_count_session: number;
+    fold_count: number;
   };
-  undo_action: { remaining_undo_steps: number; fold_count_session: number };
-  fold_triggered: { trigger_method: string; fold_count_session: number };
-  panel_toggled: { panel: "settings" | "info"; visible: boolean };
+  undo_action: { remaining_undo_steps: number; fold_count: number };
+  fold_triggered: {
+    trigger_method: FoldTrigger;
+    fold_source: FoldSource;
+    fold_count: number;
+  };
+  panel_toggled: { panel: Panel; visible: boolean };
   keyboard_shortcut: { key: string; action: string };
-  setting_changed: { setting: string; value: unknown };
+  hinge_manual_adjusted: { axis: "x" | "y"; value: number };
   hinge_reset: Record<string, never>;
+  stability_threshold_changed: { value: number };
+  invert_fold_direction_changed: { enabled: boolean };
+  hinge_flip_changed: { enabled: boolean };
+  show_paper_border_changed: { enabled: boolean };
   paper_size_changed: {
     size_type: string;
     aspect_ratio: string;
     custom_width?: number;
     custom_height?: number;
   };
-  color_changed: { side: "front" | "back"; color: string };
+  color_changed: { side: PaperSide; color: string };
   posture_change: {
     posture_type: string;
     hinge_x: number;
@@ -35,18 +65,19 @@ interface EventMap {
   };
   fold_complete: {
     fold_count: number;
-    fold_side: "front" | "back";
+    fold_side: PaperSide;
+    fold_source: FoldSource;
     hinge_x: number;
     hinge_y: number;
     duration_ms: number;
   };
   flip_complete: {
     face_count: number;
-    fold_count_session: number;
+    fold_count: number;
     duration_ms: number;
   };
+  gesture_used: { gesture_type: string; duration_ms: number };
   session_start: {
-    platform: string;
     device_type: string;
     posture_support: string;
     screen_width: number;

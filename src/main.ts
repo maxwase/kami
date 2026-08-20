@@ -43,6 +43,10 @@ import {
   trackEvent,
   getAnalyticsConsent,
   setAnalyticsConsent,
+  FoldTrigger,
+  FoldSource,
+  PaperSide,
+  Panel,
 } from "./analytics";
 
 initAnalytics();
@@ -140,18 +144,6 @@ repoLink.addEventListener("click", () => {
     link_url: repoLink.href,
   });
 });
-
-// Expose an untyped trackEvent globally for use in other modules (e.g.
-// gestures.ts) that can't import the typed EventMap directly.
-(
-  window as Window & {
-    trackEvent?: (name: string, params?: Record<string, unknown>) => void;
-  }
-).trackEvent = (name, params) =>
-  (trackEvent as (name: string, params?: Record<string, unknown>) => void)(
-    name,
-    params,
-  );
 
 let dpr = 1;
 let cssW = 0;
@@ -328,7 +320,13 @@ function updateUndoBtn(isAnimating: boolean): void {
 
 type FoldRuntime =
   | { phase: "idle" }
-  | { phase: "animating"; anim: FoldAnim; hinge: Vec2; hingeDir: Vec2 };
+  | {
+      phase: "animating";
+      anim: FoldAnim;
+      hinge: Vec2;
+      hingeDir: Vec2;
+      foldSource: FoldSource;
+    };
 
 type FlipRuntime = { phase: "idle" } | { phase: "animating"; anim: FlipAnim };
 
@@ -410,7 +408,7 @@ resetActiveBtn.onclick = () => {
   trackEvent("paper_reset", {
     previous_face_count: prevFaceCount,
     aspect_ratio: currentAspect.toFixed(3),
-    fold_count_session: foldCount,
+    fold_count: foldCount,
   });
 };
 
@@ -423,7 +421,7 @@ undoBtn.onclick = () => {
 
   trackEvent("undo_action", {
     remaining_undo_steps: undoStack.length,
-    fold_count_session: foldCount,
+    fold_count: foldCount,
   });
 };
 
@@ -458,8 +456,9 @@ foldFallbackBtn.style.display = "inline-block";
 foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
   trackEvent("fold_triggered", {
-    trigger_method: "button",
-    fold_count_session: foldCount,
+    trigger_method: FoldTrigger.Button,
+    fold_source: FoldSource.Software,
+    fold_count: foldCount,
   });
 };
 
@@ -497,7 +496,7 @@ toggleSettingsBtn.onclick = () => {
   syncSettingsVisibility();
   syncInfoVisibility();
   trackEvent("panel_toggled", {
-    panel: "settings",
+    panel: Panel.Settings,
     visible: settingsVisible,
   });
 };
@@ -510,7 +509,7 @@ toggleInfoBtn.onclick = () => {
   syncInfoVisibility();
   syncSettingsVisibility();
   trackEvent("panel_toggled", {
-    panel: "info",
+    panel: Panel.Info,
     visible: infoVisible,
   });
 };
@@ -525,8 +524,10 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
     manualFoldQueued = true;
     trackEvent("fold_triggered", {
-      trigger_method: e.code === "Space" ? "keyboard_space" : "keyboard_enter",
-      fold_count_session: foldCount,
+      trigger_method:
+        e.code === "Space" ? FoldTrigger.KeyboardSpace : FoldTrigger.KeyboardEnter,
+      fold_source: FoldSource.Software,
+      fold_count: foldCount,
     });
   } else if (e.code === "KeyF") {
     e.preventDefault();
@@ -554,17 +555,13 @@ function updateStableAccelFromUi() {
 
 stableAccelInput.addEventListener("change", () => {
   updateStableAccelFromUi();
-  trackEvent("setting_changed", {
-    setting: "stability_threshold",
-    value: options.stableAccel,
-  });
+  trackEvent("stability_threshold_changed", { value: options.stableAccel });
 });
 stableAccelInput.addEventListener("input", updateStableAccelFromUi);
 invertFoldDirectionInput.addEventListener("change", () => {
   updateOptions({ invertFoldDirection: invertFoldDirectionInput.checked });
-  trackEvent("setting_changed", {
-    setting: "invert_fold_direction",
-    value: invertFoldDirectionInput.checked,
+  trackEvent("invert_fold_direction_changed", {
+    enabled: invertFoldDirectionInput.checked,
   });
 });
 const updateManualHingePos = () => {
@@ -578,23 +575,14 @@ const updateManualHingePos = () => {
 manualHingeX.addEventListener("input", updateManualHingePos);
 manualHingeY.addEventListener("input", updateManualHingePos);
 manualHingeX.addEventListener("change", () => {
-  trackEvent("setting_changed", {
-    setting: "hinge_x",
-    value: Number(manualHingeX.value),
-  });
+  trackEvent("hinge_manual_adjusted", { axis: "x", value: Number(manualHingeX.value) });
 });
 manualHingeY.addEventListener("change", () => {
-  trackEvent("setting_changed", {
-    setting: "hinge_y",
-    value: Number(manualHingeY.value),
-  });
+  trackEvent("hinge_manual_adjusted", { axis: "y", value: Number(manualHingeY.value) });
 });
 manualHingeFlip.addEventListener("change", () => {
   updateOptions({ manualHingeDirFlip: manualHingeFlip.checked });
-  trackEvent("setting_changed", {
-    setting: "hinge_flip",
-    value: manualHingeFlip.checked,
-  });
+  trackEvent("hinge_flip_changed", { enabled: manualHingeFlip.checked });
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
@@ -756,7 +744,7 @@ if (paperFrontColorInput && paperFrontColorDisplay) {
 
   paperFrontColorInput.addEventListener("change", () => {
     trackEvent("color_changed", {
-      side: "front",
+      side: PaperSide.Front,
       color: paperFrontColorInput.value,
     });
   });
@@ -777,7 +765,7 @@ if (paperBackColorInput && paperBackColorDisplay) {
 
   paperBackColorInput.addEventListener("change", () => {
     trackEvent("color_changed", {
-      side: "back",
+      side: PaperSide.Back,
       color: paperBackColorInput.value,
     });
   });
@@ -794,9 +782,8 @@ const showPaperBorderInput = document.getElementById(
 if (showPaperBorderInput) {
   showPaperBorderInput.addEventListener("change", () => {
     updateOptions({ showPaperBorder: showPaperBorderInput.checked });
-    trackEvent("setting_changed", {
-      setting: "show_paper_border",
-      value: showPaperBorderInput.checked,
+    trackEvent("show_paper_border_changed", {
+      enabled: showPaperBorderInput.checked,
     });
   });
 }
@@ -870,6 +857,9 @@ function tick(now: number) {
       options.invertFoldDirection,
     );
 
+    const foldSource: FoldSource = manualFoldQueued
+      ? FoldSource.Software
+      : FoldSource.Physical;
     if (manualFoldQueued && foldedNow) {
       manualFoldQueued = false;
     }
@@ -890,7 +880,18 @@ function tick(now: number) {
           anim: buildResult.anim,
           hinge: activeHinge,
           hingeDir: activeHingeDir,
+          foldSource,
         };
+        // Button/keyboard paths already emit fold_triggered at the moment the
+        // user acts (see foldFallbackBtn.onclick and the Space/Enter keydown
+        // handler) - only the physical hinge path has no earlier trigger point.
+        if (foldSource === FoldSource.Physical) {
+          trackEvent("fold_triggered", {
+            trigger_method: FoldTrigger.Hinge,
+            fold_source: FoldSource.Physical,
+            fold_count: foldCount,
+          });
+        }
       }
     }
     deviceFolded = foldedNow;
@@ -911,7 +912,9 @@ function tick(now: number) {
           foldCount += 1;
           trackEvent("fold_complete", {
             fold_count: foldCount,
-            fold_side: activeAnim.foldSide === FoldSide.Front ? "front" : "back",
+            fold_side:
+              activeAnim.foldSide === FoldSide.Front ? PaperSide.Front : PaperSide.Back,
+            fold_source: foldRuntime.foldSource,
             hinge_x: Math.round(foldRuntime.hinge.x),
             hinge_y: Math.round(foldRuntime.hinge.y),
             duration_ms: Math.round(activeAnim.durationSeconds * 1000),
@@ -936,7 +939,7 @@ function tick(now: number) {
           commitFlip(paper, activeAnim);
           trackEvent("flip_complete", {
             face_count: paper.faces.length,
-            fold_count_session: foldCount,
+            fold_count: foldCount,
             duration_ms: Math.round(activeAnim.durationSeconds * 1000),
           });
         } else {
@@ -1015,9 +1018,9 @@ function tick(now: number) {
 void (async function bootstrap() {
   textures = await loadTextures(ctx);
 
-  // Track session start with device context
+  // Track session start with device context. `platform` is added automatically
+  // by trackEvent() from resolveRuntimeInfo() - no need to pass it here.
   trackEvent("session_start", {
-    platform: platform === Platform.Tauri ? "tauri" : "web",
     device_type: device === Device.Laptop ? "laptop" : "phone",
     posture_support:
       postureSupport === PostureSupport.Available ? "available" : "unavailable",
