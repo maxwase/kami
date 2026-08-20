@@ -19,7 +19,12 @@
         background: #201a14;
         color: #e8e2d8;
         font-family:
-          system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
           sans-serif;
         line-height: 1.6;
       }
@@ -64,19 +69,19 @@
   <body>
     <main>
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: 2 June 2026</p>
+      <p class="updated">Last updated: 18 August 2026</p>
 
       <p>
-        <strong>kami</strong> ("the app") is an interactive origami-folding
-        simulator available as a web app, an installable Progressive Web App
-        (PWA), and an Android app distributed through Google Play. This policy
-        explains what data the app processes and why.
+        <strong>kami</strong> ("the app") is an interactive origami-folding simulator
+        available as a web app, an installable Progressive Web App (PWA), and an Android
+        app distributed through Google Play. This policy explains what data the app
+        processes and why.
       </p>
 
       <h2>1. Who is responsible</h2>
       <p>
-        The app is developed and operated by an independent developer
-        ("we", "us"). For any privacy question, contact:
+        The app is developed and operated by an independent developer ("we", "us"). For
+        any privacy question, contact:
         <a href="mailto:max.vvase@gmail.com">max.vvase@gmail.com</a>.
       </p>
 
@@ -84,41 +89,38 @@
       <ul>
         <li>We do not require an account, sign-in, or registration.</li>
         <li>We do not ask for your name, email, phone number, or contacts.</li>
-        <li>
-          We do not collect, store, or transmit your precise location.
-        </li>
+        <li>We do not collect, store, or transmit your precise location.</li>
         <li>We do not sell your data or share it with advertisers.</li>
       </ul>
 
       <h2>3. Device sensor data (processed locally)</h2>
-      <p>
-        To animate paper folding in response to your device, the app reads:
-      </p>
+      <p>To animate paper folding in response to your device, the app reads:</p>
       <ul>
         <li>
-          <strong>Device posture / fold angle</strong> (foldable phones and
-          laptop lids) via the Device Posture and Viewport Segments APIs.
+          <strong>Device posture / fold angle</strong> (foldable phones and laptop lids)
+          via the Device Posture and Viewport Segments APIs.
         </li>
         <li>
-          <strong>Motion / orientation</strong> from the accelerometer, when
-          available and permitted by your device.
+          <strong>Motion / orientation</strong> from the accelerometer, when available
+          and permitted by your device.
         </li>
       </ul>
       <p>
-        This sensor data is processed entirely <strong>on your device</strong>,
-        in real time, to render the animation. It is <strong>never</strong>
+        This sensor data is processed entirely <strong>on your device</strong>, in real
+        time, to render the animation. It is <strong>never</strong>
         transmitted to us or any third party, and it is not stored.
       </p>
 
       <h2>4. Analytics (only with your consent)</h2>
       <p>
-        On the web/PWA version, we use
-        <strong>Google Analytics 4</strong> to understand how the app is used
-        so we can improve it. Analytics is <strong>disabled by default</strong>.
-        It runs only after you grant consent through the cookie banner
-        (Google Consent Mode, <code>analytics_storage</code> starts as
-        <code>denied</code>). You can change or withdraw consent at any time via
-        the "Cookie preferences" option in the app.
+        Across every version of the app — web, PWA, Android (via the Play Store app),
+        iOS, and macOS — we use
+        <strong>PostHog</strong> (hosted on PostHog's EU Cloud, in the European Union)
+        to understand how the app is used so we can improve it. Analytics is
+        <strong>off by default</strong> everywhere. The first time you open the app
+        you're asked to opt in; nothing is sent to PostHog until you tap "Allow". You
+        can change or withdraw your consent at any time via the "Analytics preferences"
+        option in the app's Settings panel, which reopens the same prompt.
       </p>
       <p>When enabled, analytics collects:</p>
       <ul>
@@ -126,72 +128,63 @@
           Anonymous usage events — e.g. <code>fold_triggered</code>,
           <code>paper_reset</code>, <code>undo_action</code>,
           <code>panel_toggled</code>, <code>keyboard_shortcut</code>,
-          <code>outbound_link</code>.
+          <code>outbound_link</code>, <code>app_open</code>.
         </li>
         <li>
-          Standard technical data Google Analytics records: approximate
-          (coarse) region derived from a truncated IP address, device/browser
-          type, and pages viewed.
+          Standard technical data PostHog records: approximate (coarse) region derived
+          from IP address, device/browser type, and screen size.
         </li>
       </ul>
       <p>
-        Google acts as a data processor. See
-        <a
-          href="https://policies.google.com/privacy"
-          target="_blank"
-          rel="noopener"
-          >Google's Privacy Policy</a
-        >
-        and
-        <a
-          href="https://support.google.com/analytics/answer/6004245"
-          target="_blank"
-          rel="noopener"
-          >how Google Analytics handles data</a
-        >. For details on cookies, see our
-        <a href="/cookie-policy">Cookie Policy</a>.
+        PostHog acts as our data processor. Your consent choice is remembered using your
+        browser's/app's local storage, not cookies — nothing is set until you opt in,
+        and nothing is set at all if you decline.
+      </p>
+      <p>
+        <strong>A note on China:</strong> connections to PostHog's servers, like most
+        non-China-hosted services, may be blocked or throttled by the Great Firewall for
+        users without a VPN. This isn't something we can engineer around — it means
+        analytics from mainland China is likely undercounted, not that we're targeting
+        or excluding it.
       </p>
 
       <h2>5. Legal basis</h2>
       <p>
-        Where the GDPR applies, our legal basis for analytics is your
-        <strong>consent</strong> (Art. 6(1)(a)). Sensor processing for the
-        animation happens locally and never leaves your device.
+        Where the GDPR (EU) or KVKK (Türkiye) applies, our legal basis for analytics is
+        your <strong>consent</strong> (GDPR Art. 6(1)(a); KVKK Art. 5). Sensor
+        processing for the animation happens locally and never leaves your device.
       </p>
 
       <h2>6. Data retention</h2>
       <p>
-        We retain analytics data only in aggregate within Google Analytics,
-        subject to Google's retention settings. We hold no personal database
-        of our own.
+        We retain analytics data only in aggregate within PostHog, subject to PostHog's
+        retention settings. We hold no personal database of our own.
       </p>
 
       <h2>7. Children</h2>
       <p>
-        The app is suitable for general audiences and does not knowingly
-        collect personal data from children.
+        The app is suitable for general audiences and does not knowingly collect
+        personal data from children.
       </p>
 
       <h2>8. Your rights</h2>
       <p>
-        Depending on your jurisdiction (e.g. GDPR/CCPA), you may have rights to
-        access, correct, or delete your data, and to withdraw consent. Because
-        we do not maintain user accounts or store personal data ourselves, the
-        primary control is the analytics consent toggle in the app. For any
-        request, contact
+        Depending on your jurisdiction (e.g. GDPR/KVKK), you may have rights to access,
+        correct, or delete your data, and to withdraw consent. Because we do not
+        maintain user accounts or store personal data ourselves, the primary control is
+        the analytics consent toggle in the app. For any request, contact
         <a href="mailto:max.vvase@gmail.com">max.vvase@gmail.com</a>.
       </p>
 
       <h2>9. Changes</h2>
       <p>
-        We may update this policy. Material changes will be reflected by the
-        "Last updated" date above.
+        We may update this policy. Material changes will be reflected by the "Last
+        updated" date above.
       </p>
 
       <footer>
         <p>
-          <a href="/">← Back to kami</a> ·
-          <a href="/cookie-policy">Cookie Policy</a>
+          <a href="/">← Back to kami</a>
         </p>
       </footer>
     </main>

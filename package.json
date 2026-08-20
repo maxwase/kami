@@ -31,6 +31,7 @@
     "@tauri-apps/plugin-opener": "^2.5.4",
     "gl-matrix": "^3.4.4",
     "polygon-clipping": "^0.15.7",
+    "posthog-js": "^1.417.1",
     "viewportsegments-polyfill": "^1.0.4"
   },
   "pnpm": {
