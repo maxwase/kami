@@ -13,6 +13,8 @@ export interface SegmentRect {
 export interface HingeInfo {
   segments: SegmentRect[];
   hingeDir: Vec2;
+  /** Center of the hinge gap in canvas CSS coords; undefined when <2 segments. */
+  hingePoint?: Vec2;
 }
 
 interface WindowWithSegments extends Window {
@@ -88,10 +90,8 @@ function buildHingeInfo(
   canvasCssW: number,
   canvasCssH: number,
 ): HingeInfo {
-  return {
-    segments,
-    hingeDir: hingeDirFromSegments(segments, canvasCssW, canvasCssH),
-  };
+  const { dir, point } = hingeFromSegments(segments, canvasCssW, canvasCssH);
+  return { segments, hingeDir: dir, hingePoint: point };
 }
 
 function readSegments(source: SegmentRect[]): SegmentRect[] {
@@ -105,13 +105,19 @@ function readSegments(source: SegmentRect[]): SegmentRect[] {
 }
 
 /**
- * Derive a hinge direction vector from provided screen segments.
- * Falls back to an orientation-derived direction when fewer than two segments exist.
+ * Derive the hinge direction and crease point from provided screen segments.
+ * The crease point is the center of the gap between the two outer segments.
+ * Falls back to an orientation-derived direction (and no point) when fewer
+ * than two segments exist or no gap is found.
  */
-function hingeDirFromSegments(segs: SegmentRect[], w: number, h: number): Vec2 {
+function hingeFromSegments(
+  segs: SegmentRect[],
+  w: number,
+  h: number,
+): { dir: Vec2; point?: Vec2 } {
   const ratioDir = fallbackHingeDir(getScreenAngleDeg(), w, h);
   if (segs.length < 2) {
-    return ratioDir;
+    return { dir: ratioDir };
   }
 
   const byLeft = [...segs].sort((a, b) => a.left - b.left);
@@ -126,13 +132,13 @@ function hingeDirFromSegments(segs: SegmentRect[], w: number, h: number): Vec2 {
   const gapY = bT.top - aT.bottom;
 
   if (gapX > 0 && gapX >= gapY) {
-    return { x: 0, y: 1 };
+    return { dir: { x: 0, y: 1 }, point: { x: (aL.right + bL.left) / 2, y: h / 2 } };
   }
   if (gapY > 0 && gapY > gapX) {
-    return { x: 1, y: 0 };
+    return { dir: { x: 1, y: 0 }, point: { x: w / 2, y: (aT.bottom + bT.top) / 2 } };
   }
 
-  return ratioDir;
+  return { dir: ratioDir };
 }
 
 function hingeDirForAngle(angleDeg: number): Vec2 {
@@ -146,6 +152,14 @@ function fallbackHingeDir(
   canvasCssW: number,
   canvasCssH: number,
 ): Vec2 {
+  // A foldable's unfolded inner screen is nearly square, so a few pixels of
+  // width/height difference must not decide the hinge axis (this is what made
+  // the installed PWA pick horizontal while the browser picked vertical).
+  // When near-square, trust the orientation angle instead.
+  const ratio = canvasCssW / canvasCssH;
+  if (ratio > 0.85 && ratio < 1.18) {
+    return hingeDirForAngle(angleDeg);
+  }
   if (canvasCssH >= canvasCssW) return { x: 1, y: 0 };
   return hingeDirForAngle(angleDeg);
 }
