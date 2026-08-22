@@ -57,8 +57,8 @@ public func buildFold(
 ) -> Result<FoldAnimation, FoldRejection> {
     let (foldedLayer, layerOverflow) = (paper.faces.map(\.layer).max() ?? 0).addingReportingOverflow(1)
     guard layerOverflow == false, foldedLayer <= maximumSafePaperLayer else { return .failure(.layerOverflow) }
-    var stationaryFaces: [Face] = []
-    var movingFaces: [Face] = []
+    var stationaryPieces: [(polygon: Polygon, source: Face)] = []
+    var movingPieces: [(polygon: Polygon, source: Face)] = []
 
     for face in paper.faces {
         let positive = face.polygon.clipped(to: request.line, keeping: .positive)
@@ -67,16 +67,23 @@ public func buildFold(
         let stationaryPolygon = request.moving == .positive ? negative : positive
 
         if stationaryPolygon.vertices.isEmpty == false {
-            stationaryFaces.append(Face(id: nextFaceID(), polygon: stationaryPolygon, visibleSide: face.visibleSide, layer: face.layer))
+            stationaryPieces.append((polygon: stationaryPolygon, source: face))
         }
         if movingPolygon.vertices.isEmpty == false {
-            movingFaces.append(Face(id: nextFaceID(), polygon: movingPolygon, visibleSide: face.visibleSide, layer: face.layer))
+            movingPieces.append((polygon: movingPolygon, source: face))
         }
     }
 
-    guard stationaryFaces.isEmpty == false || movingFaces.isEmpty == false else { return .failure(.noIntersection) }
-    guard movingFaces.isEmpty == false else { return .failure(.emptyMovingSide) }
-    guard stationaryFaces.isEmpty == false else { return .failure(.emptyStationarySide) }
+    guard stationaryPieces.isEmpty == false || movingPieces.isEmpty == false else { return .failure(.noIntersection) }
+    guard movingPieces.isEmpty == false else { return .failure(.emptyMovingSide) }
+    guard stationaryPieces.isEmpty == false else { return .failure(.emptyStationarySide) }
+
+    let stationaryFaces = stationaryPieces.map { piece in
+        Face(id: nextFaceID(), polygon: piece.polygon, visibleSide: piece.source.visibleSide, layer: piece.source.layer)
+    }
+    let movingFaces = movingPieces.map { piece in
+        Face(id: nextFaceID(), polygon: piece.polygon, visibleSide: piece.source.visibleSide, layer: piece.source.layer)
+    }
 
     return .success(FoldAnimation(
         paperID: paper.id,
@@ -89,26 +96,27 @@ public func buildFold(
 }
 
 public func commitFold(_ paper: Paper, animation: FoldAnimation, nextFaceID: () -> FaceID) -> Paper {
-    let maxMovingLayer = animation.movingFaces.map(\.layer).max() ?? 0
-    guard animation.foldedLayer >= 0,
+    guard animation.paperID == paper.id,
+          animation.stationaryFaces.isEmpty == false,
+          animation.movingFaces.isEmpty == false,
+          animation.foldedLayer >= 0,
           animation.foldedLayer <= maximumSafePaperLayer,
           animation.stationaryFaces.allSatisfy({ $0.layer >= 0 && $0.layer <= maximumSafePaperLayer }),
           animation.movingFaces.allSatisfy({ $0.layer >= 0 && $0.layer <= maximumSafePaperLayer }) else {
         return paper
     }
-    var reflectedFaces: [Face] = []
+    let maxMovingLayer = animation.movingFaces.map(\.layer).max() ?? 0
+    var reflectedPieces: [(polygon: Polygon, source: Face, layer: Int)] = []
 
     for face in animation.movingFaces {
         guard let polygon = reflected(face.polygon, across: animation.line) else { return paper }
         let invertedLayer = maxMovingLayer - face.layer
         let (layer, layerOverflow) = animation.foldedLayer.addingReportingOverflow(invertedLayer)
         guard layerOverflow == false, layer <= maximumSafePaperLayer else { return paper }
-        reflectedFaces.append(Face(
-            id: nextFaceID(),
-            polygon: polygon,
-            visibleSide: face.visibleSide.toggled,
-            layer: layer
-        ))
+        reflectedPieces.append((polygon: polygon, source: face, layer: layer))
+    }
+    let reflectedFaces = reflectedPieces.map { piece in
+        Face(id: nextFaceID(), polygon: piece.polygon, visibleSide: piece.source.visibleSide.toggled, layer: piece.layer)
     }
     let faces = animation.stationaryFaces + reflectedFaces
 

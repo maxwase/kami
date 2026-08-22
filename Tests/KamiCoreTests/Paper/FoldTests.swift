@@ -51,6 +51,22 @@ struct FoldTests {
         #expect(committed.faces.map(\.visibleSide) == [.front, .back])
     }
 
+    @Test("A fold retains polygons that are near but not exactly duplicate")
+    func foldRetainsNearDuplicatePolygons() throws {
+        let first = try rectangleFace(id: 1, layer: 0)
+        let second = try rectangleFace(id: 2, layer: 0, centerX: 0.000_001)
+        let paper = try makePaper(faces: [first, second])
+        let animation = try builtFold(
+            paper: paper,
+            line: Line2D(point: .zero, direction: Point2D(x: 0, y: 1)),
+            moving: .positive
+        )
+
+        let committed = commitFold(paper, animation: animation, nextFaceID: faceIDs(startingAt: 100))
+
+        #expect(committed.faces.count == 4)
+    }
+
     @Test("A fold with no faces rejects as no intersection")
     func emptyPaperRejectsAsNoIntersection() throws {
         let paper = try makePaper(faces: [])
@@ -69,16 +85,21 @@ struct FoldTests {
     @Test("A fold outside the paper rejects an empty stationary side")
     func foldOutsidePaperRejectsEmptyStationarySide() throws {
         let paper = try makeRectangle()
+        var allocatedIDs = 0
         let result = buildFold(
             paper: paper,
             request: FoldRequest(
                 line: try Line2D(point: Point2D(x: 500, y: 0), direction: Point2D(x: 0, y: 1)),
                 moving: .positive
             ),
-            nextFaceID: faceIDs(startingAt: 10)
+            nextFaceID: {
+                allocatedIDs += 1
+                return FaceID(rawValue: 10)
+            }
         )
 
         #expect(result.failure == .emptyStationarySide)
+        #expect(allocatedIDs == 0)
     }
 
     @Test("A fold outside the opposite side rejects an empty moving side")
@@ -150,6 +171,51 @@ struct FoldTests {
             moving: .positive,
             stationaryFaces: [],
             movingFaces: [movingFace],
+            foldedLayer: 1
+        )
+
+        let committed = commitFold(paper, animation: animation, nextFaceID: faceIDs(startingAt: 10))
+
+        #expect(committed == paper)
+    }
+
+    @Test("A fold animation for another paper leaves the requested paper unchanged")
+    func foldAnimationForAnotherPaperIsRejected() throws {
+        let source = try makeRectangle()
+        let target = try Paper(
+            id: PaperID(rawValue: 2),
+            style: source.style,
+            center: source.center,
+            rotation: source.rotation,
+            scale: source.scale,
+            baseSize: source.baseSize,
+            faces: source.faces
+        )
+        let animation = try builtFold(
+            paper: source,
+            line: Line2D(point: .zero, direction: Point2D(x: 0, y: 1)),
+            moving: .positive
+        )
+        var allocatedIDs = 0
+
+        let committed = commitFold(target, animation: animation, nextFaceID: {
+            allocatedIDs += 1
+            return FaceID(rawValue: 10)
+        })
+
+        #expect(committed == target)
+        #expect(allocatedIDs == 0)
+    }
+
+    @Test("A malformed fold animation cannot clear paper faces")
+    func malformedFoldAnimationIsRejected() throws {
+        let paper = try makeRectangle()
+        let animation = FoldAnimation(
+            paperID: paper.id,
+            line: try Line2D(point: .zero, direction: Point2D(x: 0, y: 1)),
+            moving: .positive,
+            stationaryFaces: [],
+            movingFaces: paper.faces,
             foldedLayer: 1
         )
 
@@ -282,12 +348,17 @@ private func makePaper(
     )
 }
 
-private func rectangleFace(id: UInt64, layer: Int, visibleSide: PaperSide = .front) throws -> Face {
+private func rectangleFace(
+    id: UInt64,
+    layer: Int,
+    visibleSide: PaperSide = .front,
+    centerX: Double = 0
+) throws -> Face {
     Face(
         id: FaceID(rawValue: id),
         polygon: try Polygon(vertices: [
-            Point2D(x: -100, y: -50), Point2D(x: 100, y: -50),
-            Point2D(x: 100, y: 50), Point2D(x: -100, y: 50),
+            Point2D(x: centerX - 100, y: -50), Point2D(x: centerX + 100, y: -50),
+            Point2D(x: centerX + 100, y: 50), Point2D(x: centerX - 100, y: 50),
         ]),
         visibleSide: visibleSide,
         layer: layer
