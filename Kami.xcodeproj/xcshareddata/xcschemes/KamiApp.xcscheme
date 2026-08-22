@@ -55,6 +55,17 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D53F8D2DE8039AC3BDFF8B62"
+               BuildableName = "KamiSnapshotTests.xctest"
+               BlueprintName = "KamiSnapshotTests"
+               ReferencedContainer = "container:Kami.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "A841F9DDD43671E916CFE264"
                BuildableName = "KamiAppUITests.xctest"
                BlueprintName = "KamiAppUITests"
