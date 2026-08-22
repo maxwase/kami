@@ -4,6 +4,9 @@ public struct Line2D: Equatable, Sendable {
     public let normal: Point2D
 
     public init(point: Point2D, direction: Point2D) throws {
+        guard point.isFinite, direction.isFinite else {
+            throw GeometryError.nonFiniteCoordinate
+        }
         guard let normalizedDirection = direction.normalized else {
             throw GeometryError.degenerateLine
         }

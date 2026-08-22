@@ -11,6 +11,8 @@ public struct Point2D: Equatable, Sendable {
 
     public static let zero = Point2D(x: 0, y: 0)
 
+    var isFinite: Bool { x.isFinite && y.isFinite }
+
     static func - (lhs: Self, rhs: Self) -> Self {
         Self(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
     }

@@ -46,6 +46,56 @@ struct ClipperTests {
         #expect(clockwise.contains(Point2D(x: 2, y: 0)) == false)
     }
 
+    @Test("Duplicate vertices do not make outside points count as boundary points")
+    func duplicateVerticesDoNotMakeOutsidePointsCountAsBoundaryPoints() throws {
+        let polygon = try Polygon(vertices: [
+            Point2D(x: 0, y: 0),
+            Point2D(x: 2, y: 0),
+            Point2D(x: 2, y: 0),
+            Point2D(x: 2, y: 2),
+            Point2D(x: 0, y: 2),
+            Point2D(x: 0, y: 0),
+        ])
+
+        #expect(polygon.contains(Point2D(x: 2, y: 1)))
+        #expect(polygon.contains(Point2D(x: 4, y: 1)) == false)
+    }
+
+    @Test("A short edge does not make a distant collinear point a boundary point")
+    func shortEdgeDoesNotMakeDistantCollinearPointABoundaryPoint() throws {
+        let polygon = try Polygon(vertices: [
+            Point2D(x: 0, y: 0),
+            Point2D(x: 0.001, y: 0),
+            Point2D(x: 1, y: 1),
+            Point2D(x: 0, y: 1),
+        ])
+
+        #expect(polygon.contains(Point2D(x: 0.0015, y: 0)) == false)
+    }
+
+    @Test("Geometry constructors reject non-finite coordinates with typed errors")
+    func geometryConstructorsRejectNonFiniteCoordinatesWithTypedErrors() {
+        #expect(throws: GeometryError.self) {
+            try Line2D(
+                point: Point2D(x: .nan, y: 0),
+                direction: Point2D(x: 1, y: 0)
+            )
+        }
+        #expect(throws: GeometryError.self) {
+            try Line2D(
+                point: .zero,
+                direction: Point2D(x: .infinity, y: 0)
+            )
+        }
+        #expect(throws: GeometryError.self) {
+            try Polygon(vertices: [
+                Point2D(x: 1, y: 0),
+                Point2D(x: 0, y: .infinity),
+                Point2D(x: -1, y: 0),
+            ])
+        }
+    }
+
     @Test("Clipping a polygon wholly on one side returns an empty and unchanged half")
     func clippingPolygonWhollyOnOneSideReturnsEmptyAndUnchangedHalves() throws {
         let polygon = try Polygon(vertices: [

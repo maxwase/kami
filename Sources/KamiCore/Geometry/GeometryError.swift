@@ -1,4 +1,5 @@
 public enum GeometryError: Error, Equatable, Sendable {
+    case nonFiniteCoordinate
     case degenerateLine
     case degeneratePolygon
 }

@@ -9,6 +9,9 @@ public struct Polygon: Equatable, Sendable {
     public let vertices: [Point2D]
 
     public init(vertices: [Point2D]) throws {
+        guard vertices.allSatisfy(\.isFinite) else {
+            throw GeometryError.nonFiniteCoordinate
+        }
         guard vertices.count >= 3, abs(Self.signedArea(vertices)) > GeometryTolerance.area else {
             throw GeometryError.degeneratePolygon
         }
@@ -74,12 +77,17 @@ public struct Polygon: Equatable, Sendable {
     private static func isOnSegment(_ point: Point2D, from start: Point2D, to end: Point2D) -> Bool {
         let offset = point - start
         let edge = end - start
+        let edgeLength = edge.length
+        guard edgeLength > 0 else { return false }
+
         let crossProduct = offset.x * edge.y - offset.y * edge.x
-        guard abs(crossProduct) <= GeometryTolerance.distance else { return false }
+        let areaTolerance = GeometryTolerance.distance * edgeLength
+        guard abs(crossProduct) <= areaTolerance else { return false }
 
         let dotProduct = offset.x * edge.x + offset.y * edge.y
-        return dotProduct >= -GeometryTolerance.distance
-            && dotProduct <= edge.x * edge.x + edge.y * edge.y + GeometryTolerance.distance
+        let edgeLengthSquared = edgeLength * edgeLength
+        return dotProduct >= -areaTolerance
+            && dotProduct <= edgeLengthSquared + areaTolerance
     }
 
     private static func canonicalized(_ vertices: [Point2D]) -> [Point2D] {
