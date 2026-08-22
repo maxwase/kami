@@ -20,12 +20,15 @@
 		7D2427259F0A64D1F90D9A3C /* KamiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; };
 		92A14AE6683C6B4029C3D947 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */; };
 		9BDC7A16EFDA3977FA2EB180 /* Point2D.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFF6D531C9D91AFB4A5EDF4 /* Point2D.swift */; };
+		A43A2515CABE19216BE64CF9 /* Undo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102BACD64BEC3913B5AE99C0 /* Undo.swift */; };
 		AA1C67E577DBE8A912364948 /* Polygon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA5F68DE197DA58923B54F85 /* Polygon.swift */; };
 		ADD2D2BECF3283D50BEABC98 /* GeometryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2BD2CC350074AACBFC217 /* GeometryError.swift */; };
 		B5D62F5F9A51F4CA724F430E /* KamiAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */; };
+		B90D6A4D6C23F157286FC14D /* Fold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2FC3AF1DFE41E339041A129 /* Fold.swift */; };
 		E4E4146519BA178B39B5AEE0 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 70511DD0684E8609E5AAF5DD /* ComposableArchitecture */; };
 		EFF5855EBEA6C31AD0EE2216 /* KamiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; };
 		F07B87C03542EBC53358D4B9 /* ClipperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7C6E07B593452FCDC9622D /* ClipperTests.swift */; };
+		FDB1587F7B09108F17B0B5B7 /* Flip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8538F0698F1F38B3FDEA8E31 /* Flip.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +82,7 @@
 
 /* Begin PBXFileReference section */
 		0EB47A67668D77A817E42E2A /* KamiCoreTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		102BACD64BEC3913B5AE99C0 /* Undo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Undo.swift; sourceTree = "<group>"; };
 		127D04659A612DF14619A9B1 /* Line2D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Line2D.swift; sourceTree = "<group>"; };
 		386464CE7FAF532061DB8D0D /* KamiAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CFF6D531C9D91AFB4A5EDF4 /* Point2D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Point2D.swift; sourceTree = "<group>"; };
@@ -86,6 +90,7 @@
 		5F7C6E07B593452FCDC9622D /* ClipperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperTests.swift; sourceTree = "<group>"; };
 		6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		72835269E3E0712E58E9C663 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8538F0698F1F38B3FDEA8E31 /* Flip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flip.swift; sourceTree = "<group>"; };
 		8908054EF997DBEF70F4FD0E /* KamiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KamiApp.swift; sourceTree = "<group>"; };
 		A947A02072569E7DB04FC8DF /* KamiCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = KamiCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABC48770F00DF97F4DA608DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -93,6 +98,7 @@
 		CB2FEF8428C9EE4CC0DB3BBB /* ProjectSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSmokeTests.swift; sourceTree = "<group>"; };
 		D4C2BD2CC350074AACBFC217 /* GeometryError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryError.swift; sourceTree = "<group>"; };
 		D952CA00A2DF84358C8D2E7D /* FoldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldTests.swift; sourceTree = "<group>"; };
+		E2FC3AF1DFE41E339041A129 /* Fold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fold.swift; sourceTree = "<group>"; };
 		FA5F68DE197DA58923B54F85 /* Polygon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Polygon.swift; sourceTree = "<group>"; };
 		FAFB0F01EB8EB23C02262170 /* KamiApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KamiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -158,7 +164,10 @@
 		8A514158A5678500272A2AC0 /* Paper */ = {
 			isa = PBXGroup;
 			children = (
+				8538F0698F1F38B3FDEA8E31 /* Flip.swift */,
+				E2FC3AF1DFE41E339041A129 /* Fold.swift */,
 				43E10A95CB11F94B3993EB38 /* Paper.swift */,
+				102BACD64BEC3913B5AE99C0 /* Undo.swift */,
 			);
 			path = Paper;
 			sourceTree = "<group>";
@@ -407,11 +416,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FDB1587F7B09108F17B0B5B7 /* Flip.swift in Sources */,
+				B90D6A4D6C23F157286FC14D /* Fold.swift in Sources */,
 				ADD2D2BECF3283D50BEABC98 /* GeometryError.swift in Sources */,
 				141F21B6AEFBD1F682DAE142 /* Line2D.swift in Sources */,
 				72168A825F2CBA71DF2DECBF /* Paper.swift in Sources */,
 				9BDC7A16EFDA3977FA2EB180 /* Point2D.swift in Sources */,
 				AA1C67E577DBE8A912364948 /* Polygon.swift in Sources */,
+				A43A2515CABE19216BE64CF9 /* Undo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

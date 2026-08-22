@@ -1,12 +1,16 @@
 import Foundation
 
+let maximumSafePaperLayer = (Int.max - 1) / 2
+
 public struct PaperID: RawRepresentable, Hashable, Sendable {
     public let rawValue: UInt64
+
     public init(rawValue: UInt64) { self.rawValue = rawValue }
 }
 
 public struct FaceID: RawRepresentable, Hashable, Sendable {
     public let rawValue: UInt64
+
     public init(rawValue: UInt64) { self.rawValue = rawValue }
 }
 
@@ -76,71 +80,74 @@ public struct Paper: Equatable, Sendable {
     public let baseSize: PaperAspectRatio
     public let faces: [Face]
 
-    public static func rectangle(id: PaperID, faceID: FaceID, style: PaperStyle, center: Point2D, width: Double, height: Double) throws -> Self {
+    public init(
+        id: PaperID,
+        style: PaperStyle,
+        center: Point2D,
+        rotation: Double,
+        scale: Double,
+        baseSize: PaperAspectRatio,
+        faces: [Face]
+    ) throws {
+        guard center.isFinite, rotation.isFinite, scale.isFinite, scale > 0 else {
+            throw PaperValidationError.invalidTransform
+        }
+        guard faces.allSatisfy({ $0.layer >= 0 && $0.layer <= maximumSafePaperLayer }) else {
+            throw PaperValidationError.invalidLayer
+        }
+        self.init(
+            uncheckedID: id,
+            style: style,
+            center: center,
+            rotation: rotation,
+            scale: scale,
+            baseSize: baseSize,
+            faces: faces
+        )
+    }
+
+    public static func rectangle(
+        id: PaperID,
+        faceID: FaceID,
+        style: PaperStyle,
+        center: Point2D,
+        width: Double,
+        height: Double
+    ) throws -> Self {
         let size = try PaperAspectRatio(width: width, height: height)
-        let halfWidth = width / 2
-        let halfHeight = height / 2
         let face = Face(
             id: faceID,
             polygon: try Polygon(vertices: [
-                Point2D(x: -halfWidth, y: -halfHeight), Point2D(x: halfWidth, y: -halfHeight),
-                Point2D(x: halfWidth, y: halfHeight), Point2D(x: -halfWidth, y: halfHeight),
+                Point2D(x: -width / 2, y: -height / 2), Point2D(x: width / 2, y: -height / 2),
+                Point2D(x: width / 2, y: height / 2), Point2D(x: -width / 2, y: height / 2),
             ]),
             visibleSide: .front,
             layer: 0
         )
-        return Self(id: id, style: style, center: center, rotation: 0, scale: 1, baseSize: size, faces: [face])
+        return try Self(id: id, style: style, center: center, rotation: 0, scale: 1, baseSize: size, faces: [face])
     }
 
-    public func folding(_ request: FoldRequest) throws -> Self {
-        let maxLayer = faces.map(\.layer).max() ?? 0
-        var stationary: [Face] = []
-        var moving: [Face] = []
-        var nextID = faces.map(\.id.rawValue).max() ?? 0
-
-        for face in faces {
-            let positive = face.polygon.clipped(to: request.line, keeping: .positive)
-            let negative = face.polygon.clipped(to: request.line, keeping: .negative)
-            let movable = request.moving == .positive ? positive : negative
-            let fixed = request.moving == .positive ? negative : positive
-            if fixed.vertices.isEmpty == false {
-                nextID += 1
-                stationary.append(Face(id: FaceID(rawValue: nextID), polygon: fixed, visibleSide: face.visibleSide, layer: face.layer))
-            }
-            if movable.vertices.isEmpty == false {
-                nextID += 1
-                let reflected = try Polygon(vertices: movable.vertices.map(request.line.reflected))
-                moving.append(Face(id: FaceID(rawValue: nextID), polygon: reflected, visibleSide: face.visibleSide.toggled, layer: maxLayer + 1))
-            }
-        }
-        guard stationary.isEmpty == false, moving.isEmpty == false else { throw FoldRejection.noIntersection }
-        return Self(id: id, style: style, center: center, rotation: rotation, scale: scale, baseSize: baseSize, faces: stationary + moving)
+    init(
+        uncheckedID id: PaperID,
+        style: PaperStyle,
+        center: Point2D,
+        rotation: Double,
+        scale: Double,
+        baseSize: PaperAspectRatio,
+        faces: [Face]
+    ) {
+        self.id = id
+        self.style = style
+        self.center = center
+        self.rotation = rotation
+        self.scale = scale
+        self.baseSize = baseSize
+        self.faces = faces
     }
 }
 
-public enum PaperValidationError: Error, Equatable, Sendable { case invalidDimensions }
-
-public enum FoldSide: Equatable, Sendable { case positive, negative }
-
-public struct FoldRequest: Sendable {
-    public let line: Line2D
-    public let moving: FoldSide
-    public init(line: Line2D, moving: FoldSide) { self.line = line; self.moving = moving }
-}
-
-public enum FoldRejection: Error, Equatable, Sendable { case noIntersection }
-
-public struct FoldAnimation: Equatable, Sendable {
-    public let duration: Duration
-    public let progress: Double
-    public init(duration: Duration = .milliseconds(460), progress: Double = 0) {
-        self.duration = duration
-        self.progress = min(max(progress, 0), 1)
-    }
-}
-
-public struct RenderFrame: Equatable, Sendable {
-    public let paper: Paper
-    public let fold: FoldAnimation?
-    public init(paper: Paper, fold: FoldAnimation? = nil) { self.paper = paper; self.fold = fold }
+public enum PaperValidationError: Error, Equatable, Sendable {
+    case invalidDimensions
+    case invalidTransform
+    case invalidLayer
 }
