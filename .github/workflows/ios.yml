@@ -8,4 +8,4 @@ jobs:
       - uses: xcodegen/setup-xcodegen@v1
         with: { xcodegen-version: '2.46.0' }
       - run: xcodegen generate
-      - run: xcodebuild test -project Kami.xcodeproj -scheme KamiApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' CODE_SIGNING_ALLOWED=NO
+      - run: xcodebuild test -skipMacroValidation -project Kami.xcodeproj -scheme KamiApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' CODE_SIGNING_ALLOWED=NO

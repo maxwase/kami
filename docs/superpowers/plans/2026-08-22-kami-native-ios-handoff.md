@@ -140,15 +140,15 @@ commit the resolved package lockfile; add `Tests/KamiCoreTests/ProjectSmokeTests
 **Produces:** a clean, reproducible native project whose app, unit tests, and
 UI test bundles are discoverable on the iPhone 17 Pro simulator.
 
-- [ ] Write a failing `@Test` that imports `KamiCore` and asserts
+- [x] Write a failing `@Test` that imports `KamiCore` and asserts
   `PaperAspectRatio.a4.value > 0`.
-- [ ] Run the focused target on the iPhone 17 Pro simulator with
+- [x] Run the focused target on the iPhone 17 Pro simulator with
   `-skipMacroValidation`; confirm the failure comes from the project/test
   configuration, not a missing simulator.
-- [ ] Repair the target membership, asset metadata, generated package lockfile,
+- [x] Repair the target membership, asset metadata, generated package lockfile,
   and CI command. CI must include `-skipMacroValidation` and
   `CODE_SIGNING_ALLOWED=NO`.
-- [ ] Run the full simulator test command above; confirm a nonzero test count
+- [x] Run the full simulator test command above; confirm a nonzero test count
   and a successful result bundle.
 - [ ] Commit `build: stabilize native simulator project`.
 

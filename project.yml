@@ -7,7 +7,7 @@ configs:
   Release: release
 settings:
   base:
-    SWIFT_VERSION: 6.0
+    SWIFT_VERSION: 6.3
     SWIFT_STRICT_CONCURRENCY: complete
     IPHONEOS_DEPLOYMENT_TARGET: 18.0
     TARGETED_DEVICE_FAMILY: 1
@@ -32,6 +32,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: eu.maxwase.kami.core
+        GENERATE_INFOPLIST_FILE: YES
   KamiApp:
     type: application
     platform: iOS
@@ -63,3 +64,12 @@ targets:
     platform: iOS
     sources: [Tests/KamiAppUITests]
     dependencies: [target: KamiApp]
+schemes:
+  KamiApp:
+    build:
+      targets:
+        KamiApp: all
+    test:
+      targets:
+        - KamiCoreTests
+        - KamiAppUITests
