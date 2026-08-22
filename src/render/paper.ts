@@ -3,7 +3,7 @@ import { add2, mul2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
 import { mul3, norm3, rotateAroundAxis, rotatePointAroundLine, v3 } from "../math/vec3";
 import type { Vec3 } from "../math/vec3";
-import { localToScreen } from "../paper/space";
+import { localToScreen, makeProjector } from "../paper/space";
 import type { Face, Paper, PaperSide } from "../paper/model";
 import { FoldSide, type FoldAnim } from "../paper/fold";
 import type { FlipAnim } from "../paper/flip";
@@ -41,20 +41,141 @@ export function project3To2Local(p: Vec3): Vec2 {
   return { x: p.x * persp, y: p.y * persp };
 }
 
+const FLAT_NORMAL: Vec3 = { x: 0, y: 0, z: 1 };
+
+/** Face count above which one batched sheet fill beats per-face pattern fills. */
+const BATCH_FACE_THRESHOLD = 8;
+
+let tintCanvas: HTMLCanvasElement | undefined;
+let tintCtx: CanvasRenderingContext2D | null | undefined;
+
+/**
+ * Draw the paper's flat faces.
+ *
+ * A pattern fill carries large fixed per-call overhead - measured ~184x a solid
+ * fill, and independent of the polygon's size - so issuing one per face made
+ * this scale badly with fold depth. The texture is therefore filled exactly
+ * once, clipped to the union of every face.
+ *
+ * Per-face colour is applied through a tint mask instead. Faces are painted
+ * into the mask top layer first with source-over, so the topmost face wins each
+ * pixel; that reproduces the old per-face draw order, where an upper face's
+ * opaque texture fill covered everything beneath it. Lighting is constant for
+ * flat faces, so it is applied once over the same clip.
+ */
 export function drawFlatPaperFaces(
   ctx: CanvasRenderingContext2D,
   paper: Paper,
   texture: CanvasPattern,
 ): void {
-  const faces = [...paper.faces].sort((a, b) => a.layer - b.layer);
-  alignTextureToPaper(texture, paper);
+  if (paper.faces.length === 0) return;
 
-  for (const f of faces) {
-    const screenVerts = f.verts.map((p) => localToScreen(paper, p));
-    const color = f.up === "front" ? paper.style.front : paper.style.back;
-
-    shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture);
+  // The batched path costs a fixed full-sheet fill plus a composite, which only
+  // pays off once enough faces are sharing it. Below the threshold, shading each
+  // face directly is cheaper - an unfolded sheet is one large, cheap fill.
+  if (paper.faces.length <= BATCH_FACE_THRESHOLD) {
+    const projectFew = makeProjector(paper);
+    const ordered = [...paper.faces].sort((a, b) => a.layer - b.layer);
+    alignTextureToPaper(texture, paper);
+    for (const f of ordered) {
+      const color = f.up === "front" ? paper.style.front : paper.style.back;
+      shadeFace(ctx, f.verts.map(projectFew), color, FLAT_NORMAL, texture);
+    }
+    return;
   }
+
+  const t = ctx.getTransform();
+  const sx = t.a || 1;
+  const sy = t.d || 1;
+
+  const project = makeProjector(paper);
+  const byTop = [...paper.faces].sort((a, b) => b.layer - a.layer);
+  const polys = byTop.map((f) => f.verts.map(project));
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const sv of polys) {
+    for (const p of sv) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
+
+  const viewW = ctx.canvas.width / sx;
+  const viewH = ctx.canvas.height / sy;
+  const x0 = Math.max(0, Math.floor(minX) - 1);
+  const y0 = Math.max(0, Math.floor(minY) - 1);
+  const x1 = Math.min(viewW, Math.ceil(maxX) + 1);
+  const y1 = Math.min(viewH, Math.ceil(maxY) + 1);
+  const w = x1 - x0;
+  const h = y1 - y0;
+  if (w <= 0 || h <= 0) return;
+
+  const needW = Math.ceil(w * sx);
+  const needH = Math.ceil(h * sy);
+
+  if (!tintCanvas || tintCanvas.width < needW || tintCanvas.height < needH) {
+    const prevW = tintCanvas?.width ?? 0;
+    const prevH = tintCanvas?.height ?? 0;
+    tintCanvas = document.createElement("canvas");
+    tintCanvas.width = Math.max(needW, prevW);
+    tintCanvas.height = Math.max(needH, prevH);
+    tintCtx = tintCanvas.getContext("2d");
+  }
+
+  // Without a tint layer, fall back to shading each face on its own.
+  if (!tintCtx) {
+    for (let i = polys.length - 1; i >= 0; i--) {
+      const f = byTop[i];
+      const color = f.up === "front" ? paper.style.front : paper.style.back;
+      shadeFace(ctx, polys[i], color, FLAT_NORMAL, texture);
+    }
+    return;
+  }
+
+  // Tint mask: painted top layer first so the topmost face wins each pixel.
+  tintCtx.setTransform(1, 0, 0, 1, 0, 0);
+  tintCtx.clearRect(0, 0, needW, needH);
+  tintCtx.setTransform(sx, 0, 0, sy, -x0 * sx, -y0 * sy);
+  for (let i = 0; i < polys.length; i++) {
+    const f = byTop[i];
+    tintCtx.fillStyle = f.up === "front" ? paper.style.front : paper.style.back;
+    pathPoly(tintCtx, polys[i]);
+    tintCtx.fill();
+  }
+
+  ctx.save();
+  pathPolys(ctx, polys.map(orientCcw));
+  ctx.clip();
+
+  // One pattern fill for the whole sheet, instead of one per face.
+  alignTextureToPaper(texture, paper);
+  ctx.fillStyle = texture;
+  ctx.fillRect(x0, y0, w, h);
+
+  ctx.globalCompositeOperation = "multiply";
+  ctx.globalAlpha = 0.9;
+  ctx.drawImage(tintCanvas, 0, 0, needW, needH, x0, y0, w, h);
+
+  // Constant flat-face lighting, applied once over the same clip.
+  ctx.globalCompositeOperation = "source-over";
+  const { shadow, highlight } = calculateLighting(FLAT_NORMAL);
+  if (shadow > 0.001) {
+    ctx.globalAlpha = shadow;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(x0, y0, w, h);
+  }
+  if (highlight > 0.001) {
+    ctx.globalAlpha = highlight;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x0, y0, w, h);
+  }
+  ctx.restore();
 }
 
 /** Intermediate structure for Z-sorted rendering. */
@@ -144,9 +265,11 @@ export function drawFoldingPaper(
   // Collect all faces into a single list for unified sorting
   const items: RenderItem[] = [];
 
+  const projectPt = makeProjector(paper);
+
   // Add stationary (keep) faces - they remain flat at Z=0
   for (const f of anim.keepFaces) {
-    const screenVerts = f.verts.map((p) => localToScreen(paper, p));
+    const screenVerts = f.verts.map(projectPt);
     const color = f.up === "front" ? paper.style.front : paper.style.back;
     items.push({
       screenVerts,
@@ -161,7 +284,7 @@ export function drawFoldingPaper(
   for (const { face: f, pts3 } of movingGeometry) {
     // Project 3D back to 2D with perspective
     const projLocal = pts3.map(project3To2Local);
-    const screenVerts = projLocal.map((pl) => localToScreen(paper, pl));
+    const screenVerts = projLocal.map(projectPt);
 
     // During animation, ALL faces in the moving stack toggle at 90° - they
     // rotate together as a rigid body.
@@ -228,42 +351,118 @@ export function drawFoldingPaper(
 let scratchCanvas: HTMLCanvasElement | undefined;
 let scratchCtx: CanvasRenderingContext2D | null | undefined;
 
-/** Draw a subtle outline to indicate the active sheet. */
+/**
+ * Draw a subtle outline to indicate the active sheet.
+ *
+ * Face outlines overlap along shared creases, so they are stroked opaque into a
+ * scratch layer and composited once at the target alpha - otherwise the shared
+ * edges would stack and read darker than the outer boundary.
+ *
+ * The scratch layer covers only the paper's bounding box rather than the whole
+ * viewport: the per-frame clear and composite dominate this function's cost, and
+ * a full-screen version measured ~10x more expensive on WebKit than in Chrome.
+ */
 export function drawActiveOutline(ctx: CanvasRenderingContext2D, paper: Paper): void {
-  const width = ctx.canvas.width;
-  const height = ctx.canvas.height;
+  if (paper.faces.length === 0) return;
 
-  if (
-    !scratchCanvas ||
-    scratchCanvas.width !== width ||
-    scratchCanvas.height !== height
-  ) {
-    scratchCanvas = document.createElement("canvas");
-    scratchCanvas.width = width;
-    scratchCanvas.height = height;
-    scratchCtx = scratchCanvas.getContext("2d");
+  // Backing-store scale of the target, so the scratch layer matches its density.
+  const t = ctx.getTransform();
+  const sx = t.a || 1;
+  const sy = t.d || 1;
+
+  const projectOutline = makeProjector(paper);
+  const polys: Vec2[][] = [];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const f of paper.faces) {
+    const sv = f.verts.map(projectOutline);
+    polys.push(sv);
+    for (const p of sv) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
   }
 
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
+
+  // Pad for the stroke width, then clamp to the visible canvas.
+  const pad = 2;
+  const viewW = ctx.canvas.width / sx;
+  const viewH = ctx.canvas.height / sy;
+  const x0 = Math.max(0, Math.floor(minX - pad));
+  const y0 = Math.max(0, Math.floor(minY - pad));
+  const x1 = Math.min(viewW, Math.ceil(maxX + pad));
+  const y1 = Math.min(viewH, Math.ceil(maxY + pad));
+  const w = x1 - x0;
+  const h = y1 - y0;
+  if (w <= 0 || h <= 0) return;
+
+  const needW = Math.ceil(w * sx);
+  const needH = Math.ceil(h * sy);
+
+  // Grow-only: reuse the buffer across frames as the paper moves or rotates.
+  if (!scratchCanvas || scratchCanvas.width < needW || scratchCanvas.height < needH) {
+    const prevW = scratchCanvas?.width ?? 0;
+    const prevH = scratchCanvas?.height ?? 0;
+    scratchCanvas = document.createElement("canvas");
+    scratchCanvas.width = Math.max(needW, prevW);
+    scratchCanvas.height = Math.max(needH, prevH);
+    scratchCtx = scratchCanvas.getContext("2d");
+  }
   if (!scratchCtx) return;
 
-  scratchCtx.clearRect(0, 0, width, height);
+  scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
+  scratchCtx.clearRect(0, 0, needW, needH);
+  // Map paper-space (CSS px) into the bounding-box-local scratch layer.
+  scratchCtx.setTransform(sx, 0, 0, sy, -x0 * sx, -y0 * sy);
 
-  // Determine opaque color and target alpha
   const isWhite = paper.style.edge.includes("255");
   scratchCtx.strokeStyle = isWhite ? "#ffffff" : "#000000";
   scratchCtx.lineWidth = 1;
   const targetAlpha = isWhite ? 0.2 : 0.16;
 
-  for (const f of paper.faces) {
-    const sv = f.verts.map((pt) => localToScreen(paper, pt));
+  for (const sv of polys) {
     pathPoly(scratchCtx, sv);
     scratchCtx.stroke();
   }
 
   ctx.save();
   ctx.globalAlpha = targetAlpha;
-  ctx.drawImage(scratchCanvas, 0, 0);
+  ctx.drawImage(scratchCanvas, 0, 0, needW, needH, x0, y0, w, h);
   ctx.restore();
+}
+
+/**
+ * Reverse a polygon's vertices if it is wound clockwise.
+ *
+ * Folding reflects faces, which flips their winding. Under the nonzero rule a
+ * clip or fill built from mixed-winding polygons cancels where they overlap, so
+ * every polygon must agree before they share a path.
+ */
+function orientCcw(verts: Vec2[]): Vec2[] {
+  let twiceArea = 0;
+  for (let i = 0; i < verts.length; i++) {
+    const p = verts[i];
+    const q = verts[(i + 1) % verts.length];
+    twiceArea += p.x * q.y - q.x * p.y;
+  }
+  return twiceArea < 0 ? [...verts].reverse() : verts;
+}
+
+/** Build one path spanning several polygons, for a single clip or fill. */
+function pathPolys(ctx: CanvasRenderingContext2D, polys: Vec2[][]): void {
+  ctx.beginPath();
+  for (const verts of polys) {
+    if (verts.length === 0) continue;
+    ctx.moveTo(verts[0].x, verts[0].y);
+    for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
+    ctx.closePath();
+  }
 }
 
 function pathPoly(ctx: CanvasRenderingContext2D, screenVerts: Vec2[]): void {
@@ -423,6 +622,7 @@ export function drawFlippingPaper(
   // Collect faces for rendering
   const items: RenderItem[] = [];
   const faces = [...anim.originalFaces].sort((a, b) => a.layer - b.layer);
+  const projectPt = makeProjector(paper);
 
   for (const f of faces) {
     // Rotate each vertex around the Y axis
@@ -432,7 +632,7 @@ export function drawFlippingPaper(
 
     // Project 3D back to 2D with perspective
     const projLocal = pts3.map(project3To2Local);
-    const screenVerts = projLocal.map((pl) => localToScreen(paper, pl));
+    const screenVerts = projLocal.map(projectPt);
 
     // Determine visible side: show other side when viewing back
     const visibleSide: PaperSide = viewingBackSide
