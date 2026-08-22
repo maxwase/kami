@@ -224,6 +224,34 @@ struct FoldTests {
         #expect(committed == paper)
     }
 
+    @Test("A fold animation with an empty polygon is rejected before allocating IDs")
+    func foldAnimationWithEmptyPolygonIsRejected() throws {
+        let paper = try makeRectangle()
+        let emptyFace = Face(
+            id: FaceID(rawValue: 99),
+            polygon: .empty,
+            visibleSide: .front,
+            layer: 0
+        )
+        let animation = FoldAnimation(
+            paperID: paper.id,
+            line: try Line2D(point: .zero, direction: Point2D(x: 0, y: 1)),
+            moving: .positive,
+            stationaryFaces: [emptyFace] + paper.faces,
+            movingFaces: paper.faces,
+            foldedLayer: 1
+        )
+        var allocatedIDs = 0
+
+        let committed = commitFold(paper, animation: animation, nextFaceID: {
+            allocatedIDs += 1
+            return FaceID(rawValue: 10)
+        })
+
+        #expect(committed == paper)
+        #expect(allocatedIDs == 0)
+    }
+
     private func builtFold(paper: Paper, line: Line2D, moving: FoldSide) throws -> FoldAnimation {
         let result = buildFold(
             paper: paper,

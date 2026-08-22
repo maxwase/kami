@@ -99,6 +99,8 @@ public func commitFold(_ paper: Paper, animation: FoldAnimation, nextFaceID: () 
     guard animation.paperID == paper.id,
           animation.stationaryFaces.isEmpty == false,
           animation.movingFaces.isEmpty == false,
+          animation.stationaryFaces.allSatisfy({ hasValidGeometry($0.polygon) }),
+          animation.movingFaces.allSatisfy({ hasValidGeometry($0.polygon) }),
           animation.foldedLayer >= 0,
           animation.foldedLayer <= maximumSafePaperLayer,
           animation.stationaryFaces.allSatisfy({ $0.layer >= 0 && $0.layer <= maximumSafePaperLayer }),
@@ -133,6 +135,10 @@ public func commitFold(_ paper: Paper, animation: FoldAnimation, nextFaceID: () 
 
 private func reflected(_ polygon: Polygon, across line: Line2D) -> Polygon? {
     try? Polygon(vertices: polygon.vertices.map(line.reflected))
+}
+
+private func hasValidGeometry(_ polygon: Polygon) -> Bool {
+    (try? Polygon(vertices: polygon.vertices)) != nil
 }
 
 private func removingExactDuplicates(from faces: [Face]) -> [Face] {
