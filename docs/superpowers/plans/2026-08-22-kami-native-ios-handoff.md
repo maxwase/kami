@@ -150,7 +150,7 @@ UI test bundles are discoverable on the iPhone 17 Pro simulator.
   `CODE_SIGNING_ALLOWED=NO`.
 - [x] Run the full simulator test command above; confirm a nonzero test count
   and a successful result bundle.
-- [ ] Commit `build: stabilize native simulator project`.
+- [x] Commit `build: stabilize native simulator project`.
 
 ### Task 2: Finish exact `KamiCore` geometry
 
