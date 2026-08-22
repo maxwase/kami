@@ -26,3 +26,6 @@ app/build/
 *.apk
 *.apk.idsig
 manifest-checksum.txt
+Signing.xcconfig
+.build/
+DerivedData/

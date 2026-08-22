@@ -1,0 +1,2 @@
+// Copy to Signing.xcconfig for a local release build. Do not commit credentials.
+// DEVELOPMENT_TEAM =

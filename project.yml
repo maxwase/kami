@@ -1,0 +1,65 @@
+name: Kami
+options:
+  minimumXcodeGenVersion: 2.46.0
+  developmentLanguage: en
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    SWIFT_STRICT_CONCURRENCY: complete
+    IPHONEOS_DEPLOYMENT_TARGET: 18.0
+    TARGETED_DEVICE_FAMILY: 1
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: NO
+packages:
+  ComposableArchitecture:
+    url: https://github.com/pointfreeco/swift-composable-architecture
+    exactVersion: 1.26.1
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    exactVersion: 3.69.5
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    exactVersion: 1.19.2
+targets:
+  KamiCore:
+    type: framework
+    platform: iOS
+    sources: [Sources/KamiCore]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: eu.maxwase.kami.core
+  KamiApp:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/KamiApp
+      - Resources
+    dependencies:
+      - target: KamiCore
+      - package: ComposableArchitecture
+      - package: PostHog
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: eu.maxwase.kami
+        INFOPLIST_FILE: Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: ""
+  KamiCoreTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/KamiCoreTests
+        excludes: [Fixtures]
+    dependencies:
+      - target: KamiCore
+      - package: SnapshotTesting
+  KamiAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests/KamiAppUITests]
+    dependencies: [target: KamiApp]

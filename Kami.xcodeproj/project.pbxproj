@@ -1,0 +1,762 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A771ECDDC33BA5851F0BB9C /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 3B5E04D27BB87D42FBF35BAF /* PostHog */; };
+		0DCE6B49D567B2662FBA3B4A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABC48770F00DF97F4DA608DD /* Assets.xcassets */; };
+		17F35EEA4A1E32589480BD51 /* KamiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		42FEE47AF7B2D467D6E4C58A /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 17108BACFA97ADA9C3FD2694 /* SnapshotTesting */; };
+		4A09DD0BA1B9B34601541C3B /* KamiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8908054EF997DBEF70F4FD0E /* KamiApp.swift */; };
+		7751E14E46FFFD50A20AF135 /* KamiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7D2427259F0A64D1F90D9A3C /* KamiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; };
+		92A14AE6683C6B4029C3D947 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */; };
+		A81BA9B4C4D5A39298C14EEE /* Geometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F308CC8E76F5033918D64660 /* Geometry.swift */; };
+		B5D62F5F9A51F4CA724F430E /* KamiAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */; };
+		E4E4146519BA178B39B5AEE0 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 70511DD0684E8609E5AAF5DD /* ComposableArchitecture */; };
+		EFF5855EBEA6C31AD0EE2216 /* KamiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; };
+		F07B87C03542EBC53358D4B9 /* ClipperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7C6E07B593452FCDC9622D /* ClipperTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0F1588C76088C8A9713A2BBA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9D4BE99BD8A021E7AAE4DFEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E5C0735140BD8BF0967B57BE;
+			remoteInfo = KamiCore;
+		};
+		4F0FCB5522D9957E50BD905B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9D4BE99BD8A021E7AAE4DFEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0013BC36134CC06B212CEF6;
+			remoteInfo = KamiApp;
+		};
+		D1941442DB7BA6C94D08C419 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9D4BE99BD8A021E7AAE4DFEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E5C0735140BD8BF0967B57BE;
+			remoteInfo = KamiCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3BB75B337B2B94EB87DD1346 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				7751E14E46FFFD50A20AF135 /* KamiCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD61C3C4A061785F0038CBB4 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				17F35EEA4A1E32589480BD51 /* KamiCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0EB47A67668D77A817E42E2A /* KamiCoreTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		386464CE7FAF532061DB8D0D /* KamiAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5F7C6E07B593452FCDC9622D /* ClipperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperTests.swift; sourceTree = "<group>"; };
+		6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		72835269E3E0712E58E9C663 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8908054EF997DBEF70F4FD0E /* KamiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KamiApp.swift; sourceTree = "<group>"; };
+		A947A02072569E7DB04FC8DF /* KamiCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = KamiCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABC48770F00DF97F4DA608DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KamiAppUITests.swift; sourceTree = "<group>"; };
+		F308CC8E76F5033918D64660 /* Geometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Geometry.swift; sourceTree = "<group>"; };
+		FAFB0F01EB8EB23C02262170 /* KamiApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KamiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		105213D952F258710C6BB984 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EFF5855EBEA6C31AD0EE2216 /* KamiCore.framework in Frameworks */,
+				E4E4146519BA178B39B5AEE0 /* ComposableArchitecture in Frameworks */,
+				0A771ECDDC33BA5851F0BB9C /* PostHog in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57B0DC3E32F2ACDD9A8BD806 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D2427259F0A64D1F90D9A3C /* KamiCore.framework in Frameworks */,
+				42FEE47AF7B2D467D6E4C58A /* SnapshotTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		526DDAC675AFC9A19BC56D6E /* KamiCore */ = {
+			isa = PBXGroup;
+			children = (
+				B090C54B121177C8185AEF16 /* Geometry */,
+			);
+			name = KamiCore;
+			path = Sources/KamiCore;
+			sourceTree = "<group>";
+		};
+		5524724DA55C6168018A9CDE /* KamiApp */ = {
+			isa = PBXGroup;
+			children = (
+				8908054EF997DBEF70F4FD0E /* KamiApp.swift */,
+			);
+			name = KamiApp;
+			path = Sources/KamiApp;
+			sourceTree = "<group>";
+		};
+		62E9B3893D8767CD376CC98A /* Geometry */ = {
+			isa = PBXGroup;
+			children = (
+				5F7C6E07B593452FCDC9622D /* ClipperTests.swift */,
+			);
+			path = Geometry;
+			sourceTree = "<group>";
+		};
+		9C17E24D47E3B8EE0016F5F8 = {
+			isa = PBXGroup;
+			children = (
+				5524724DA55C6168018A9CDE /* KamiApp */,
+				A6E76668D18448B78A032E18 /* KamiAppUITests */,
+				526DDAC675AFC9A19BC56D6E /* KamiCore */,
+				B2C0C05A3FD924723DFA8A86 /* KamiCoreTests */,
+				A55AC1E9788870B24C987E1F /* Resources */,
+				BC232C2911C0C8E26C8CD469 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A55AC1E9788870B24C987E1F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				ABC48770F00DF97F4DA608DD /* Assets.xcassets */,
+				72835269E3E0712E58E9C663 /* Info.plist */,
+				6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A6E76668D18448B78A032E18 /* KamiAppUITests */ = {
+			isa = PBXGroup;
+			children = (
+				C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */,
+			);
+			name = KamiAppUITests;
+			path = Tests/KamiAppUITests;
+			sourceTree = "<group>";
+		};
+		B090C54B121177C8185AEF16 /* Geometry */ = {
+			isa = PBXGroup;
+			children = (
+				F308CC8E76F5033918D64660 /* Geometry.swift */,
+			);
+			path = Geometry;
+			sourceTree = "<group>";
+		};
+		B2C0C05A3FD924723DFA8A86 /* KamiCoreTests */ = {
+			isa = PBXGroup;
+			children = (
+				62E9B3893D8767CD376CC98A /* Geometry */,
+			);
+			name = KamiCoreTests;
+			path = Tests/KamiCoreTests;
+			sourceTree = "<group>";
+		};
+		BC232C2911C0C8E26C8CD469 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FAFB0F01EB8EB23C02262170 /* KamiApp.app */,
+				386464CE7FAF532061DB8D0D /* KamiAppUITests.xctest */,
+				A947A02072569E7DB04FC8DF /* KamiCore.framework */,
+				0EB47A67668D77A817E42E2A /* KamiCoreTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4C0BEC230A78EF8E5F974610 /* KamiCoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 715DB531A99904FB39CF188A /* Build configuration list for PBXNativeTarget "KamiCoreTests" */;
+			buildPhases = (
+				1BA088162341A24EEAA18602 /* Sources */,
+				57B0DC3E32F2ACDD9A8BD806 /* Frameworks */,
+				CD61C3C4A061785F0038CBB4 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				09D4DDE911FFDEDE2223CF02 /* PBXTargetDependency */,
+			);
+			name = KamiCoreTests;
+			packageProductDependencies = (
+				17108BACFA97ADA9C3FD2694 /* SnapshotTesting */,
+			);
+			productName = KamiCoreTests;
+			productReference = 0EB47A67668D77A817E42E2A /* KamiCoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A841F9DDD43671E916CFE264 /* KamiAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D4A580BEDCB929D868032511 /* Build configuration list for PBXNativeTarget "KamiAppUITests" */;
+			buildPhases = (
+				144324701D8C035BA3C208DE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				44F5A1E4D29E5022702C8EC4 /* PBXTargetDependency */,
+			);
+			name = KamiAppUITests;
+			packageProductDependencies = (
+			);
+			productName = KamiAppUITests;
+			productReference = 386464CE7FAF532061DB8D0D /* KamiAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		E5C0735140BD8BF0967B57BE /* KamiCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6548D1B74741C811759E8342 /* Build configuration list for PBXNativeTarget "KamiCore" */;
+			buildPhases = (
+				34FD95536C16F5EA4FCF2B70 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KamiCore;
+			packageProductDependencies = (
+			);
+			productName = KamiCore;
+			productReference = A947A02072569E7DB04FC8DF /* KamiCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		F0013BC36134CC06B212CEF6 /* KamiApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7995562142C44DD539AD6F75 /* Build configuration list for PBXNativeTarget "KamiApp" */;
+			buildPhases = (
+				2C3B55426EC1305E5CB657D1 /* Sources */,
+				965210D4212EC667DF20AA9F /* Resources */,
+				105213D952F258710C6BB984 /* Frameworks */,
+				3BB75B337B2B94EB87DD1346 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				668E62939C2A7005AEED7E16 /* PBXTargetDependency */,
+			);
+			name = KamiApp;
+			packageProductDependencies = (
+				70511DD0684E8609E5AAF5DD /* ComposableArchitecture */,
+				3B5E04D27BB87D42FBF35BAF /* PostHog */,
+			);
+			productName = KamiApp;
+			productReference = FAFB0F01EB8EB23C02262170 /* KamiApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9D4BE99BD8A021E7AAE4DFEF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					4C0BEC230A78EF8E5F974610 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					A841F9DDD43671E916CFE264 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = F0013BC36134CC06B212CEF6;
+					};
+					E5C0735140BD8BF0967B57BE = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					F0013BC36134CC06B212CEF6 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 11D9FA2CBC152BB599AAFE68 /* Build configuration list for PBXProject "Kami" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9C17E24D47E3B8EE0016F5F8;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				75E1B2F22EE107F6C3BC80CC /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				5C68A58597034BE02B233CDA /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				3FAAD42C13E3E853E1F4BAB8 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BC232C2911C0C8E26C8CD469 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E5C0735140BD8BF0967B57BE /* KamiCore */,
+				F0013BC36134CC06B212CEF6 /* KamiApp */,
+				4C0BEC230A78EF8E5F974610 /* KamiCoreTests */,
+				A841F9DDD43671E916CFE264 /* KamiAppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		965210D4212EC667DF20AA9F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0DCE6B49D567B2662FBA3B4A /* Assets.xcassets in Resources */,
+				92A14AE6683C6B4029C3D947 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		144324701D8C035BA3C208DE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B5D62F5F9A51F4CA724F430E /* KamiAppUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BA088162341A24EEAA18602 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F07B87C03542EBC53358D4B9 /* ClipperTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2C3B55426EC1305E5CB657D1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4A09DD0BA1B9B34601541C3B /* KamiApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34FD95536C16F5EA4FCF2B70 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A81BA9B4C4D5A39298C14EEE /* Geometry.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		09D4DDE911FFDEDE2223CF02 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E5C0735140BD8BF0967B57BE /* KamiCore */;
+			targetProxy = D1941442DB7BA6C94D08C419 /* PBXContainerItemProxy */;
+		};
+		44F5A1E4D29E5022702C8EC4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0013BC36134CC06B212CEF6 /* KamiApp */;
+			targetProxy = 4F0FCB5522D9957E50BD905B /* PBXContainerItemProxy */;
+		};
+		668E62939C2A7005AEED7E16 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E5C0735140BD8BF0967B57BE /* KamiCore */;
+			targetProxy = 0F1588C76088C8A9713A2BBA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		083EAAE80E0E6E182ADC4F3B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		1DEDBD615CC091978C998F95 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = eu.maxwase.kami;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1F2234A0F8A8FAD8F637CE0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		3F2006FBC48D14D177609D32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = eu.maxwase.kami;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5493B5D47A3128F50C3F0E1C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = KamiApp;
+			};
+			name = Release;
+		};
+		56E427A6EE0458E5F7627320 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = eu.maxwase.kami.core;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		5F13D94D54F957709FF66525 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6D73297BA8AB8C2F3FA0D13F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		77E6E19A1CA520F421B4989F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = KamiApp;
+			};
+			name = Debug;
+		};
+		89B0CA1E37E4394C657B91FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = eu.maxwase.kami.core;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		11D9FA2CBC152BB599AAFE68 /* Build configuration list for PBXProject "Kami" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				083EAAE80E0E6E182ADC4F3B /* Debug */,
+				6D73297BA8AB8C2F3FA0D13F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6548D1B74741C811759E8342 /* Build configuration list for PBXNativeTarget "KamiCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89B0CA1E37E4394C657B91FC /* Debug */,
+				56E427A6EE0458E5F7627320 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		715DB531A99904FB39CF188A /* Build configuration list for PBXNativeTarget "KamiCoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F13D94D54F957709FF66525 /* Debug */,
+				1F2234A0F8A8FAD8F637CE0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7995562142C44DD539AD6F75 /* Build configuration list for PBXNativeTarget "KamiApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F2006FBC48D14D177609D32 /* Debug */,
+				1DEDBD615CC091978C998F95 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D4A580BEDCB929D868032511 /* Build configuration list for PBXNativeTarget "KamiAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77E6E19A1CA520F421B4989F /* Debug */,
+				5493B5D47A3128F50C3F0E1C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3FAAD42C13E3E853E1F4BAB8 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = exactVersion;
+				version = 1.19.2;
+			};
+		};
+		5C68A58597034BE02B233CDA /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = exactVersion;
+				version = 3.69.5;
+			};
+		};
+		75E1B2F22EE107F6C3BC80CC /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
+			requirement = {
+				kind = exactVersion;
+				version = 1.26.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		17108BACFA97ADA9C3FD2694 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3FAAD42C13E3E853E1F4BAB8 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+		3B5E04D27BB87D42FBF35BAF /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C68A58597034BE02B233CDA /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
+		};
+		70511DD0684E8609E5AAF5DD /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 75E1B2F22EE107F6C3BC80CC /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9D4BE99BD8A021E7AAE4DFEF /* Project object */;
+}

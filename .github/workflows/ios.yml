@@ -1,0 +1,11 @@
+name: iOS
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xcodegen/setup-xcodegen@v1
+        with: { xcodegen-version: '2.46.0' }
+      - run: xcodegen generate
+      - run: xcodebuild test -project Kami.xcodeproj -scheme KamiApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' CODE_SIGNING_ALLOWED=NO
