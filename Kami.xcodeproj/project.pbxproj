@@ -11,6 +11,7 @@
 		0DCE6B49D567B2662FBA3B4A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABC48770F00DF97F4DA608DD /* Assets.xcassets */; };
 		141F21B6AEFBD1F682DAE142 /* Line2D.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127D04659A612DF14619A9B1 /* Line2D.swift */; };
 		17F35EEA4A1E32589480BD51 /* KamiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		1EFAF2E91EC6944B305DF910 /* referenceSceneSnapshots.flipped-committed-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = F8D8B439604FFFCD56A3650E /* referenceSceneSnapshots.flipped-committed-portrait.png */; };
 		32CFE0B97FF9FAC3A2EBC1A8 /* referenceSceneSnapshots.folding-25-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C20D1BC898E71CB841F554D /* referenceSceneSnapshots.folding-25-landscape.png */; };
 		32FDE297B6AFA19CB2D0E090 /* RenderFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CFC95B5D0BF5F081786BB4 /* RenderFrame.swift */; };
 		36BB2AD85749B93E2E8F57A0 /* referenceSceneSnapshots.layered-stack-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = 0B86B476F123D6B88E0B1C10 /* referenceSceneSnapshots.layered-stack-portrait.png */; };
@@ -42,6 +43,7 @@
 		A873442B069E69E0D354A1D9 /* paper.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 20A0428DFB4E32E0D6B43FBA /* paper.jpg */; };
 		AA1C67E577DBE8A912364948 /* Polygon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA5F68DE197DA58923B54F85 /* Polygon.swift */; };
 		ADD2D2BECF3283D50BEABC98 /* GeometryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2BD2CC350074AACBFC217 /* GeometryError.swift */; };
+		B4A4355B1CADF8FDBE5C0161 /* referenceSceneSnapshots.flipped-committed-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */; };
 		B5D62F5F9A51F4CA724F430E /* KamiAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */; };
 		B90D6A4D6C23F157286FC14D /* Fold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2FC3AF1DFE41E339041A129 /* Fold.swift */; };
 		CADC46A636FEC9CBCE92684A /* referenceSceneSnapshots.folding-75-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = FAD36F07BB8E3BF70BD2523E /* referenceSceneSnapshots.folding-75-landscape.png */; };
@@ -145,6 +147,7 @@
 		AB8B14CF07A73F793193DE72 /* SizingAndRenderFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SizingAndRenderFrameTests.swift; sourceTree = "<group>"; };
 		ABC48770F00DF97F4DA608DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AE710E7DE11BFD10C12B5E8B /* referenceSceneSnapshots.folding-25-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-25-portrait.png"; sourceTree = "<group>"; };
+		BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipped-committed-landscape.png"; sourceTree = "<group>"; };
 		C083D363B7A2015DF028C24E /* MetalBufferArena.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalBufferArena.swift; sourceTree = "<group>"; };
 		C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KamiAppUITests.swift; sourceTree = "<group>"; };
 		C42F2DF961267EF492085EE4 /* RendererStressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendererStressTests.swift; sourceTree = "<group>"; };
@@ -155,6 +158,7 @@
 		D952CA00A2DF84358C8D2E7D /* FoldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldTests.swift; sourceTree = "<group>"; };
 		E2FC3AF1DFE41E339041A129 /* Fold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fold.swift; sourceTree = "<group>"; };
 		EF4A2B757D3A7F4737AD35FF /* flatA4Snapshot-scene.flat-a4-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "flatA4Snapshot-scene.flat-a4-landscape.png"; sourceTree = "<group>"; };
+		F8D8B439604FFFCD56A3650E /* referenceSceneSnapshots.flipped-committed-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipped-committed-portrait.png"; sourceTree = "<group>"; };
 		FA5F68DE197DA58923B54F85 /* Polygon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Polygon.swift; sourceTree = "<group>"; };
 		FAD36F07BB8E3BF70BD2523E /* referenceSceneSnapshots.folding-75-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-75-landscape.png"; sourceTree = "<group>"; };
 		FAFB0F01EB8EB23C02262170 /* KamiApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KamiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -196,6 +200,8 @@
 			children = (
 				EF4A2B757D3A7F4737AD35FF /* flatA4Snapshot-scene.flat-a4-landscape.png */,
 				A33371E12519A301AA77A2A8 /* flatA4Snapshot-scene.flat-a4-portrait.png */,
+				BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */,
+				F8D8B439604FFFCD56A3650E /* referenceSceneSnapshots.flipped-committed-portrait.png */,
 				90F9CCEB1C39894AFAD1CAEE /* referenceSceneSnapshots.flipping-25-landscape.png */,
 				4699260F53AD8070FA5EDD68 /* referenceSceneSnapshots.flipping-25-portrait.png */,
 				D70191C96AEFA973F2702A2E /* referenceSceneSnapshots.flipping-75-landscape.png */,
@@ -537,6 +543,8 @@
 			files = (
 				4E1055A014EB37D842F992D5 /* flatA4Snapshot-scene.flat-a4-landscape.png in Resources */,
 				CCFE3D434B71499C71E3D792 /* flatA4Snapshot-scene.flat-a4-portrait.png in Resources */,
+				B4A4355B1CADF8FDBE5C0161 /* referenceSceneSnapshots.flipped-committed-landscape.png in Resources */,
+				1EFAF2E91EC6944B305DF910 /* referenceSceneSnapshots.flipped-committed-portrait.png in Resources */,
 				39531B1EF719E47A1FF04F8D /* referenceSceneSnapshots.flipping-25-landscape.png in Resources */,
 				59F841007C7BBE336A7D3E0A /* referenceSceneSnapshots.flipping-25-portrait.png in Resources */,
 				435009CC635E18DC3C0945DD /* referenceSceneSnapshots.flipping-75-landscape.png in Resources */,

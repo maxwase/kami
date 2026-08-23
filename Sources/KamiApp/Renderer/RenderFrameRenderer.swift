@@ -6,6 +6,17 @@ import UIKit
 struct RenderedFrame {
     let image: UIImage
     let processedFaceCount: Int
+    let faceFailures: [FaceRenderFailure]
+}
+
+struct FaceRenderFailure: Equatable {
+    let faceID: FaceID
+    let error: RenderFrameRendererError
+}
+
+struct RenderPassResult: Equatable {
+    let processedFaceCount: Int
+    let faceFailures: [FaceRenderFailure]
 }
 
 enum RenderFrameRendererError: Error, Equatable {
@@ -81,10 +92,11 @@ final class RenderFrameRenderer {
         try validate(size)
         let scale = UIScreen.main.scale
         let target = try makeRenderTarget(in: size, scale: scale)
-        let processedFaceCount = try draw(frame: frame, in: size, to: target)
+        let result = try draw(frame: frame, in: size, to: target)
         return RenderedFrame(
             image: try image(from: target, scale: scale),
-            processedFaceCount: processedFaceCount
+            processedFaceCount: result.processedFaceCount,
+            faceFailures: result.faceFailures
         )
     }
 
@@ -106,7 +118,12 @@ final class RenderFrameRenderer {
         return target
     }
 
-    func draw(frame: RenderFrame, in size: CGSize, to target: any MTLTexture) throws -> Int {
+    func draw(
+        frame: RenderFrame,
+        in size: CGSize,
+        to target: any MTLTexture,
+        presenting drawable: (any CAMetalDrawable)? = nil
+    ) throws -> RenderPassResult {
         try validate(size)
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw RenderFrameRendererError.commandBufferCreationFailed
@@ -129,14 +146,28 @@ final class RenderFrameRenderer {
         } ?? frame.faces.map { FaceInput(face: $0, moving: false) }
         let allPoints = sourceFaces.flatMap { $0.face.polygon.vertices }
         var processedFaceCount = 0
+        var faceFailures: [FaceRenderFailure] = []
         do {
             if let bounds = bounds(of: allPoints) {
                 let projection = Projection(frame: frame, bounds: bounds, canvasSize: size)
-                let items = try sourceFaces.map { try makeItem(input: $0, frame: frame, projection: projection) }
-                    .sorted { lhs, rhs in
-                        abs(lhs.depth - rhs.depth) >= 0.001 ? lhs.depth < rhs.depth : lhs.layer < rhs.layer
+                var drawableFaces: [(item: RenderItem, polygon: Polygon)] = []
+                for input in sourceFaces {
+                    do {
+                        drawableFaces.append((
+                            item: try makeItem(input: input, frame: frame, projection: projection),
+                            polygon: input.face.polygon
+                        ))
+                    } catch let error as RenderFrameRendererError {
+                        faceFailures.append(FaceRenderFailure(faceID: input.face.id, error: error))
                     }
-                for item in items {
+                }
+                drawableFaces.sort { lhs, rhs in
+                    abs(lhs.item.depth - rhs.item.depth) >= 0.001
+                        ? lhs.item.depth < rhs.item.depth
+                        : lhs.item.layer < rhs.item.layer
+                }
+                for drawableFace in drawableFaces {
+                    let item = drawableFace.item
                     try drawShadow(item, size: size, in: encoder)
                     if try drawFace(item, style: frame.style, in: encoder) {
                         processedFaceCount += 1
@@ -146,7 +177,7 @@ final class RenderFrameRenderer {
                 if let hinge = frame.hinge {
                     try drawCrease(
                         hinge,
-                        polygons: sourceFaces.map(\.face.polygon),
+                        polygons: drawableFaces.map(\.polygon),
                         projection: projection,
                         size: size,
                         in: encoder
@@ -159,12 +190,16 @@ final class RenderFrameRenderer {
         }
 
         encoder.endEncoding()
+        if let drawable { commandBuffer.present(drawable) }
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         guard commandBuffer.status == .completed else {
             throw RenderFrameRendererError.commandExecutionFailed
         }
-        return processedFaceCount
+        return RenderPassResult(
+            processedFaceCount: processedFaceCount,
+            faceFailures: faceFailures
+        )
     }
 
     private func validate(_ size: CGSize) throws {
@@ -421,6 +456,9 @@ final class RenderFrameRenderer {
     ) throws -> MetalMesh? {
         guard points.count >= 3, points.count == textureCoordinates.count else { return nil }
         let triangleIndices = try providedTriangleIndices ?? triangleIndices(for: points)
+        guard triangleIndices.count.isMultiple(of: 3) else {
+            throw RenderFrameRendererError.triangulationFailed
+        }
         guard triangleIndices.allSatisfy(points.indices.contains) else {
             throw RenderFrameRendererError.triangulationFailed
         }

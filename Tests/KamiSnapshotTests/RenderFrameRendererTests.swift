@@ -37,6 +37,8 @@ struct RenderFrameRendererTests {
             ("flipping-25-landscape", flippingA4Frame(progress: 0.25), CGSize(width: 844, height: 390)),
             ("flipping-75-portrait", flippingA4Frame(progress: 0.75), CGSize(width: 390, height: 844)),
             ("flipping-75-landscape", flippingA4Frame(progress: 0.75), CGSize(width: 844, height: 390)),
+            ("flipped-committed-portrait", committedFlipFrame(), CGSize(width: 390, height: 844)),
+            ("flipped-committed-landscape", committedFlipFrame(), CGSize(width: 844, height: 390)),
         ]
         for scene in scenes {
             let rendered = try renderer.render(frame: scene.1, in: scene.2)
@@ -71,6 +73,44 @@ struct RenderFrameRendererTests {
         #expect(foldedPixel == baselinePixel, "A crease pixel was encoded onto the wood background.")
     }
 
+    @Test("An offscreen or zero-sized draw is a silent lifecycle no-op")
+    func offscreenDrawDoesNotReportRendererError() throws {
+        let view = PaperRendererView(frameRenderer: try RenderFrameRenderer())
+        var reportedErrors: [RenderFrameRendererError] = []
+        view.renderErrorHandler = { reportedErrors.append($0) }
+        view.renderFrame = try flatA4Frame()
+
+        view.draw(in: view)
+
+        #expect(reportedErrors.isEmpty)
+    }
+
+    @Test("A diagnosed invalid face does not freeze the displayed frame")
+    func invalidFaceDoesNotFreezeDisplayLifecycle() throws {
+        let renderer = try RenderFrameRenderer()
+        let size = CGSize(width: 390, height: 844)
+        let (window, view) = makeDrawableView(renderer: renderer, size: size)
+        defer { tearDown(window: window, view: view) }
+        var reportedErrors: [RenderFrameRendererError] = []
+        var faceFailures: [FaceRenderFailure] = []
+        var presentationCount = 0
+        view.renderErrorHandler = { reportedErrors.append($0) }
+        view.renderIssueHandler = { faceFailures.append($0) }
+        view.drawablePresentationHandler = { _ in presentationCount += 1 }
+
+        view.renderFrame = try flatA4Frame()
+        view.draw()
+        view.renderFrame = try mixedValidAndInvalidFrame()
+        view.draw()
+
+        #expect(presentationCount == 2)
+        #expect(view.lastRenderResult?.processedFaceCount == 1)
+        #expect(reportedErrors.isEmpty)
+        #expect(faceFailures.count == 1)
+        #expect(faceFailures.first?.faceID == FaceID(rawValue: 2))
+        #expect(faceFailures.first?.error == .triangulationFailed)
+    }
+
     @Test(arguments: [1, 64, 256])
     func rendererProcessesEveryFace(faceCount: Int) throws {
         let rendered = try RenderFrameRenderer().render(
@@ -87,18 +127,30 @@ struct RenderFrameRendererTests {
         let frame = try stackedFrame(faceCount: faceCount)
         let size = CGSize(width: 390, height: 844)
         let (window, view) = makeDrawableView(renderer: renderer, size: size)
-        defer { window.isHidden = true }
+        defer { tearDown(window: window, view: view) }
+        view.renderFrame = frame
+        var reportedErrors: [RenderFrameRendererError] = []
+        var reportedFaceFailures: [FaceRenderFailure] = []
+        var presentedDrawableIDs: [ObjectIdentifier] = []
+        view.renderErrorHandler = { reportedErrors.append($0) }
+        view.renderIssueHandler = { reportedFaceFailures.append($0) }
+        view.drawablePresentationHandler = { presentedDrawableIDs.append($0) }
         let clock = ContinuousClock()
         var samples: [Duration] = []
         for _ in 0..<2 {
-            _ = try view.render(frame: frame, present: false)
+            view.draw()
         }
+        presentedDrawableIDs.removeAll(keepingCapacity: true)
         for _ in 0..<30 {
             let start = clock.now
-            let processedFaceCount = try view.render(frame: frame, present: false)
+            view.draw()
             samples.append(start.duration(to: clock.now))
-            #expect(processedFaceCount == faceCount)
         }
+        #expect(view.lastRenderResult?.processedFaceCount == faceCount)
+        #expect(reportedErrors.isEmpty)
+        #expect(reportedFaceFailures.isEmpty)
+        #expect(presentedDrawableIDs.count == 30)
+        #expect(Set(presentedDrawableIDs).count >= 2, "Presented CAMetalDrawables did not rotate.")
         let sorted = samples.sorted()
         let index = Int(Double(sorted.count - 1) * 0.95)
         let readbackSamples = try (0..<10).map { _ in
@@ -110,7 +162,7 @@ struct RenderFrameRendererTests {
         let readbackIndex = Int(Double(sortedReadback.count - 1) * 0.95)
 
         printPerformance(
-            label: "onscreen",
+            label: "display-loop",
             faceCount: faceCount,
             samples: samples,
             p95: sorted[index]
@@ -129,9 +181,6 @@ struct RenderFrameRendererTests {
             )
         }
 
-        // Present once to cover the same display path used by the app. Timed samples
-        // intentionally omit presentation and UIImage readback.
-        _ = try view.render(frame: frame, present: true)
     }
 
     private func makeDrawableView(
@@ -139,21 +188,23 @@ struct RenderFrameRendererTests {
         size: CGSize
     ) -> (window: UIWindow, view: PaperRendererView) {
         let window = UIWindow(frame: CGRect(origin: .zero, size: size))
-        let controller = UIViewController()
-        window.rootViewController = controller
         let view = PaperRendererView(frameRenderer: renderer)
-        view.frame = controller.view.bounds
+        view.frame = window.bounds
         view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.isPaused = true
-        controller.view.addSubview(view)
-        window.makeKeyAndVisible()
-        controller.view.layoutIfNeeded()
+        window.addSubview(view)
+        window.isHidden = false
         view.layoutIfNeeded()
         view.drawableSize = CGSize(
             width: size.width * UIScreen.main.scale,
             height: size.height * UIScreen.main.scale
         )
         return (window, view)
+    }
+
+    private func tearDown(window: UIWindow, view: PaperRendererView) {
+        window.isHidden = true
+        view.removeFromSuperview()
     }
 
     private func printPerformance(
@@ -252,6 +303,31 @@ struct RenderFrameRendererTests {
         return RenderFrame(paper: paper)
     }
 
+    private func mixedValidAndInvalidFrame() throws -> RenderFrame {
+        let valid = try Polygon(vertices: [
+            Point2D(x: -140, y: -120), Point2D(x: -20, y: -120),
+            Point2D(x: -20, y: 120), Point2D(x: -140, y: 120),
+        ])
+        let outer = (0..<5).map { index in
+            let angle = Double(index) / 5 * 2 * Double.pi - Double.pi / 2
+            return Point2D(x: 70 + cos(angle) * 65, y: sin(angle) * 65)
+        }
+        let invalid = try Polygon(vertices: [outer[0], outer[2], outer[4], outer[1], outer[3]])
+        let paper = try Paper(
+            id: PaperID(rawValue: 1),
+            style: .white,
+            center: .zero,
+            rotation: 0,
+            scale: 1,
+            baseSize: .a4,
+            faces: [
+                Face(id: FaceID(rawValue: 1), polygon: valid, visibleSide: .front, layer: 0),
+                Face(id: FaceID(rawValue: 2), polygon: invalid, visibleSide: .front, layer: 1),
+            ]
+        )
+        return RenderFrame(paper: paper)
+    }
+
     private func foldingA4Frame(progress: Double) throws -> RenderFrame {
         let paper = try Paper.rectangle(
             id: PaperID(rawValue: 1),
@@ -304,6 +380,18 @@ struct RenderFrameRendererTests {
             movingFaces: paper.faces,
             foldedLayer: 1
         ))
+    }
+
+    private func committedFlipFrame() throws -> RenderFrame {
+        let paper = try Paper.rectangle(
+            id: PaperID(rawValue: 1),
+            faceID: FaceID(rawValue: 1),
+            style: .white,
+            center: .zero,
+            width: 210,
+            height: 297
+        )
+        return RenderFrame(paper: commitFlip(paper))
     }
 
     private func pixel(in image: UIImage, at point: CGPoint) throws -> [UInt8] {

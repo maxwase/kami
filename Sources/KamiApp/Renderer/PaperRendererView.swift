@@ -9,6 +9,10 @@ final class PaperRendererView: MTKView, MTKViewDelegate {
     }
 
     var renderErrorHandler: ((RenderFrameRendererError) -> Void)?
+    var renderIssueHandler: ((FaceRenderFailure) -> Void)?
+    var drawablePresentationHandler: ((ObjectIdentifier) -> Void)?
+
+    private(set) var lastRenderResult: RenderPassResult?
 
     private var frameRenderer: RenderFrameRenderer?
 
@@ -28,7 +32,7 @@ final class PaperRendererView: MTKView, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     @discardableResult
-    func render(frame: RenderFrame, present: Bool = true) throws -> Int {
+    func render(frame: RenderFrame, present: Bool = true) throws -> RenderPassResult {
         guard
             let frameRenderer,
             let drawable = currentDrawable,
@@ -36,13 +40,19 @@ final class PaperRendererView: MTKView, MTKViewDelegate {
             bounds.height > 0
         else { throw RenderFrameRendererError.drawableUnavailable }
 
-        let processedFaceCount = try frameRenderer.draw(
+        let drawableTextureIdentity = ObjectIdentifier(drawable.texture as AnyObject)
+        let result = try frameRenderer.draw(
             frame: frame,
             in: bounds.size,
-            to: drawable.texture
+            to: drawable.texture,
+            presenting: present ? drawable : nil
         )
-        if present { drawable.present() }
-        return processedFaceCount
+        lastRenderResult = result
+        result.faceFailures.forEach { renderIssueHandler?($0) }
+        if present {
+            drawablePresentationHandler?(drawableTextureIdentity)
+        }
+        return result
     }
 
     func draw(in view: MTKView) {
@@ -50,6 +60,8 @@ final class PaperRendererView: MTKView, MTKViewDelegate {
 
         do {
             try render(frame: renderFrame)
+        } catch RenderFrameRendererError.drawableUnavailable {
+            return
         } catch let error as RenderFrameRendererError {
             renderErrorHandler?(error)
         } catch {
