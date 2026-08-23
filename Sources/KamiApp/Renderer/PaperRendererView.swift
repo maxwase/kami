@@ -27,18 +27,29 @@ final class PaperRendererView: MTKView, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
-    func draw(in view: MTKView) {
+    @discardableResult
+    func render(frame: RenderFrame, present: Bool = true) throws -> Int {
         guard
             let frameRenderer,
-            let renderFrame,
-            let drawable = view.currentDrawable,
+            let drawable = currentDrawable,
             bounds.width > 0,
             bounds.height > 0
-        else { return }
+        else { throw RenderFrameRendererError.drawableUnavailable }
+
+        let processedFaceCount = try frameRenderer.draw(
+            frame: frame,
+            in: bounds.size,
+            to: drawable.texture
+        )
+        if present { drawable.present() }
+        return processedFaceCount
+    }
+
+    func draw(in view: MTKView) {
+        guard let renderFrame else { return }
 
         do {
-            _ = try frameRenderer.draw(frame: renderFrame, in: bounds.size, to: drawable.texture)
-            drawable.present()
+            try render(frame: renderFrame)
         } catch let error as RenderFrameRendererError {
             renderErrorHandler?(error)
         } catch {

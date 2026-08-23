@@ -27,12 +27,16 @@ struct RenderFrameRendererTests {
     func referenceSceneSnapshots() throws {
         let renderer = try RenderFrameRenderer()
         let scenes = try [
-            ("folding-a4-portrait", foldingA4Frame(), CGSize(width: 390, height: 844)),
-            ("folding-a4-landscape", foldingA4Frame(), CGSize(width: 844, height: 390)),
-            ("layered-stack-portrait", stackedFrame(faceCount: 3), CGSize(width: 390, height: 844)),
-            ("layered-stack-landscape", stackedFrame(faceCount: 3), CGSize(width: 844, height: 390)),
-            ("flipping-a4-portrait", flippingA4Frame(), CGSize(width: 390, height: 844)),
-            ("flipping-a4-landscape", flippingA4Frame(), CGSize(width: 844, height: 390)),
+            ("folding-25-portrait", foldingA4Frame(progress: 0.25), CGSize(width: 390, height: 844)),
+            ("folding-25-landscape", foldingA4Frame(progress: 0.25), CGSize(width: 844, height: 390)),
+            ("folding-75-portrait", foldingA4Frame(progress: 0.75), CGSize(width: 390, height: 844)),
+            ("folding-75-landscape", foldingA4Frame(progress: 0.75), CGSize(width: 844, height: 390)),
+            ("layered-stack-portrait", layeredFrame(), CGSize(width: 390, height: 844)),
+            ("layered-stack-landscape", layeredFrame(), CGSize(width: 844, height: 390)),
+            ("flipping-25-portrait", flippingA4Frame(progress: 0.25), CGSize(width: 390, height: 844)),
+            ("flipping-25-landscape", flippingA4Frame(progress: 0.25), CGSize(width: 844, height: 390)),
+            ("flipping-75-portrait", flippingA4Frame(progress: 0.75), CGSize(width: 390, height: 844)),
+            ("flipping-75-landscape", flippingA4Frame(progress: 0.75), CGSize(width: 844, height: 390)),
         ]
         for scene in scenes {
             let rendered = try renderer.render(frame: scene.1, in: scene.2)
@@ -42,6 +46,29 @@ struct RenderFrameRendererTests {
                 named: scene.0
             )
         }
+    }
+
+    @Test("A projected edge-on face is not reported as rendered")
+    func processedFaceCountIncludesOnlyEncodedFaceMeshes() throws {
+        let rendered = try RenderFrameRenderer().render(
+            frame: try foldingA4Frame(progress: 0.5),
+            in: CGSize(width: 390, height: 844)
+        )
+
+        #expect(rendered.processedFaceCount == 1)
+    }
+
+    @Test("The crease remains clipped to the paper")
+    func creaseDoesNotCrossWood() throws {
+        let renderer = try RenderFrameRenderer()
+        let size = CGSize(width: 390, height: 844)
+        let baseline = try renderer.render(frame: try flatA4Frame(), in: size).image
+        let folded = try renderer.render(frame: try foldingA4Frame(progress: 0.25), in: size).image
+        let samplePoint = CGPoint(x: size.width / 2, y: 40)
+
+        let baselinePixel = try pixel(in: baseline, at: samplePoint)
+        let foldedPixel = try pixel(in: folded, at: samplePoint)
+        #expect(foldedPixel == baselinePixel, "A crease pixel was encoded onto the wood background.")
     }
 
     @Test(arguments: [1, 64, 256])
@@ -54,21 +81,23 @@ struct RenderFrameRendererTests {
         #expect(rendered.processedFaceCount == faceCount)
     }
 
-    @Test("The renderer p95 stays within the 60 fps budget through 64 faces", arguments: [1, 64])
+    @Test("The renderer p95 stays within the 60 fps budget through 64 faces", arguments: [1, 64, 256])
     func rendererMeetsSixtyFramesPerSecondThrough64Faces(faceCount: Int) throws {
         let renderer = try RenderFrameRenderer()
         let frame = try stackedFrame(faceCount: faceCount)
         let size = CGSize(width: 390, height: 844)
-        let target = try renderer.makeRenderTarget(in: size)
+        let (window, view) = makeDrawableView(renderer: renderer, size: size)
+        defer { window.isHidden = true }
         let clock = ContinuousClock()
         var samples: [Duration] = []
         for _ in 0..<2 {
-            _ = try renderer.draw(frame: frame, in: size, to: target)
+            _ = try view.render(frame: frame, present: false)
         }
         for _ in 0..<30 {
             let start = clock.now
-            _ = try renderer.draw(frame: frame, in: size, to: target)
+            let processedFaceCount = try view.render(frame: frame, present: false)
             samples.append(start.duration(to: clock.now))
+            #expect(processedFaceCount == faceCount)
         }
         let sorted = samples.sorted()
         let index = Int(Double(sorted.count - 1) * 0.95)
@@ -93,10 +122,38 @@ struct RenderFrameRendererTests {
             p95: sortedReadback[readbackIndex]
         )
 
-        #expect(
-            sorted[index] < .nanoseconds(16_700_000),
-            "\(faceCount)-face p95 was \(sorted[index]); the Metal performance gate is 16.7 ms."
+        if faceCount <= 64 {
+            #expect(
+                sorted[index] < .nanoseconds(16_700_000),
+                "\(faceCount)-face p95 was \(sorted[index]); the Metal performance gate is 16.7 ms."
+            )
+        }
+
+        // Present once to cover the same display path used by the app. Timed samples
+        // intentionally omit presentation and UIImage readback.
+        _ = try view.render(frame: frame, present: true)
+    }
+
+    private func makeDrawableView(
+        renderer: RenderFrameRenderer,
+        size: CGSize
+    ) -> (window: UIWindow, view: PaperRendererView) {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        let controller = UIViewController()
+        window.rootViewController = controller
+        let view = PaperRendererView(frameRenderer: renderer)
+        view.frame = controller.view.bounds
+        view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.isPaused = true
+        controller.view.addSubview(view)
+        window.makeKeyAndVisible()
+        controller.view.layoutIfNeeded()
+        view.layoutIfNeeded()
+        view.drawableSize = CGSize(
+            width: size.width * UIScreen.main.scale,
+            height: size.height * UIScreen.main.scale
         )
+        return (window, view)
     }
 
     private func printPerformance(
@@ -159,7 +216,43 @@ struct RenderFrameRendererTests {
         return RenderFrame(paper: paper)
     }
 
-    private func foldingA4Frame() throws -> RenderFrame {
+    private func layeredFrame() throws -> RenderFrame {
+        let base = try flatA4Frame()
+        let polygons = try [
+            Polygon(vertices: [
+                Point2D(x: -105, y: -145), Point2D(x: 70, y: -145),
+                Point2D(x: 70, y: 105), Point2D(x: -105, y: 105),
+            ]),
+            Polygon(vertices: [
+                Point2D(x: -80, y: -120), Point2D(x: 95, y: -110),
+                Point2D(x: 88, y: 130), Point2D(x: -72, y: 120),
+            ]),
+            Polygon(vertices: [
+                Point2D(x: -48, y: -88), Point2D(x: 110, y: -72),
+                Point2D(x: 98, y: 145), Point2D(x: -35, y: 132),
+            ]),
+        ]
+        let faces = polygons.enumerated().map { index, polygon in
+            Face(
+                id: FaceID(rawValue: UInt64(index + 1)),
+                polygon: polygon,
+                visibleSide: index.isMultiple(of: 2) ? .front : .back,
+                layer: index
+            )
+        }
+        let paper = try Paper(
+            id: base.paperID,
+            style: base.style,
+            center: base.transform.center,
+            rotation: base.transform.rotation,
+            scale: base.transform.scale,
+            baseSize: .a4,
+            faces: faces
+        )
+        return RenderFrame(paper: paper)
+    }
+
+    private func foldingA4Frame(progress: Double) throws -> RenderFrame {
         let paper = try Paper.rectangle(
             id: PaperID(rawValue: 1),
             faceID: FaceID(rawValue: 1),
@@ -183,7 +276,7 @@ struct RenderFrameRendererTests {
         }
         return RenderFrame(paper: paper, animation: FoldAnimation(
             paperID: animation.paperID,
-            progress: 0.5,
+            progress: progress,
             line: animation.line,
             moving: animation.moving,
             stationaryFaces: animation.stationaryFaces,
@@ -192,7 +285,7 @@ struct RenderFrameRendererTests {
         ))
     }
 
-    private func flippingA4Frame() throws -> RenderFrame {
+    private func flippingA4Frame(progress: Double) throws -> RenderFrame {
         let paper = try Paper.rectangle(
             id: PaperID(rawValue: 1),
             faceID: FaceID(rawValue: 1),
@@ -201,10 +294,43 @@ struct RenderFrameRendererTests {
             width: 210,
             height: 297
         )
-        return RenderFrame(paper: commitFlip(paper))
+        let line = try Line2D(point: .zero, direction: Point2D(x: 0, y: 1))
+        return RenderFrame(paper: paper, animation: FoldAnimation(
+            paperID: paper.id,
+            progress: progress,
+            line: line,
+            moving: .positive,
+            stationaryFaces: [],
+            movingFaces: paper.faces,
+            foldedLayer: 1
+        ))
+    }
+
+    private func pixel(in image: UIImage, at point: CGPoint) throws -> [UInt8] {
+        guard let cgImage = image.cgImage else { throw RenderFixtureError.missingImage }
+        let scale = image.scale
+        let x = min(max(Int((point.x * scale).rounded()), 0), cgImage.width - 1)
+        let y = min(max(Int((point.y * scale).rounded()), 0), cgImage.height - 1)
+        var bytes = [UInt8](repeating: 0, count: 4)
+        guard
+            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+            let context = CGContext(
+                data: &bytes,
+                width: 1,
+                height: 1,
+                bitsPerComponent: 8,
+                bytesPerRow: 4,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ),
+            let cropped = cgImage.cropping(to: CGRect(x: x, y: y, width: 1, height: 1))
+        else { throw RenderFixtureError.missingImage }
+        context.draw(cropped, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        return bytes
     }
 }
 
 private enum RenderFixtureError: Error {
     case foldRejected
+    case missingImage
 }
