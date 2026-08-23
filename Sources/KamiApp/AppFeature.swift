@@ -7,17 +7,21 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var paper: Paper
-        var undoHistory: UndoHistory
+        var undoHistory: AppUndoHistory
         var renderState: AppRenderState
         var paperSettings: PaperSettings
+        var foldRejection: FoldRejection?
+        var accessibilityAnnouncement: String?
         var reduceMotionEnabled: Bool
         var presentedSheet: AppSheet?
 
         init(
             paper: Paper,
-            undoHistory: UndoHistory = UndoHistory(),
+            undoHistory: AppUndoHistory = AppUndoHistory(),
             renderState: AppRenderState = .idle,
             paperSettings: PaperSettings = PaperSettings(),
+            foldRejection: FoldRejection? = nil,
+            accessibilityAnnouncement: String? = nil,
             reduceMotionEnabled: Bool = false,
             presentedSheet: AppSheet? = nil
         ) {
@@ -25,6 +29,8 @@ struct AppFeature {
             self.undoHistory = undoHistory
             self.renderState = renderState
             self.paperSettings = paperSettings
+            self.foldRejection = foldRejection
+            self.accessibilityAnnouncement = accessibilityAnnouncement
             self.reduceMotionEnabled = reduceMotionEnabled
             self.presentedSheet = presentedSheet
         }
@@ -32,8 +38,10 @@ struct AppFeature {
 
     enum Action: Equatable {
         case animationCancelled
+        case animationCompleted
         case animationProgressed(Double)
         case customDimensionsChanged(width: Double, height: Double)
+        case customDimensionsRejected
         case debugOverlayChanged(Bool)
         case flipButtonTapped
         case foldButtonTapped
@@ -50,6 +58,7 @@ struct AppFeature {
     }
 
     @Dependency(\.continuousClock) private var clock
+    @Dependency(\.animationTimeline) private var animationTimeline
     @Dependency(\.faceIDGenerator) private var faceIDGenerator
 
     private enum CancelID { case animation }
@@ -60,6 +69,10 @@ struct AppFeature {
             case .animationCancelled:
                 state.renderState = .idle
                 return .cancel(id: CancelID.animation)
+
+            case .animationCompleted:
+                finishAnimation(state: &state, nextFaceID: faceIDGenerator.next)
+                return .none
 
             case let .customDimensionsChanged(width, height):
                 guard state.renderState.isAnimating == false else { return .none }
@@ -78,12 +91,19 @@ struct AppFeature {
                     state.paperSettings.validationError = .invalidDimensions
                     return .none
                 }
-                state.undoHistory = state.undoHistory.recording(state.paper)
+                state.undoHistory = state.undoHistory.recording(
+                    paper: state.paper,
+                    paperSettings: state.paperSettings
+                )
                 state.paper = newPaper
                 state.paperSettings.format = .custom
                 state.paperSettings.customWidth = width
                 state.paperSettings.customHeight = height
                 state.paperSettings.validationError = nil
+                return .none
+
+            case .customDimensionsRejected:
+                state.paperSettings.validationError = .invalidDimensions
                 return .none
 
             case let .debugOverlayChanged(isEnabled):
@@ -93,27 +113,11 @@ struct AppFeature {
             case let .animationProgressed(progress):
                 switch state.renderState {
                 case let .folding(animation):
-                    guard progress >= 1 else {
-                        state.renderState = .folding(animation.withProgress(progress))
-                        return .none
-                    }
-                    state.undoHistory = state.undoHistory.recording(state.paper)
-                    state.paper = commitFold(
-                        state.paper,
-                        animation: animation.withProgress(1),
-                        nextFaceID: faceIDGenerator.next
-                    )
-                    state.renderState = .idle
+                    state.renderState = .folding(animation.withProgress(progress))
                     return .none
 
-                case .flipping:
-                    guard progress >= 1 else {
-                        state.renderState = .flipping(progress: progress)
-                        return .none
-                    }
-                    state.undoHistory = state.undoHistory.recording(state.paper)
-                    state.paper = commitFlip(state.paper)
-                    state.renderState = .idle
+                case let .flipping(animation):
+                    state.renderState = .flipping(animation.withProgress(progress))
                     return .none
 
                 case .idle:
@@ -122,47 +126,52 @@ struct AppFeature {
 
             case .flipButtonTapped:
                 guard state.renderState.isAnimating == false else { return .none }
+                guard let animation = flipAnimation(for: state.paper) else { return .none }
                 guard state.reduceMotionEnabled == false else {
-                    state.undoHistory = state.undoHistory.recording(state.paper)
+                    state.undoHistory = state.undoHistory.recording(
+                        paper: state.paper,
+                        paperSettings: state.paperSettings
+                    )
                     state.paper = commitFlip(state.paper)
+                    state.accessibilityAnnouncement = "Flip complete"
                     return .none
                 }
-                state.renderState = .flipping(progress: 0)
-                return .run { [clock] send in
-                    for step in 1...4 {
-                        try await clock.sleep(for: .milliseconds(90))
-                        await send(.animationProgressed(Double(step) / 4))
-                    }
-                }
-                .cancellable(id: CancelID.animation)
+                state.renderState = .flipping(animation)
+                return animationEffect(duration: animation.duration)
 
             case .foldButtonTapped:
-                guard state.renderState.isAnimating == false,
-                      let request = centerFoldRequest(for: state.paper)
-                else { return .none }
+                guard state.renderState.isAnimating == false else { return .none }
+                guard let request = centerFoldRequest(for: state.paper) else {
+                    state.foldRejection = .noIntersection
+                    return .none
+                }
                 let result = buildFold(
                     paper: state.paper,
                     request: request,
                     nextFaceID: faceIDGenerator.next
                 )
-                guard case let .success(animation) = result else { return .none }
+                guard case let .success(animation) = result else {
+                    if case let .failure(rejection) = result {
+                        state.foldRejection = rejection
+                    }
+                    return .none
+                }
+                state.foldRejection = nil
                 guard state.reduceMotionEnabled == false else {
-                    state.undoHistory = state.undoHistory.recording(state.paper)
+                    state.undoHistory = state.undoHistory.recording(
+                        paper: state.paper,
+                        paperSettings: state.paperSettings
+                    )
                     state.paper = commitFold(
                         state.paper,
                         animation: animation.withProgress(1),
                         nextFaceID: faceIDGenerator.next
                     )
+                    state.accessibilityAnnouncement = "Fold complete"
                     return .none
                 }
                 state.renderState = .folding(animation)
-                return .run { [clock] send in
-                    for step in 1...4 {
-                        try await clock.sleep(for: .milliseconds(115))
-                        await send(.animationProgressed(Double(step) / 4))
-                    }
-                }
-                .cancellable(id: CancelID.animation)
+                return animationEffect(duration: animation.duration)
 
             case .infoButtonTapped:
                 state.presentedSheet = .info
@@ -188,8 +197,12 @@ struct AppFeature {
                         scale: state.paper.scale,
                         baseSize: state.paper.baseSize,
                         faces: state.paper.faces
-                      )
+                )
                 else { return .none }
+                state.undoHistory = state.undoHistory.recording(
+                    paper: state.paper,
+                    paperSettings: state.paperSettings
+                )
                 state.paper = paper
                 state.paperSettings.frontColor = style.frontColor
                 state.paperSettings.backColor = style.backColor
@@ -211,6 +224,10 @@ struct AppFeature {
                 case .custom:
                     dimensions = (state.paperSettings.customWidth, state.paperSettings.customHeight)
                 }
+                guard (try? PaperAspectRatio(width: dimensions.width, height: dimensions.height)) != nil else {
+                    state.paperSettings.validationError = .invalidDimensions
+                    return .none
+                }
                 guard let newPaper = try? Paper.rectangle(
                     id: state.paper.id,
                     faceID: faceIDGenerator(),
@@ -218,8 +235,14 @@ struct AppFeature {
                     center: state.paper.center,
                     width: dimensions.width,
                     height: dimensions.height
-                ) else { return .none }
-                state.undoHistory = state.undoHistory.recording(state.paper)
+                ) else {
+                    state.paperSettings.validationError = .invalidDimensions
+                    return .none
+                }
+                state.undoHistory = state.undoHistory.recording(
+                    paper: state.paper,
+                    paperSettings: state.paperSettings
+                )
                 state.paper = newPaper
                 state.paperSettings.format = format
                 state.paperSettings.validationError = nil
@@ -227,13 +250,21 @@ struct AppFeature {
 
             case .resetButtonTapped:
                 guard state.renderState.isAnimating == false else { return .none }
-                state.undoHistory = state.undoHistory.recording(state.paper)
+                state.undoHistory = state.undoHistory.recording(
+                    paper: state.paper,
+                    paperSettings: state.paperSettings
+                )
                 state.paper = reset(state.paper, nextFaceID: faceIDGenerator.next)
+                state.paperSettings.validationError = nil
+                state.foldRejection = nil
+                state.accessibilityAnnouncement = "Paper reset"
                 return .none
 
             case let .reduceMotionChanged(isEnabled):
                 state.reduceMotionEnabled = isEnabled
-                return .none
+                guard isEnabled, state.renderState.isAnimating else { return .none }
+                finishAnimation(state: &state, nextFaceID: faceIDGenerator.next)
+                return .cancel(id: CancelID.animation)
 
             case .settingsButtonTapped:
                 state.presentedSheet = .settings
@@ -245,13 +276,51 @@ struct AppFeature {
 
             case .undoButtonTapped:
                 guard state.renderState.isAnimating == false,
-                      let result = state.undoHistory.undoing(from: state.paper)
+                      let result = state.undoHistory.undoing()
                 else { return .none }
-                state.paper = result.paper
+                state.paper = result.snapshot.paper
+                state.paperSettings = result.snapshot.paperSettings.restoring(into: state.paperSettings)
                 state.undoHistory = result.history
                 return .none
             }
         }
+    }
+
+    private func animationEffect(duration: Duration) -> Effect<Action> {
+        let ticks = animationTimeline.ticks(duration)
+        let endpointHold = animationTimeline.endpointHold
+        return .run { [clock] send in
+            for tick in ticks {
+                try Task.checkCancellation()
+                try await clock.sleep(for: tick.delay)
+                await send(.animationProgressed(tick.progress))
+            }
+            try Task.checkCancellation()
+            try await clock.sleep(for: endpointHold)
+            await send(.animationCompleted)
+        }
+        .cancellable(id: CancelID.animation, cancelInFlight: true)
+    }
+}
+
+extension AppFeature.State {
+    var keyboardCommandsEnabled: Bool {
+        renderState.isAnimating == false
+    }
+
+    var canvasAccessibilityValue: String {
+        let faceDescription = paper.faces.count == 1 ? "1 face" : "\(paper.faces.count) faces"
+        let visibleSide = paper.faces.max(by: { $0.layer < $1.layer })?.visibleSide.rawValue ?? "no visible"
+        let status: String
+        switch renderState {
+        case .idle:
+            status = "Ready"
+        case let .folding(animation):
+            status = "Folding \(Int((animation.progress * 100).rounded()))%"
+        case let .flipping(animation):
+            status = "Flipping \(Int((animation.progress * 100).rounded()))%"
+        }
+        return "\(faceDescription), \(visibleSide) side, \(status)"
     }
 }
 
@@ -284,4 +353,57 @@ private func centerFoldRequest(for paper: Paper) -> FoldRequest? {
         : Point2D(x: 1, y: 0)
     guard let line = try? Line2D(point: center, direction: direction) else { return nil }
     return FoldRequest(line: line, moving: .positive)
+}
+
+private func flipAnimation(for paper: Paper) -> FoldAnimation? {
+    let points = paper.faces.flatMap { $0.polygon.vertices }
+    guard
+        let minimumX = points.map(\.x).min(),
+        let maximumX = points.map(\.x).max(),
+        let minimumY = points.map(\.y).min(),
+        let maximumY = points.map(\.y).max(),
+        let line = try? Line2D(
+            point: Point2D(x: (minimumX + maximumX) / 2, y: (minimumY + maximumY) / 2),
+            direction: Point2D(x: 0, y: 1)
+        )
+    else { return nil }
+    let maximumLayer = paper.faces.map(\.layer).max() ?? 0
+    let (foldedLayer, overflow) = maximumLayer.addingReportingOverflow(1)
+    guard overflow == false else { return nil }
+    return FoldAnimation(
+        paperID: paper.id,
+        duration: .milliseconds(360),
+        line: line,
+        moving: .positive,
+        stationaryFaces: [],
+        movingFaces: paper.faces,
+        foldedLayer: foldedLayer
+    )
+}
+
+private func finishAnimation(
+    state: inout AppFeature.State,
+    nextFaceID: () -> FaceID
+) {
+    let renderState = state.renderState
+    guard renderState.isAnimating else { return }
+    state.undoHistory = state.undoHistory.recording(
+        paper: state.paper,
+        paperSettings: state.paperSettings
+    )
+    switch renderState {
+    case .idle:
+        return
+    case let .folding(animation):
+        state.paper = commitFold(
+            state.paper,
+            animation: animation.withProgress(1),
+            nextFaceID: nextFaceID
+        )
+        state.accessibilityAnnouncement = "Fold complete"
+    case .flipping:
+        state.paper = commitFlip(state.paper)
+        state.accessibilityAnnouncement = "Flip complete"
+    }
+    state.renderState = .idle
 }

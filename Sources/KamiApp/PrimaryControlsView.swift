@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PrimaryControlsView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let isAnimating: Bool
     let canUndo: Bool
     let foldAction: () -> Void
@@ -11,88 +13,105 @@ struct PrimaryControlsView: View {
     var body: some View {
         if #available(iOS 26, *) {
             GlassEffectContainer(spacing: 10) {
-                controls
+                adaptiveControls
             }
         } else {
-            controls
+            adaptiveControls
                 .padding(8)
-                .background(.ultraThinMaterial, in: .capsule)
-                .overlay { Capsule().stroke(.white.opacity(0.22), lineWidth: 0.5) }
-        }
-    }
-
-    private var controls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) {
-                actionButtons(compact: false)
-            }
-            HStack(spacing: 6) {
-                actionButtons(compact: true)
-            }
+                .background(.ultraThinMaterial, in: .rect(cornerRadius: 22))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(.primary.opacity(0.14), lineWidth: 0.5)
+                }
         }
     }
 
     @ViewBuilder
-    private func actionButtons(compact: Bool) -> some View {
-        ControlButton(
-            title: "Fold",
-            systemImage: "rectangle.portrait.and.arrow.forward",
-            prominent: true,
-            compact: compact,
-            action: foldAction
-        )
-        .disabled(isAnimating)
-
-        ControlButton(
-            title: "Flip",
-            systemImage: "arrow.left.and.right",
-            prominent: false,
-            compact: compact,
-            action: flipAction
-        )
-        .disabled(isAnimating)
-
-        ControlButton(
-            title: "Reset",
-            systemImage: "arrow.counterclockwise",
-            prominent: false,
-            compact: compact,
-            action: resetAction
-        )
-        .disabled(isAnimating)
-
-        ControlButton(
-            title: "Undo",
-            systemImage: "arrow.uturn.backward",
-            prominent: false,
-            compact: compact,
-            action: undoAction
-        )
-        .disabled(isAnimating || canUndo == false)
+    private var adaptiveControls: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 8) {
+                control(.fold)
+                control(.flip)
+                control(.reset)
+                control(.undo)
+            }
+        } else {
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                spacing: 8
+            ) {
+                control(.fold)
+                control(.flip)
+                control(.reset)
+                control(.undo)
+            }
+        }
     }
+
+    private func control(_ kind: PrimaryControl) -> some View {
+        ControlButton(
+            title: kind.title,
+            systemImage: kind.systemImage,
+            prominent: kind == .fold,
+            action: action(for: kind)
+        )
+        .disabled(isAnimating || (kind == .undo && canUndo == false))
+    }
+
+    private func action(for kind: PrimaryControl) -> () -> Void {
+        switch kind {
+        case .fold: foldAction
+        case .flip: flipAction
+        case .reset: resetAction
+        case .undo: undoAction
+        }
+    }
+}
+
+private enum PrimaryControl: CaseIterable {
+    case fold
+    case flip
+    case reset
+    case undo
+
+    var title: String {
+        switch self {
+        case .fold: "Fold"
+        case .flip: "Flip"
+        case .reset: "Reset"
+        case .undo: "Undo"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .fold: "rectangle.portrait.on.rectangle.portrait"
+        case .flip: "arrow.left.and.right"
+        case .reset: "arrow.counterclockwise"
+        case .undo: "arrow.uturn.backward"
+        }
+    }
+
 }
 
 private struct ControlButton: View {
     let title: String
     let systemImage: String
     let prominent: Bool
-    let compact: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            if compact {
-                Image(systemName: systemImage)
-            } else {
-                Label(title, systemImage: systemImage)
-            }
+            Label(title, systemImage: systemImage)
+                .lineLimit(1)
+                .frame(minHeight: 44)
         }
-            .font(.callout.weight(.semibold))
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(.capsule)
-            .accessibilityLabel(title)
-            .accessibilityIdentifier(title)
-            .modifier(GlassControlButtonStyle(prominent: prominent))
+        .font(.callout.weight(.semibold))
+        .frame(minWidth: 72, minHeight: 44)
+        .contentShape(.capsule)
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(title)
+        .modifier(GlassControlButtonStyle(prominent: prominent))
     }
 }
 

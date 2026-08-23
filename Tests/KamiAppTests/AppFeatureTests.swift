@@ -74,6 +74,7 @@ struct AppFeatureTests {
         } withDependencies: {
             $0.continuousClock = clock
             $0.faceIDGenerator = .incrementing(from: 10)
+            $0.animationTimeline = .legacyQuarterSteps
         }
 
         await store.send(.keyboardCommand(command))
@@ -87,7 +88,7 @@ struct AppFeatureTests {
             }
         case .flip:
             await store.receive(.flipButtonTapped) {
-                $0.renderState = .flipping(progress: 0)
+                $0.renderState = .flipping(try expectedFlipRendererAnimation(progress: 0))
             }
             await store.send(.animationCancelled) {
                 $0.renderState = .idle
@@ -102,7 +103,8 @@ struct AppFeatureTests {
                     width: 210,
                     height: 297
                 )
-                $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+                $0.undoHistory = appHistory(paper)
+                $0.accessibilityAnnouncement = "Paper reset"
             }
         }
     }
@@ -126,7 +128,8 @@ struct AppFeatureTests {
         }
         await store.send(.flipButtonTapped) {
             $0.paper = try expectedFlippedPaper()
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
+            $0.accessibilityAnnouncement = "Flip complete"
         }
     }
 
@@ -151,7 +154,8 @@ struct AppFeatureTests {
         }
         await store.send(.foldButtonTapped) {
             $0.paper = try expectedFoldedPaper()
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
+            $0.accessibilityAnnouncement = "Fold complete"
         }
     }
 
@@ -194,6 +198,7 @@ struct AppFeatureTests {
         let style = PaperStyle(frontColor: "#FFF8E7", backColor: "#DCE8F2", edgeColor: "#49372A55")
 
         await store.send(.paperColorsChanged(style)) {
+            $0.undoHistory = appHistory(paper)
             $0.paper = try Paper(
                 id: PaperID(rawValue: 1),
                 style: style,
@@ -234,7 +239,7 @@ struct AppFeatureTests {
                 width: 1,
                 height: 1
             )
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
             $0.paperSettings.format = .square
         }
     }
@@ -283,7 +288,7 @@ struct AppFeatureTests {
                 width: 80,
                 height: 120
             )
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
             $0.paperSettings.format = .custom
             $0.paperSettings.customWidth = 80
             $0.paperSettings.customHeight = 120
@@ -304,14 +309,14 @@ struct AppFeatureTests {
         )
         let store = TestStore(initialState: AppFeature.State(
             paper: current,
-            undoHistory: UndoHistory(snapshots: [PaperSnapshot(paper: original)])
+            undoHistory: appHistory(original)
         )) {
             AppFeature()
         }
 
         await store.send(.undoButtonTapped) {
             $0.paper = original
-            $0.undoHistory = UndoHistory()
+            $0.undoHistory = AppUndoHistory()
         }
     }
 
@@ -333,7 +338,8 @@ struct AppFeatureTests {
                 width: 210,
                 height: 297
             )
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
+            $0.accessibilityAnnouncement = "Paper reset"
         }
     }
 
@@ -352,10 +358,11 @@ struct AppFeatureTests {
             AppFeature()
         } withDependencies: {
             $0.continuousClock = clock
+            $0.animationTimeline = .legacyQuarterSteps
         }
 
         await store.send(.flipButtonTapped) {
-            $0.renderState = .flipping(progress: 0)
+            $0.renderState = .flipping(try expectedFlipRendererAnimation(progress: 0))
         }
         await store.send(.animationCancelled) {
             $0.renderState = .idle
@@ -377,22 +384,28 @@ struct AppFeatureTests {
             AppFeature()
         } withDependencies: {
             $0.continuousClock = clock
+            $0.animationTimeline = .legacyQuarterSteps
         }
 
         await store.send(.flipButtonTapped) {
-            $0.renderState = .flipping(progress: 0)
+            $0.renderState = .flipping(try expectedFlipRendererAnimation(progress: 0))
         }
         for progress in [0.25, 0.5, 0.75] {
             await clock.advance(by: .milliseconds(90))
             await store.receive(.animationProgressed(progress)) {
-                $0.renderState = .flipping(progress: progress)
+                $0.renderState = .flipping(try expectedFlipRendererAnimation(progress: progress))
             }
         }
         await clock.advance(by: .milliseconds(90))
         await store.receive(.animationProgressed(1)) {
+            $0.renderState = .flipping(try expectedFlipRendererAnimation(progress: 1))
+        }
+        await clock.advance(by: .milliseconds(1))
+        await store.receive(.animationCompleted) {
             $0.paper = try expectedFlippedPaper()
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
             $0.renderState = .idle
+            $0.accessibilityAnnouncement = "Flip complete"
         }
     }
 
@@ -412,6 +425,7 @@ struct AppFeatureTests {
         } withDependencies: {
             $0.continuousClock = clock
             $0.faceIDGenerator = .incrementing(from: 10)
+            $0.animationTimeline = .legacyQuarterSteps
         }
 
         await store.send(.foldButtonTapped) {
@@ -425,9 +439,14 @@ struct AppFeatureTests {
         }
         await clock.advance(by: .milliseconds(115))
         await store.receive(.animationProgressed(1)) {
+            $0.renderState = .folding(try expectedFoldAnimation(progress: 1))
+        }
+        await clock.advance(by: .milliseconds(1))
+        await store.receive(.animationCompleted) {
             $0.paper = try expectedFoldedPaper()
-            $0.undoHistory = UndoHistory(snapshots: [PaperSnapshot(paper: paper)])
+            $0.undoHistory = appHistory(paper)
             $0.renderState = .idle
+            $0.accessibilityAnnouncement = "Fold complete"
         }
     }
 
@@ -518,6 +537,44 @@ private func expectedFoldAnimation(progress: Double) throws -> FoldAnimation {
         ],
         foldedLayer: 1
     )
+}
+
+private extension AnimationTimeline {
+    static let legacyQuarterSteps = Self(
+        ticks: { duration in
+            let delay = duration == .milliseconds(360) ? Duration.milliseconds(90) : .milliseconds(115)
+            return [0.25, 0.5, 0.75, 1].map { AnimationTick(delay: delay, progress: $0) }
+        },
+        endpointHold: .milliseconds(1)
+    )
+}
+
+private func expectedFlipRendererAnimation(progress: Double) throws -> FoldAnimation {
+    let paper = try Paper.rectangle(
+        id: PaperID(rawValue: 1),
+        faceID: FaceID(rawValue: 1),
+        style: .white,
+        center: .zero,
+        width: 210,
+        height: 297
+    )
+    return FoldAnimation(
+        paperID: paper.id,
+        duration: .milliseconds(360),
+        progress: progress,
+        line: try Line2D(point: .zero, direction: Point2D(x: 0, y: 1)),
+        moving: .positive,
+        stationaryFaces: [],
+        movingFaces: paper.faces,
+        foldedLayer: 1
+    )
+}
+
+private func appHistory(
+    _ paper: Paper,
+    settings: PaperSettings = PaperSettings()
+) -> AppUndoHistory {
+    AppUndoHistory(snapshots: [AppPaperSnapshot(paper: paper, paperSettings: settings)])
 }
 
 private func expectedFoldedPaper() throws -> Paper {

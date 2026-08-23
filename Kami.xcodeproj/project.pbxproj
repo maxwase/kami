@@ -14,6 +14,7 @@
 		141F21B6AEFBD1F682DAE142 /* Line2D.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127D04659A612DF14619A9B1 /* Line2D.swift */; };
 		17F35EEA4A1E32589480BD51 /* KamiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		1AE6871FC87BCFC84BCA0623 /* PaperFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F983C60D44803A9AF3633F /* PaperFormat.swift */; };
+		1E8E1F7DF66C79465678BA98 /* AppKeyboardShortcut+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393952D3337B85DEAFF04583 /* AppKeyboardShortcut+SwiftUI.swift */; };
 		1EFAF2E91EC6944B305DF910 /* referenceSceneSnapshots.flipped-committed-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = F8D8B439604FFFCD56A3650E /* referenceSceneSnapshots.flipped-committed-portrait.png */; };
 		32CFE0B97FF9FAC3A2EBC1A8 /* referenceSceneSnapshots.folding-25-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C20D1BC898E71CB841F554D /* referenceSceneSnapshots.folding-25-landscape.png */; };
 		32FDE297B6AFA19CB2D0E090 /* RenderFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CFC95B5D0BF5F081786BB4 /* RenderFrame.swift */; };
@@ -27,6 +28,7 @@
 		42FEE47AF7B2D467D6E4C58A /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 17108BACFA97ADA9C3FD2694 /* SnapshotTesting */; };
 		435009CC635E18DC3C0945DD /* referenceSceneSnapshots.flipping-75-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = D70191C96AEFA973F2702A2E /* referenceSceneSnapshots.flipping-75-landscape.png */; };
 		4A09DD0BA1B9B34601541C3B /* KamiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8908054EF997DBEF70F4FD0E /* KamiApp.swift */; };
+		4A52ACC431E91AE11FC459F3 /* AppKeyboardShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2821ED2DB60BE98F0B89FD /* AppKeyboardShortcut.swift */; };
 		4C9C8674B4A3278D2A7A71CB /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF92996BD3C9A44B5D70A434 /* InfoView.swift */; };
 		4E1055A014EB37D842F992D5 /* flatA4Snapshot-scene.flat-a4-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = EF4A2B757D3A7F4737AD35FF /* flatA4Snapshot-scene.flat-a4-landscape.png */; };
 		4FB0856D6C8745D00DF7F713 /* FoldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D952CA00A2DF84358C8D2E7D /* FoldTests.swift */; };
@@ -42,6 +44,7 @@
 		8C42E4F2FAD1709B76CC53F6 /* referenceSceneSnapshots.folding-25-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = AE710E7DE11BFD10C12B5E8B /* referenceSceneSnapshots.folding-25-portrait.png */; };
 		8DF8A775AB60A6FA72202862 /* referenceSceneSnapshots.flipping-75-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = 034E8A956B8ED629147868CE /* referenceSceneSnapshots.flipping-75-portrait.png */; };
 		8EA4D31069B634F8F335F94A /* FoldFlowGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA987C073E0B39B608378D9 /* FoldFlowGlass.swift */; };
+		8FF1A0354AD687E8B1BFE2CD /* PaperDimensionText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1676B1F082726088AE8C16C /* PaperDimensionText.swift */; };
 		921A21F9AAC56DC92A3F3688 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D8A1F4AAC6F478A1BC2E0E97 /* SnapshotTesting */; };
 		92A14AE6683C6B4029C3D947 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */; };
 		9B80FE3C5EED73DD54CBD8D7 /* referenceSceneSnapshots.folding-75-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = 75E6A3FD3165AC0F44E43843 /* referenceSceneSnapshots.folding-75-portrait.png */; };
@@ -50,6 +53,7 @@
 		A43A2515CABE19216BE64CF9 /* Undo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102BACD64BEC3913B5AE99C0 /* Undo.swift */; };
 		A873442B069E69E0D354A1D9 /* paper.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 20A0428DFB4E32E0D6B43FBA /* paper.jpg */; };
 		AA1C67E577DBE8A912364948 /* Polygon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA5F68DE197DA58923B54F85 /* Polygon.swift */; };
+		AB9E8C44CC8D865E42932C1F /* InputAccessibilityRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4C8FF58E831E56727A6EFE /* InputAccessibilityRegressionTests.swift */; };
 		ADB75DFAE8D2900CC2B7625C /* AppKeyboardCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E7A7B7D12E4E26C510EE9F /* AppKeyboardCommand.swift */; };
 		ADD2D2BECF3283D50BEABC98 /* GeometryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2BD2CC350074AACBFC217 /* GeometryError.swift */; };
 		B4A4355B1CADF8FDBE5C0161 /* referenceSceneSnapshots.flipped-committed-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */; };
@@ -57,8 +61,10 @@
 		B719C576B7529431F48B73FF /* PrimaryControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B877D69E0056B48FB8029DDA /* PrimaryControlsView.swift */; };
 		B84A1CEDD16180537F219CC1 /* SettingsValidationError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9016A71F1DD584D6908537 /* SettingsValidationError.swift */; };
 		B90D6A4D6C23F157286FC14D /* Fold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2FC3AF1DFE41E339041A129 /* Fold.swift */; };
+		C146030D787120CCA6B56D5C /* AppFeatureRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC8FB4021BFA4441BEF217B7 /* AppFeatureRegressionTests.swift */; };
 		C342203C2AAEC31825F6A18B /* AppFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CCFD208A5E478294BA52EC /* AppFeatureTests.swift */; };
 		C5F1E90463C454588B09D927 /* WorkspaceHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FBA46ECAB9F460C005D0CB /* WorkspaceHeaderView.swift */; };
+		C77B649DC9F48F383C57BF2C /* AppUndoHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14BF492E2516536E7FB23FC2 /* AppUndoHistory.swift */; };
 		CA8A045FAAEB2AA800FB8F34 /* PaperSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0300995FE879C049FE9275D4 /* PaperSettings.swift */; };
 		CADC46A636FEC9CBCE92684A /* referenceSceneSnapshots.folding-75-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = FAD36F07BB8E3BF70BD2523E /* referenceSceneSnapshots.folding-75-landscape.png */; };
 		CC6532A7FBB82D655DB2DCAE /* RenderFrameRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3542B31A34A339108F86EA8 /* RenderFrameRenderer.swift */; };
@@ -67,10 +73,12 @@
 		D8BF2D67A7F958E3F2469717 /* DebugOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E6C502D73F736A7578E114 /* DebugOverlayView.swift */; };
 		D91E27CF21EDD08C98AEBA30 /* FaceIDGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7B9FA20A173AFD624C548A /* FaceIDGenerator.swift */; };
 		DB1BA7A92DEC6E33C9385506 /* PaperWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6EDAFE4530CB84F69639A2A /* PaperWorkspaceView.swift */; };
+		DF2117B3F9C05BE1213364E9 /* AnimationTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7316C15F0A52ADF629DCD694 /* AnimationTimeline.swift */; };
 		E4E4146519BA178B39B5AEE0 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 70511DD0684E8609E5AAF5DD /* ComposableArchitecture */; };
 		E823BFE987985AA9965F2236 /* MetalBufferArena.swift in Sources */ = {isa = PBXBuildFile; fileRef = C083D363B7A2015DF028C24E /* MetalBufferArena.swift */; };
 		E8763FE385073513A6CA2CAC /* referenceSceneSnapshots.layered-stack-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 01026D4D0A38093194622514 /* referenceSceneSnapshots.layered-stack-landscape.png */; };
 		EFF5855EBEA6C31AD0EE2216 /* KamiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; };
+		F039CDF42B18AA7E52345D16 /* AnimationRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24CF472F01B8F413085E8BA /* AnimationRegressionTests.swift */; };
 		F07B87C03542EBC53358D4B9 /* ClipperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7C6E07B593452FCDC9622D /* ClipperTests.swift */; };
 		FD483A24A4C7CFE29490B6D4 /* PaperInk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0D660C66CDAB4D6E13C2FB /* PaperInk.swift */; };
 		FDB1587F7B09108F17B0B5B7 /* Flip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8538F0698F1F38B3FDEA8E31 /* Flip.swift */; };
@@ -150,6 +158,7 @@
 		12627D6AFD4DBFF0BDEA55F8 /* PaperCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperCanvasView.swift; sourceTree = "<group>"; };
 		127D04659A612DF14619A9B1 /* Line2D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Line2D.swift; sourceTree = "<group>"; };
 		1408264B3AC03C988074A540 /* PaperColorSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperColorSelector.swift; sourceTree = "<group>"; };
+		14BF492E2516536E7FB23FC2 /* AppUndoHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUndoHistory.swift; sourceTree = "<group>"; };
 		1B0D660C66CDAB4D6E13C2FB /* PaperInk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperInk.swift; sourceTree = "<group>"; };
 		1B86548F3C96C10D7F0B369D /* MetalTextureCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalTextureCache.swift; sourceTree = "<group>"; };
 		1B9016A71F1DD584D6908537 /* SettingsValidationError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsValidationError.swift; sourceTree = "<group>"; };
@@ -157,6 +166,7 @@
 		20A0428DFB4E32E0D6B43FBA /* paper.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = paper.jpg; sourceTree = "<group>"; };
 		2BEE1517F8F192081483F40B /* RenderFrameRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderFrameRendererTests.swift; sourceTree = "<group>"; };
 		386464CE7FAF532061DB8D0D /* KamiAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		393952D3337B85DEAFF04583 /* AppKeyboardShortcut+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppKeyboardShortcut+SwiftUI.swift"; sourceTree = "<group>"; };
 		3CFF6D531C9D91AFB4A5EDF4 /* Point2D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Point2D.swift; sourceTree = "<group>"; };
 		40907F89BBECB076CD964824 /* KamiSnapshotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		43E10A95CB11F94B3993EB38 /* Paper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paper.swift; sourceTree = "<group>"; };
@@ -169,6 +179,7 @@
 		6C2D7C9FDEB2EC08BC528E8A /* Sizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sizing.swift; sourceTree = "<group>"; };
 		6C8BB3E0FC3485D7CE076CF1 /* AppFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeature.swift; sourceTree = "<group>"; };
 		72835269E3E0712E58E9C663 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7316C15F0A52ADF629DCD694 /* AnimationTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationTimeline.swift; sourceTree = "<group>"; };
 		75E6A3FD3165AC0F44E43843 /* referenceSceneSnapshots.folding-75-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-75-portrait.png"; sourceTree = "<group>"; };
 		7DD17301C83F244B79713FC2 /* PaperRendererView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperRendererView.swift; sourceTree = "<group>"; };
 		8538F0698F1F38B3FDEA8E31 /* Flip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flip.swift; sourceTree = "<group>"; };
@@ -176,6 +187,7 @@
 		8FA987C073E0B39B608378D9 /* FoldFlowGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldFlowGlass.swift; sourceTree = "<group>"; };
 		90F9CCEB1C39894AFAD1CAEE /* referenceSceneSnapshots.flipping-25-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipping-25-landscape.png"; sourceTree = "<group>"; };
 		9C20D1BC898E71CB841F554D /* referenceSceneSnapshots.folding-25-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-25-landscape.png"; sourceTree = "<group>"; };
+		A1676B1F082726088AE8C16C /* PaperDimensionText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperDimensionText.swift; sourceTree = "<group>"; };
 		A2CCFD208A5E478294BA52EC /* AppFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatureTests.swift; sourceTree = "<group>"; };
 		A33371E12519A301AA77A2A8 /* flatA4Snapshot-scene.flat-a4-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "flatA4Snapshot-scene.flat-a4-portrait.png"; sourceTree = "<group>"; };
 		A3542B31A34A339108F86EA8 /* RenderFrameRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderFrameRenderer.swift; sourceTree = "<group>"; };
@@ -187,9 +199,11 @@
 		ABC48770F00DF97F4DA608DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AE710E7DE11BFD10C12B5E8B /* referenceSceneSnapshots.folding-25-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-25-portrait.png"; sourceTree = "<group>"; };
 		AEE7ED51E3CCED8FFB2A4A96 /* KamiAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B24CF472F01B8F413085E8BA /* AnimationRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationRegressionTests.swift; sourceTree = "<group>"; };
 		B3F983C60D44803A9AF3633F /* PaperFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperFormat.swift; sourceTree = "<group>"; };
 		B877D69E0056B48FB8029DDA /* PrimaryControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryControlsView.swift; sourceTree = "<group>"; };
 		BB7B9FA20A173AFD624C548A /* FaceIDGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDGenerator.swift; sourceTree = "<group>"; };
+		BC8FB4021BFA4441BEF217B7 /* AppFeatureRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatureRegressionTests.swift; sourceTree = "<group>"; };
 		BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipped-committed-landscape.png"; sourceTree = "<group>"; };
 		BF92996BD3C9A44B5D70A434 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
 		C083D363B7A2015DF028C24E /* MetalBufferArena.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalBufferArena.swift; sourceTree = "<group>"; };
@@ -198,6 +212,8 @@
 		C42F2DF961267EF492085EE4 /* RendererStressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendererStressTests.swift; sourceTree = "<group>"; };
 		C4CFC95B5D0BF5F081786BB4 /* RenderFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderFrame.swift; sourceTree = "<group>"; };
 		CB2FEF8428C9EE4CC0DB3BBB /* ProjectSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSmokeTests.swift; sourceTree = "<group>"; };
+		CE4C8FF58E831E56727A6EFE /* InputAccessibilityRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputAccessibilityRegressionTests.swift; sourceTree = "<group>"; };
+		CF2821ED2DB60BE98F0B89FD /* AppKeyboardShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppKeyboardShortcut.swift; sourceTree = "<group>"; };
 		D0E7A7B7D12E4E26C510EE9F /* AppKeyboardCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppKeyboardCommand.swift; sourceTree = "<group>"; };
 		D4C2BD2CC350074AACBFC217 /* GeometryError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryError.swift; sourceTree = "<group>"; };
 		D70191C96AEFA973F2702A2E /* referenceSceneSnapshots.flipping-75-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipping-75-landscape.png"; sourceTree = "<group>"; };
@@ -292,10 +308,14 @@
 		5524724DA55C6168018A9CDE /* KamiApp */ = {
 			isa = PBXGroup;
 			children = (
+				7316C15F0A52ADF629DCD694 /* AnimationTimeline.swift */,
 				6C8BB3E0FC3485D7CE076CF1 /* AppFeature.swift */,
 				D0E7A7B7D12E4E26C510EE9F /* AppKeyboardCommand.swift */,
+				CF2821ED2DB60BE98F0B89FD /* AppKeyboardShortcut.swift */,
+				393952D3337B85DEAFF04583 /* AppKeyboardShortcut+SwiftUI.swift */,
 				4A3132DDA7B8693E1B7EB957 /* AppRenderState.swift */,
 				C2302C9E91606E100CD75612 /* AppSheet.swift */,
+				14BF492E2516536E7FB23FC2 /* AppUndoHistory.swift */,
 				A3E6C502D73F736A7578E114 /* DebugOverlayView.swift */,
 				BB7B9FA20A173AFD624C548A /* FaceIDGenerator.swift */,
 				8FA987C073E0B39B608378D9 /* FoldFlowGlass.swift */,
@@ -303,6 +323,7 @@
 				8908054EF997DBEF70F4FD0E /* KamiApp.swift */,
 				12627D6AFD4DBFF0BDEA55F8 /* PaperCanvasView.swift */,
 				1408264B3AC03C988074A540 /* PaperColorSelector.swift */,
+				A1676B1F082726088AE8C16C /* PaperDimensionText.swift */,
 				B3F983C60D44803A9AF3633F /* PaperFormat.swift */,
 				1B0D660C66CDAB4D6E13C2FB /* PaperInk.swift */,
 				0300995FE879C049FE9275D4 /* PaperSettings.swift */,
@@ -373,7 +394,10 @@
 		9A047B8AAC95D857306EAE8F /* KamiAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				B24CF472F01B8F413085E8BA /* AnimationRegressionTests.swift */,
+				BC8FB4021BFA4441BEF217B7 /* AppFeatureRegressionTests.swift */,
 				A2CCFD208A5E478294BA52EC /* AppFeatureTests.swift */,
+				CE4C8FF58E831E56727A6EFE /* InputAccessibilityRegressionTests.swift */,
 			);
 			name = KamiAppTests;
 			path = Tests/KamiAppTests;
@@ -693,10 +717,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DF2117B3F9C05BE1213364E9 /* AnimationTimeline.swift in Sources */,
 				0A374974DAE8AB7588EC0AC8 /* AppFeature.swift in Sources */,
 				ADB75DFAE8D2900CC2B7625C /* AppKeyboardCommand.swift in Sources */,
+				1E8E1F7DF66C79465678BA98 /* AppKeyboardShortcut+SwiftUI.swift in Sources */,
+				4A52ACC431E91AE11FC459F3 /* AppKeyboardShortcut.swift in Sources */,
 				3A62C5BB9E95909CA733925F /* AppRenderState.swift in Sources */,
 				3CDDED2849B3E70FDFD9E1FD /* AppSheet.swift in Sources */,
+				C77B649DC9F48F383C57BF2C /* AppUndoHistory.swift in Sources */,
 				D8BF2D67A7F958E3F2469717 /* DebugOverlayView.swift in Sources */,
 				D91E27CF21EDD08C98AEBA30 /* FaceIDGenerator.swift in Sources */,
 				8EA4D31069B634F8F335F94A /* FoldFlowGlass.swift in Sources */,
@@ -707,6 +735,7 @@
 				9BD6EF1E1F52CAF7DCBF8EBB /* MetalTextureCache.swift in Sources */,
 				3FE43CF42FC6CB259981FE09 /* PaperCanvasView.swift in Sources */,
 				CE4F00A9A1E06002AD8B7DA0 /* PaperColorSelector.swift in Sources */,
+				8FF1A0354AD687E8B1BFE2CD /* PaperDimensionText.swift in Sources */,
 				1AE6871FC87BCFC84BCA0623 /* PaperFormat.swift in Sources */,
 				FD483A24A4C7CFE29490B6D4 /* PaperInk.swift in Sources */,
 				7EB2BA917D54D4A580DEAC0F /* PaperRendererView.swift in Sources */,
@@ -750,7 +779,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F039CDF42B18AA7E52345D16 /* AnimationRegressionTests.swift in Sources */,
+				C146030D787120CCA6B56D5C /* AppFeatureRegressionTests.swift in Sources */,
 				C342203C2AAEC31825F6A18B /* AppFeatureTests.swift in Sources */,
+				AB9E8C44CC8D865E42932C1F /* InputAccessibilityRegressionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

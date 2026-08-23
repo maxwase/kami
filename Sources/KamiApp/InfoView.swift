@@ -22,7 +22,7 @@ struct InfoView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 16) {
-                        InfoRow(icon: "rectangle.portrait.and.arrow.forward", title: "Fold", detail: "Creases the paper through its center.")
+                        InfoRow(icon: "rectangle.portrait.on.rectangle.portrait", title: "Fold", detail: "Creases the paper through its center.")
                         InfoRow(icon: "arrow.left.and.right", title: "Flip", detail: "Turns the paper over to reveal its other side.")
                         InfoRow(icon: "arrow.uturn.backward", title: "Undo", detail: "Steps back through your folding history.")
                     }

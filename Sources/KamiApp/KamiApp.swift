@@ -1,11 +1,15 @@
 import ComposableArchitecture
 import KamiCore
 import SwiftUI
+import UIKit
 
 @main
 struct KamiApp: App {
     @MainActor
-    private static let store = Store(initialState: AppFeature.State(paper: initialPaper())) {
+    private static let store = Store(initialState: AppFeature.State(
+        paper: initialPaper(),
+        reduceMotionEnabled: UIAccessibility.isReduceMotionEnabled
+    )) {
         AppFeature()
     }
 
@@ -29,17 +33,29 @@ struct KamiApp: App {
                 Button("Fold") {
                     Self.store.send(.keyboardCommand(.fold))
                 }
-                .keyboardShortcut("f", modifiers: .command)
+                .keyboardShortcut(
+                    AppKeyboardCommand.fold.shortcut.keyEquivalent,
+                    modifiers: AppKeyboardCommand.fold.shortcut.eventModifiers
+                )
+                .disabled(Self.store.keyboardCommandsEnabled == false)
 
                 Button("Flip") {
                     Self.store.send(.keyboardCommand(.flip))
                 }
-                .keyboardShortcut("l", modifiers: .command)
+                .keyboardShortcut(
+                    AppKeyboardCommand.flip.shortcut.keyEquivalent,
+                    modifiers: AppKeyboardCommand.flip.shortcut.eventModifiers
+                )
+                .disabled(Self.store.keyboardCommandsEnabled == false)
 
                 Button("Reset") {
                     Self.store.send(.keyboardCommand(.reset))
                 }
-                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .keyboardShortcut(
+                    AppKeyboardCommand.reset.shortcut.keyEquivalent,
+                    modifiers: AppKeyboardCommand.reset.shortcut.eventModifiers
+                )
+                .disabled(Self.store.keyboardCommandsEnabled == false)
             }
         }
     }

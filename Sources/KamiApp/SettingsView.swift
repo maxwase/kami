@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @State private var widthText: String
     @State private var heightText: String
 
@@ -11,8 +12,8 @@ struct SettingsView: View {
 
     init(store: StoreOf<AppFeature>) {
         self.store = store
-        _widthText = State(initialValue: store.paperSettings.customWidth.formatted())
-        _heightText = State(initialValue: store.paperSettings.customHeight.formatted())
+        _widthText = State(initialValue: PaperDimensionText.format(store.paperSettings.customWidth, locale: .current))
+        _heightText = State(initialValue: PaperDimensionText.format(store.paperSettings.customHeight, locale: .current))
     }
 
     var body: some View {
@@ -109,10 +110,14 @@ struct SettingsView: View {
     }
 
     private func applyCustomSize() {
-        store.send(.customDimensionsChanged(
-            width: Double(widthText) ?? .nan,
-            height: Double(heightText) ?? .nan
-        ))
+        guard
+            let width = PaperDimensionText.parse(widthText, locale: locale),
+            let height = PaperDimensionText.parse(heightText, locale: locale)
+        else {
+            store.send(.customDimensionsRejected)
+            return
+        }
+        store.send(.customDimensionsChanged(width: width, height: height))
     }
 
     private func applyColor(front: String? = nil, back: String? = nil, edge: String? = nil) {

@@ -5,13 +5,17 @@ final class KamiAppUITests: XCTestCase {
     func testInitialWorkspaceExposesPrimaryControls() {
         let app = XCUIApplication()
         app.launch()
-        XCTAssertTrue(app.buttons["Fold"].exists)
-        XCTAssertTrue(app.buttons["Flip"].exists)
-        XCTAssertTrue(app.buttons["Reset"].exists)
-        XCTAssertTrue(app.buttons["Undo"].exists)
+        for title in ["Fold", "Flip", "Reset", "Undo"] {
+            let control = app.buttons[title]
+            XCTAssertTrue(control.waitForExistence(timeout: 2))
+            XCTAssertTrue(control.isHittable)
+            XCTAssertGreaterThan(control.frame.width, 70, "\(title) must retain a visible text label.")
+        }
         XCTAssertTrue(app.buttons["Settings"].exists)
         XCTAssertTrue(app.buttons["Information"].exists)
-        XCTAssertTrue(app.otherElements["Paper canvas"].exists)
+        let canvas = app.otherElements["Paper canvas"]
+        XCTAssertTrue(canvas.exists)
+        XCTAssertEqual(canvas.value as? String, "1 face, front side, Ready")
     }
 
     func testPrimaryActionsUpdateUndoAvailability() {
@@ -19,19 +23,21 @@ final class KamiAppUITests: XCTestCase {
         app.launch()
 
         let undo = app.buttons["Undo"]
+        let canvas = app.otherElements["Paper canvas"]
         XCTAssertTrue(undo.exists)
         XCTAssertFalse(undo.isEnabled)
 
         app.buttons["Fold"].tap()
-        wait(for: NSPredicate(format: "isEnabled == true"), on: app.buttons["Undo"], timeout: 2)
+        wait(for: NSPredicate(format: "value CONTAINS '2 faces'"), on: canvas, timeout: 2)
 
         app.buttons["Undo"].tap()
-        wait(for: NSPredicate(format: "isEnabled == false"), on: app.buttons["Undo"], timeout: 2)
+        wait(for: NSPredicate(format: "value == '1 face, front side, Ready'"), on: canvas, timeout: 2)
 
         app.buttons["Flip"].tap()
-        wait(for: NSPredicate(format: "isEnabled == true"), on: app.buttons["Undo"], timeout: 2)
+        wait(for: NSPredicate(format: "value == '1 face, back side, Ready'"), on: canvas, timeout: 2)
 
         app.buttons["Reset"].tap()
+        wait(for: NSPredicate(format: "value == '1 face, front side, Ready'"), on: canvas, timeout: 2)
         XCTAssertTrue(app.buttons["Undo"].isEnabled)
     }
 
@@ -48,6 +54,25 @@ final class KamiAppUITests: XCTestCase {
         app.buttons["Information"].tap()
         XCTAssertTrue(app.navigationBars["About FoldFlow"].waitForExistence(timeout: 1))
         XCTAssertTrue(app.staticTexts["A calm, tactile workspace for exploring paper one fold at a time."].exists)
+    }
+
+    func testAccessibilityTextSizeKeepsEveryPrimaryActionLabeled() {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-UIPreferredContentSizeCategoryName",
+            "UICTContentSizeCategoryAccessibilityExtraExtraExtraLarge",
+        ]
+        app.launch()
+        if app.staticTexts["Renderer unavailable"].waitForExistence(timeout: 1) {
+            app.terminate()
+            app.launch()
+        }
+
+        for title in ["Fold", "Flip", "Reset", "Undo"] {
+            let control = app.buttons[title]
+            XCTAssertTrue(control.waitForExistence(timeout: 2))
+            XCTAssertGreaterThan(control.frame.width, 70)
+        }
     }
 
     private func wait(for predicate: NSPredicate, on element: XCUIElement, timeout: TimeInterval) {

@@ -1,9 +1,11 @@
 import ComposableArchitecture
 import KamiCore
 import SwiftUI
+import UIKit
 
 struct PaperWorkspaceView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     let store: StoreOf<AppFeature>
     let frameRenderer: RenderFrameRenderer
@@ -14,16 +16,11 @@ struct PaperWorkspaceView: View {
                 frameRenderer: frameRenderer,
                 renderFrame: RenderFrame(
                     paper: store.paper,
-                    animation: store.renderState.foldAnimation,
+                    animation: store.renderState.rendererAnimation,
                     outlineEnabled: store.paperSettings.outlineEnabled
-                )
+                ),
+                accessibilityValue: store.canvasAccessibilityValue
             )
-            .rotation3DEffect(
-                .degrees(flipProgress * 180),
-                axis: (x: 0, y: 1, z: 0),
-                perspective: 0.55
-            )
-            .animation(reduceMotion ? nil : .linear(duration: 0.09), value: flipProgress)
             .ignoresSafeArea()
 
             LinearGradient(
@@ -74,11 +71,17 @@ struct PaperWorkspaceView: View {
         .task(id: reduceMotion) {
             store.send(.reduceMotionChanged(reduceMotion))
         }
-    }
-
-    private var flipProgress: Double {
-        guard case let .flipping(progress) = store.renderState else { return 0 }
-        return progress
+        .onChange(of: store.accessibilityAnnouncement) { _, announcement in
+            guard let announcement else { return }
+            UIAccessibility.post(notification: .announcement, argument: announcement)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            store.send(.animationCancelled)
+        }
+        .onDisappear {
+            store.send(.animationCancelled)
+        }
     }
 
     private var statusText: String {
