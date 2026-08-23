@@ -1,60 +1,60 @@
+import ComposableArchitecture
+import KamiCore
 import SwiftUI
 
 @main
 struct KamiApp: App {
+    @MainActor
+    private static let store = Store(initialState: AppFeature.State(paper: initialPaper())) {
+        AppFeature()
+    }
+
+    @MainActor
+    private static let frameRenderer = try? RenderFrameRenderer()
+
     var body: some Scene {
         WindowGroup {
-            PaperWorkspaceView()
+            if let frameRenderer = Self.frameRenderer {
+                PaperWorkspaceView(store: Self.store, frameRenderer: frameRenderer)
+            } else {
+                ContentUnavailableView(
+                    "Renderer unavailable",
+                    systemImage: "doc.badge.gearshape",
+                    description: Text("FoldFlow needs Metal to display your paper.")
+                )
+            }
+        }
+        .commands {
+            CommandMenu("Paper") {
+                Button("Fold") {
+                    Self.store.send(.keyboardCommand(.fold))
+                }
+                .keyboardShortcut("f", modifiers: .command)
+
+                Button("Flip") {
+                    Self.store.send(.keyboardCommand(.flip))
+                }
+                .keyboardShortcut("l", modifiers: .command)
+
+                Button("Reset") {
+                    Self.store.send(.keyboardCommand(.reset))
+                }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+            }
         }
     }
-}
 
-private struct PaperWorkspaceView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var settingsPresented = false
-
-    var body: some View {
-        ZStack {
-            Color(red: 0.22, green: 0.14, blue: 0.09).ignoresSafeArea()
-            RoundedRectangle(cornerRadius: 3)
-                .fill(.white)
-                .shadow(color: .black.opacity(0.28), radius: 12, y: 8)
-                .aspectRatio(210 / 297, contentMode: .fit)
-                .padding(48)
-                .accessibilityLabel("A4 paper")
+    private static func initialPaper() -> Paper {
+        guard let paper = try? Paper.rectangle(
+            id: PaperID(rawValue: 1),
+            faceID: FaceID(rawValue: 1),
+            style: .white,
+            center: Point2D(x: 0, y: 0),
+            width: 210,
+            height: 297
+        ) else {
+            preconditionFailure("FoldFlow's validated default paper could not be created.")
         }
-        .safeAreaInset(edge: .bottom) {
-            HStack {
-                Button("Fold", systemImage: "rectangle.2.swap") {}
-                Button("Flip", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right") {}
-                Button("Reset", systemImage: "arrow.counterclockwise") {}
-                Button("Undo", systemImage: "arrow.uturn.backward") {}
-                Spacer()
-                Button("Settings", systemImage: "gearshape") { settingsPresented = true }
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderedProminent)
-            .accessibilityElement(children: .contain)
-            .padding()
-            .background(.ultraThinMaterial)
-        }
-        .sheet(isPresented: $settingsPresented) {
-            NavigationStack {
-                Form {
-                    Section("Paper") {
-                        Picker("Size", selection: .constant("A4")) {
-                            Text("A4").tag("A4")
-                            Text("Square").tag("Square")
-                            Text("Custom").tag("Custom")
-                        }
-                    }
-                    Section("Accessibility") {
-                        Text(reduceMotion ? "Reduce Motion is enabled." : "Animations follow system settings.")
-                    }
-                }
-                .navigationTitle("Settings")
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { settingsPresented = false } } }
-            }
-        }
+        return paper
     }
 }

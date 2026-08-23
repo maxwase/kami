@@ -7,20 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03AFD0E9BFB1531B2F0F5F11 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82C67D956F720CB8D4B36B /* SettingsView.swift */; };
+		0A374974DAE8AB7588EC0AC8 /* AppFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8BB3E0FC3485D7CE076CF1 /* AppFeature.swift */; };
 		0A771ECDDC33BA5851F0BB9C /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 3B5E04D27BB87D42FBF35BAF /* PostHog */; };
 		0DCE6B49D567B2662FBA3B4A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABC48770F00DF97F4DA608DD /* Assets.xcassets */; };
 		141F21B6AEFBD1F682DAE142 /* Line2D.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127D04659A612DF14619A9B1 /* Line2D.swift */; };
 		17F35EEA4A1E32589480BD51 /* KamiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		1AE6871FC87BCFC84BCA0623 /* PaperFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F983C60D44803A9AF3633F /* PaperFormat.swift */; };
 		1EFAF2E91EC6944B305DF910 /* referenceSceneSnapshots.flipped-committed-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = F8D8B439604FFFCD56A3650E /* referenceSceneSnapshots.flipped-committed-portrait.png */; };
 		32CFE0B97FF9FAC3A2EBC1A8 /* referenceSceneSnapshots.folding-25-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C20D1BC898E71CB841F554D /* referenceSceneSnapshots.folding-25-landscape.png */; };
 		32FDE297B6AFA19CB2D0E090 /* RenderFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CFC95B5D0BF5F081786BB4 /* RenderFrame.swift */; };
 		36BB2AD85749B93E2E8F57A0 /* referenceSceneSnapshots.layered-stack-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = 0B86B476F123D6B88E0B1C10 /* referenceSceneSnapshots.layered-stack-portrait.png */; };
 		36EB9CE3A4C9ECE1C491C8C1 /* ProjectSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2FEF8428C9EE4CC0DB3BBB /* ProjectSmokeTests.swift */; };
 		39531B1EF719E47A1FF04F8D /* referenceSceneSnapshots.flipping-25-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 90F9CCEB1C39894AFAD1CAEE /* referenceSceneSnapshots.flipping-25-landscape.png */; };
+		3A62C5BB9E95909CA733925F /* AppRenderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3132DDA7B8693E1B7EB957 /* AppRenderState.swift */; };
+		3CDDED2849B3E70FDFD9E1FD /* AppSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2302C9E91606E100CD75612 /* AppSheet.swift */; };
 		3F0DAF0B42E3AC6DDD805E38 /* Sizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C2D7C9FDEB2EC08BC528E8A /* Sizing.swift */; };
+		3FE43CF42FC6CB259981FE09 /* PaperCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12627D6AFD4DBFF0BDEA55F8 /* PaperCanvasView.swift */; };
 		42FEE47AF7B2D467D6E4C58A /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 17108BACFA97ADA9C3FD2694 /* SnapshotTesting */; };
 		435009CC635E18DC3C0945DD /* referenceSceneSnapshots.flipping-75-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = D70191C96AEFA973F2702A2E /* referenceSceneSnapshots.flipping-75-landscape.png */; };
 		4A09DD0BA1B9B34601541C3B /* KamiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8908054EF997DBEF70F4FD0E /* KamiApp.swift */; };
+		4C9C8674B4A3278D2A7A71CB /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF92996BD3C9A44B5D70A434 /* InfoView.swift */; };
 		4E1055A014EB37D842F992D5 /* flatA4Snapshot-scene.flat-a4-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = EF4A2B757D3A7F4737AD35FF /* flatA4Snapshot-scene.flat-a4-landscape.png */; };
 		4FB0856D6C8745D00DF7F713 /* FoldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D952CA00A2DF84358C8D2E7D /* FoldTests.swift */; };
 		58C82C6E2D30A59D7BB0BBAC /* RendererStressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42F2DF961267EF492085EE4 /* RendererStressTests.swift */; };
@@ -34,6 +41,7 @@
 		7F3C00A4065111DFB869A770 /* MetalShaderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AA42F1C9D74EEDD397E09E /* MetalShaderSource.swift */; };
 		8C42E4F2FAD1709B76CC53F6 /* referenceSceneSnapshots.folding-25-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = AE710E7DE11BFD10C12B5E8B /* referenceSceneSnapshots.folding-25-portrait.png */; };
 		8DF8A775AB60A6FA72202862 /* referenceSceneSnapshots.flipping-75-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = 034E8A956B8ED629147868CE /* referenceSceneSnapshots.flipping-75-portrait.png */; };
+		8EA4D31069B634F8F335F94A /* FoldFlowGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA987C073E0B39B608378D9 /* FoldFlowGlass.swift */; };
 		921A21F9AAC56DC92A3F3688 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D8A1F4AAC6F478A1BC2E0E97 /* SnapshotTesting */; };
 		92A14AE6683C6B4029C3D947 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */; };
 		9B80FE3C5EED73DD54CBD8D7 /* referenceSceneSnapshots.folding-75-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = 75E6A3FD3165AC0F44E43843 /* referenceSceneSnapshots.folding-75-portrait.png */; };
@@ -42,18 +50,29 @@
 		A43A2515CABE19216BE64CF9 /* Undo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102BACD64BEC3913B5AE99C0 /* Undo.swift */; };
 		A873442B069E69E0D354A1D9 /* paper.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 20A0428DFB4E32E0D6B43FBA /* paper.jpg */; };
 		AA1C67E577DBE8A912364948 /* Polygon.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA5F68DE197DA58923B54F85 /* Polygon.swift */; };
+		ADB75DFAE8D2900CC2B7625C /* AppKeyboardCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E7A7B7D12E4E26C510EE9F /* AppKeyboardCommand.swift */; };
 		ADD2D2BECF3283D50BEABC98 /* GeometryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C2BD2CC350074AACBFC217 /* GeometryError.swift */; };
 		B4A4355B1CADF8FDBE5C0161 /* referenceSceneSnapshots.flipped-committed-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */; };
 		B5D62F5F9A51F4CA724F430E /* KamiAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */; };
+		B719C576B7529431F48B73FF /* PrimaryControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B877D69E0056B48FB8029DDA /* PrimaryControlsView.swift */; };
+		B84A1CEDD16180537F219CC1 /* SettingsValidationError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9016A71F1DD584D6908537 /* SettingsValidationError.swift */; };
 		B90D6A4D6C23F157286FC14D /* Fold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2FC3AF1DFE41E339041A129 /* Fold.swift */; };
+		C342203C2AAEC31825F6A18B /* AppFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CCFD208A5E478294BA52EC /* AppFeatureTests.swift */; };
+		C5F1E90463C454588B09D927 /* WorkspaceHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FBA46ECAB9F460C005D0CB /* WorkspaceHeaderView.swift */; };
+		CA8A045FAAEB2AA800FB8F34 /* PaperSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0300995FE879C049FE9275D4 /* PaperSettings.swift */; };
 		CADC46A636FEC9CBCE92684A /* referenceSceneSnapshots.folding-75-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = FAD36F07BB8E3BF70BD2523E /* referenceSceneSnapshots.folding-75-landscape.png */; };
 		CC6532A7FBB82D655DB2DCAE /* RenderFrameRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3542B31A34A339108F86EA8 /* RenderFrameRenderer.swift */; };
 		CCFE3D434B71499C71E3D792 /* flatA4Snapshot-scene.flat-a4-portrait.png in Resources */ = {isa = PBXBuildFile; fileRef = A33371E12519A301AA77A2A8 /* flatA4Snapshot-scene.flat-a4-portrait.png */; };
+		CE4F00A9A1E06002AD8B7DA0 /* PaperColorSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1408264B3AC03C988074A540 /* PaperColorSelector.swift */; };
+		D8BF2D67A7F958E3F2469717 /* DebugOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E6C502D73F736A7578E114 /* DebugOverlayView.swift */; };
+		D91E27CF21EDD08C98AEBA30 /* FaceIDGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7B9FA20A173AFD624C548A /* FaceIDGenerator.swift */; };
+		DB1BA7A92DEC6E33C9385506 /* PaperWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6EDAFE4530CB84F69639A2A /* PaperWorkspaceView.swift */; };
 		E4E4146519BA178B39B5AEE0 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 70511DD0684E8609E5AAF5DD /* ComposableArchitecture */; };
 		E823BFE987985AA9965F2236 /* MetalBufferArena.swift in Sources */ = {isa = PBXBuildFile; fileRef = C083D363B7A2015DF028C24E /* MetalBufferArena.swift */; };
 		E8763FE385073513A6CA2CAC /* referenceSceneSnapshots.layered-stack-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 01026D4D0A38093194622514 /* referenceSceneSnapshots.layered-stack-landscape.png */; };
 		EFF5855EBEA6C31AD0EE2216 /* KamiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A947A02072569E7DB04FC8DF /* KamiCore.framework */; };
 		F07B87C03542EBC53358D4B9 /* ClipperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7C6E07B593452FCDC9622D /* ClipperTests.swift */; };
+		FD483A24A4C7CFE29490B6D4 /* PaperInk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0D660C66CDAB4D6E13C2FB /* PaperInk.swift */; };
 		FDB1587F7B09108F17B0B5B7 /* Flip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8538F0698F1F38B3FDEA8E31 /* Flip.swift */; };
 		FF7AFF3D1C1E69764B57E5A6 /* RenderFrameRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BEE1517F8F192081483F40B /* RenderFrameRendererTests.swift */; };
 /* End PBXBuildFile section */
@@ -74,6 +93,13 @@
 			remoteInfo = KamiApp;
 		};
 		4F0FCB5522D9957E50BD905B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9D4BE99BD8A021E7AAE4DFEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0013BC36134CC06B212CEF6;
+			remoteInfo = KamiApp;
+		};
+		70759B356C8BA0B6577D3478 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 9D4BE99BD8A021E7AAE4DFEF /* Project object */;
 			proxyType = 1;
@@ -116,12 +142,17 @@
 
 /* Begin PBXFileReference section */
 		01026D4D0A38093194622514 /* referenceSceneSnapshots.layered-stack-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.layered-stack-landscape.png"; sourceTree = "<group>"; };
+		0300995FE879C049FE9275D4 /* PaperSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperSettings.swift; sourceTree = "<group>"; };
 		034E8A956B8ED629147868CE /* referenceSceneSnapshots.flipping-75-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipping-75-portrait.png"; sourceTree = "<group>"; };
 		0B86B476F123D6B88E0B1C10 /* referenceSceneSnapshots.layered-stack-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.layered-stack-portrait.png"; sourceTree = "<group>"; };
 		0EB47A67668D77A817E42E2A /* KamiCoreTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		102BACD64BEC3913B5AE99C0 /* Undo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Undo.swift; sourceTree = "<group>"; };
+		12627D6AFD4DBFF0BDEA55F8 /* PaperCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperCanvasView.swift; sourceTree = "<group>"; };
 		127D04659A612DF14619A9B1 /* Line2D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Line2D.swift; sourceTree = "<group>"; };
+		1408264B3AC03C988074A540 /* PaperColorSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperColorSelector.swift; sourceTree = "<group>"; };
+		1B0D660C66CDAB4D6E13C2FB /* PaperInk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperInk.swift; sourceTree = "<group>"; };
 		1B86548F3C96C10D7F0B369D /* MetalTextureCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalTextureCache.swift; sourceTree = "<group>"; };
+		1B9016A71F1DD584D6908537 /* SettingsValidationError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsValidationError.swift; sourceTree = "<group>"; };
 		1F472A7800019A63B7AECDF9 /* wood.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = wood.jpg; sourceTree = "<group>"; };
 		20A0428DFB4E32E0D6B43FBA /* paper.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = paper.jpg; sourceTree = "<group>"; };
 		2BEE1517F8F192081483F40B /* RenderFrameRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderFrameRendererTests.swift; sourceTree = "<group>"; };
@@ -130,29 +161,44 @@
 		40907F89BBECB076CD964824 /* KamiSnapshotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		43E10A95CB11F94B3993EB38 /* Paper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paper.swift; sourceTree = "<group>"; };
 		4699260F53AD8070FA5EDD68 /* referenceSceneSnapshots.flipping-25-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipping-25-portrait.png"; sourceTree = "<group>"; };
+		4A3132DDA7B8693E1B7EB957 /* AppRenderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRenderState.swift; sourceTree = "<group>"; };
+		4C82C67D956F720CB8D4B36B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		59FBA46ECAB9F460C005D0CB /* WorkspaceHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceHeaderView.swift; sourceTree = "<group>"; };
 		5F7C6E07B593452FCDC9622D /* ClipperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipperTests.swift; sourceTree = "<group>"; };
 		6901C74693FBB03EDA0BAF29 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6C2D7C9FDEB2EC08BC528E8A /* Sizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sizing.swift; sourceTree = "<group>"; };
+		6C8BB3E0FC3485D7CE076CF1 /* AppFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeature.swift; sourceTree = "<group>"; };
 		72835269E3E0712E58E9C663 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		75E6A3FD3165AC0F44E43843 /* referenceSceneSnapshots.folding-75-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-75-portrait.png"; sourceTree = "<group>"; };
 		7DD17301C83F244B79713FC2 /* PaperRendererView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperRendererView.swift; sourceTree = "<group>"; };
 		8538F0698F1F38B3FDEA8E31 /* Flip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flip.swift; sourceTree = "<group>"; };
 		8908054EF997DBEF70F4FD0E /* KamiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KamiApp.swift; sourceTree = "<group>"; };
+		8FA987C073E0B39B608378D9 /* FoldFlowGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldFlowGlass.swift; sourceTree = "<group>"; };
 		90F9CCEB1C39894AFAD1CAEE /* referenceSceneSnapshots.flipping-25-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipping-25-landscape.png"; sourceTree = "<group>"; };
 		9C20D1BC898E71CB841F554D /* referenceSceneSnapshots.folding-25-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-25-landscape.png"; sourceTree = "<group>"; };
+		A2CCFD208A5E478294BA52EC /* AppFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatureTests.swift; sourceTree = "<group>"; };
 		A33371E12519A301AA77A2A8 /* flatA4Snapshot-scene.flat-a4-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "flatA4Snapshot-scene.flat-a4-portrait.png"; sourceTree = "<group>"; };
 		A3542B31A34A339108F86EA8 /* RenderFrameRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderFrameRenderer.swift; sourceTree = "<group>"; };
+		A3E6C502D73F736A7578E114 /* DebugOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugOverlayView.swift; sourceTree = "<group>"; };
+		A6EDAFE4530CB84F69639A2A /* PaperWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperWorkspaceView.swift; sourceTree = "<group>"; };
 		A8AA42F1C9D74EEDD397E09E /* MetalShaderSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalShaderSource.swift; sourceTree = "<group>"; };
 		A947A02072569E7DB04FC8DF /* KamiCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = KamiCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB8B14CF07A73F793193DE72 /* SizingAndRenderFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SizingAndRenderFrameTests.swift; sourceTree = "<group>"; };
 		ABC48770F00DF97F4DA608DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AE710E7DE11BFD10C12B5E8B /* referenceSceneSnapshots.folding-25-portrait.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.folding-25-portrait.png"; sourceTree = "<group>"; };
+		AEE7ED51E3CCED8FFB2A4A96 /* KamiAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KamiAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3F983C60D44803A9AF3633F /* PaperFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperFormat.swift; sourceTree = "<group>"; };
+		B877D69E0056B48FB8029DDA /* PrimaryControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryControlsView.swift; sourceTree = "<group>"; };
+		BB7B9FA20A173AFD624C548A /* FaceIDGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDGenerator.swift; sourceTree = "<group>"; };
 		BCA8D625C001806BC46E2581 /* referenceSceneSnapshots.flipped-committed-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipped-committed-landscape.png"; sourceTree = "<group>"; };
+		BF92996BD3C9A44B5D70A434 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
 		C083D363B7A2015DF028C24E /* MetalBufferArena.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalBufferArena.swift; sourceTree = "<group>"; };
 		C0D52D2BB0D3266FF0ECAFE3 /* KamiAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KamiAppUITests.swift; sourceTree = "<group>"; };
+		C2302C9E91606E100CD75612 /* AppSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSheet.swift; sourceTree = "<group>"; };
 		C42F2DF961267EF492085EE4 /* RendererStressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendererStressTests.swift; sourceTree = "<group>"; };
 		C4CFC95B5D0BF5F081786BB4 /* RenderFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderFrame.swift; sourceTree = "<group>"; };
 		CB2FEF8428C9EE4CC0DB3BBB /* ProjectSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSmokeTests.swift; sourceTree = "<group>"; };
+		D0E7A7B7D12E4E26C510EE9F /* AppKeyboardCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppKeyboardCommand.swift; sourceTree = "<group>"; };
 		D4C2BD2CC350074AACBFC217 /* GeometryError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryError.swift; sourceTree = "<group>"; };
 		D70191C96AEFA973F2702A2E /* referenceSceneSnapshots.flipping-75-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "referenceSceneSnapshots.flipping-75-landscape.png"; sourceTree = "<group>"; };
 		D952CA00A2DF84358C8D2E7D /* FoldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldTests.swift; sourceTree = "<group>"; };
@@ -246,7 +292,25 @@
 		5524724DA55C6168018A9CDE /* KamiApp */ = {
 			isa = PBXGroup;
 			children = (
+				6C8BB3E0FC3485D7CE076CF1 /* AppFeature.swift */,
+				D0E7A7B7D12E4E26C510EE9F /* AppKeyboardCommand.swift */,
+				4A3132DDA7B8693E1B7EB957 /* AppRenderState.swift */,
+				C2302C9E91606E100CD75612 /* AppSheet.swift */,
+				A3E6C502D73F736A7578E114 /* DebugOverlayView.swift */,
+				BB7B9FA20A173AFD624C548A /* FaceIDGenerator.swift */,
+				8FA987C073E0B39B608378D9 /* FoldFlowGlass.swift */,
+				BF92996BD3C9A44B5D70A434 /* InfoView.swift */,
 				8908054EF997DBEF70F4FD0E /* KamiApp.swift */,
+				12627D6AFD4DBFF0BDEA55F8 /* PaperCanvasView.swift */,
+				1408264B3AC03C988074A540 /* PaperColorSelector.swift */,
+				B3F983C60D44803A9AF3633F /* PaperFormat.swift */,
+				1B0D660C66CDAB4D6E13C2FB /* PaperInk.swift */,
+				0300995FE879C049FE9275D4 /* PaperSettings.swift */,
+				A6EDAFE4530CB84F69639A2A /* PaperWorkspaceView.swift */,
+				B877D69E0056B48FB8029DDA /* PrimaryControlsView.swift */,
+				1B9016A71F1DD584D6908537 /* SettingsValidationError.swift */,
+				4C82C67D956F720CB8D4B36B /* SettingsView.swift */,
+				59FBA46ECAB9F460C005D0CB /* WorkspaceHeaderView.swift */,
 				8DD0BA9C04BCF326FD769AF5 /* Renderer */,
 			);
 			name = KamiApp;
@@ -306,10 +370,20 @@
 			path = Tests/KamiSnapshotTests;
 			sourceTree = "<group>";
 		};
+		9A047B8AAC95D857306EAE8F /* KamiAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				A2CCFD208A5E478294BA52EC /* AppFeatureTests.swift */,
+			);
+			name = KamiAppTests;
+			path = Tests/KamiAppTests;
+			sourceTree = "<group>";
+		};
 		9C17E24D47E3B8EE0016F5F8 = {
 			isa = PBXGroup;
 			children = (
 				5524724DA55C6168018A9CDE /* KamiApp */,
+				9A047B8AAC95D857306EAE8F /* KamiAppTests */,
 				A6E76668D18448B78A032E18 /* KamiAppUITests */,
 				526DDAC675AFC9A19BC56D6E /* KamiCore */,
 				B2C0C05A3FD924723DFA8A86 /* KamiCoreTests */,
@@ -365,6 +439,7 @@
 			isa = PBXGroup;
 			children = (
 				FAFB0F01EB8EB23C02262170 /* KamiApp.app */,
+				AEE7ED51E3CCED8FFB2A4A96 /* KamiAppTests.xctest */,
 				386464CE7FAF532061DB8D0D /* KamiAppUITests.xctest */,
 				A947A02072569E7DB04FC8DF /* KamiCore.framework */,
 				0EB47A67668D77A817E42E2A /* KamiCoreTests.xctest */,
@@ -376,6 +451,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2288E6FED660E68FC9CA9769 /* KamiAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E98B9313BA0E5F6A5331E2A0 /* Build configuration list for PBXNativeTarget "KamiAppTests" */;
+			buildPhases = (
+				ECAA4F17F98D6A61452C73A9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AD9E791E5C0AA1D79D437668 /* PBXTargetDependency */,
+			);
+			name = KamiAppTests;
+			packageProductDependencies = (
+			);
+			productName = KamiAppTests;
+			productReference = AEE7ED51E3CCED8FFB2A4A96 /* KamiAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		4C0BEC230A78EF8E5F974610 /* KamiCoreTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 715DB531A99904FB39CF188A /* Build configuration list for PBXNativeTarget "KamiCoreTests" */;
@@ -485,6 +578,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					2288E6FED660E68FC9CA9769 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
 					4C0BEC230A78EF8E5F974610 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -530,6 +627,7 @@
 				E5C0735140BD8BF0967B57BE /* KamiCore */,
 				F0013BC36134CC06B212CEF6 /* KamiApp */,
 				4C0BEC230A78EF8E5F974610 /* KamiCoreTests */,
+				2288E6FED660E68FC9CA9769 /* KamiAppTests */,
 				D53F8D2DE8039AC3BDFF8B62 /* KamiSnapshotTests */,
 				A841F9DDD43671E916CFE264 /* KamiAppUITests */,
 			);
@@ -595,12 +693,30 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A374974DAE8AB7588EC0AC8 /* AppFeature.swift in Sources */,
+				ADB75DFAE8D2900CC2B7625C /* AppKeyboardCommand.swift in Sources */,
+				3A62C5BB9E95909CA733925F /* AppRenderState.swift in Sources */,
+				3CDDED2849B3E70FDFD9E1FD /* AppSheet.swift in Sources */,
+				D8BF2D67A7F958E3F2469717 /* DebugOverlayView.swift in Sources */,
+				D91E27CF21EDD08C98AEBA30 /* FaceIDGenerator.swift in Sources */,
+				8EA4D31069B634F8F335F94A /* FoldFlowGlass.swift in Sources */,
+				4C9C8674B4A3278D2A7A71CB /* InfoView.swift in Sources */,
 				4A09DD0BA1B9B34601541C3B /* KamiApp.swift in Sources */,
 				E823BFE987985AA9965F2236 /* MetalBufferArena.swift in Sources */,
 				7F3C00A4065111DFB869A770 /* MetalShaderSource.swift in Sources */,
 				9BD6EF1E1F52CAF7DCBF8EBB /* MetalTextureCache.swift in Sources */,
+				3FE43CF42FC6CB259981FE09 /* PaperCanvasView.swift in Sources */,
+				CE4F00A9A1E06002AD8B7DA0 /* PaperColorSelector.swift in Sources */,
+				1AE6871FC87BCFC84BCA0623 /* PaperFormat.swift in Sources */,
+				FD483A24A4C7CFE29490B6D4 /* PaperInk.swift in Sources */,
 				7EB2BA917D54D4A580DEAC0F /* PaperRendererView.swift in Sources */,
+				CA8A045FAAEB2AA800FB8F34 /* PaperSettings.swift in Sources */,
+				DB1BA7A92DEC6E33C9385506 /* PaperWorkspaceView.swift in Sources */,
+				B719C576B7529431F48B73FF /* PrimaryControlsView.swift in Sources */,
 				CC6532A7FBB82D655DB2DCAE /* RenderFrameRenderer.swift in Sources */,
+				B84A1CEDD16180537F219CC1 /* SettingsValidationError.swift in Sources */,
+				03AFD0E9BFB1531B2F0F5F11 /* SettingsView.swift in Sources */,
+				C5F1E90463C454588B09D927 /* WorkspaceHeaderView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,6 +746,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ECAA4F17F98D6A61452C73A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C342203C2AAEC31825F6A18B /* AppFeatureTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -652,6 +776,11 @@
 			isa = PBXTargetDependency;
 			target = E5C0735140BD8BF0967B57BE /* KamiCore */;
 			targetProxy = 0F1588C76088C8A9713A2BBA /* PBXContainerItemProxy */;
+		};
+		AD9E791E5C0AA1D79D437668 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0013BC36134CC06B212CEF6 /* KamiApp */;
+			targetProxy = 70759B356C8BA0B6577D3478 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -812,6 +941,21 @@
 			};
 			name = Release;
 		};
+		57184D03F40AA0BCC1EE6829 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KamiApp.app/KamiApp";
+			};
+			name = Release;
+		};
 		5F13D94D54F957709FF66525 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -955,6 +1099,21 @@
 			};
 			name = Debug;
 		};
+		DB2D1E2103D0670ED14B31CC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KamiApp.app/KamiApp";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1008,6 +1167,15 @@
 			buildConfigurations = (
 				77E6E19A1CA520F421B4989F /* Debug */,
 				5493B5D47A3128F50C3F0E1C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E98B9313BA0E5F6A5331E2A0 /* Build configuration list for PBXNativeTarget "KamiAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DB2D1E2103D0670ED14B31CC /* Debug */,
+				57184D03F40AA0BCC1EE6829 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

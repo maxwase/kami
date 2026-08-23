@@ -59,6 +59,12 @@ targets:
     dependencies:
       - target: KamiCore
       - package: SnapshotTesting
+  KamiAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/KamiAppTests]
+    dependencies:
+      - target: KamiApp
   KamiSnapshotTests:
     type: bundle.unit-test
     platform: iOS
@@ -79,5 +85,6 @@ schemes:
     test:
       targets:
         - KamiCoreTests
+        - KamiAppTests
         - KamiSnapshotTests
         - KamiAppUITests
