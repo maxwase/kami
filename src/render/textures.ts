@@ -1,6 +1,14 @@
+/** An image source usable both by canvas patterns and as a UV-mapped fill. */
+export type FrontImageSource = HTMLImageElement | HTMLCanvasElement;
+
 export interface TextureSet {
   wood: CanvasImageSource;
+  /** Tiled + tinted repeating pattern, used by material "color". */
   paper: CanvasPattern;
+  /** Same paper photo as an image, UV-mapped for material "paper". */
+  paperImg: FrontImageSource;
+  /** Kami Play Store banner, or null if it fails to load. */
+  banner: FrontImageSource | null;
 }
 
 const LOAD_TIMEOUT_MS = 8000;
@@ -10,14 +18,42 @@ const PAPER_FALLBACK_COLOR = "#f5f0e6";
 /**
  * Load texture images and create repeating patterns when ready. Falls back
  * to a solid-color source if an image fails to load or takes too long, so a
- * flaky network request can never permanently block the render loop.
+ * flaky network request can never permanently block the render loop. The
+ * banner has no fallback color — a load failure just leaves it null and the
+ * banner material is skipped.
  */
 export async function loadTextures(ctx: CanvasRenderingContext2D): Promise<TextureSet> {
-  const [wood, paper] = await Promise.all([
+  const [wood, paperImg, banner] = await Promise.all([
     loadImageWithFallback("textures/wood.jpg", WOOD_FALLBACK_COLOR),
-    loadPatternWithFallback(ctx, "textures/paper.jpg", PAPER_FALLBACK_COLOR),
+    loadImageWithFallback("textures/paper.jpg", PAPER_FALLBACK_COLOR),
+    loadBanner(),
   ]);
-  return { wood, paper };
+  const paper = patternFromImage(ctx, paperImg, PAPER_FALLBACK_COLOR);
+  return { wood, paper, paperImg, banner };
+}
+
+async function loadBanner(): Promise<FrontImageSource | null> {
+  try {
+    return await withTimeout(loadImage("textures/kami-banner.jpg"), LOAD_TIMEOUT_MS);
+  } catch {
+    return null;
+  }
+}
+
+function patternFromImage(
+  ctx: CanvasRenderingContext2D,
+  source: FrontImageSource,
+  fallbackColor: string,
+): CanvasPattern {
+  const pattern = ctx.createPattern(source, "repeat");
+  if (pattern) return pattern;
+  // createPattern failing on a real image is exceptional; fall back to a
+  // solid pattern rather than leaving the caller with nothing to draw.
+  const fallbackPattern = ctx.createPattern(solidCanvas(fallbackColor), "repeat");
+  if (!fallbackPattern) {
+    throw new Error("Failed to create fallback pattern for textures/paper.jpg");
+  }
+  return fallbackPattern;
 }
 
 function solidCanvas(color: string, size = 64): HTMLCanvasElement {
@@ -60,27 +96,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 async function loadImageWithFallback(
   src: string,
   fallbackColor: string,
-): Promise<CanvasImageSource> {
+): Promise<FrontImageSource> {
   try {
     return await withTimeout(loadImage(src), LOAD_TIMEOUT_MS);
   } catch {
     return solidCanvas(fallbackColor);
   }
-}
-
-async function loadPatternWithFallback(
-  ctx: CanvasRenderingContext2D,
-  src: string,
-  fallbackColor: string,
-): Promise<CanvasPattern> {
-  const source = await loadImageWithFallback(src, fallbackColor);
-  const pattern = ctx.createPattern(source, "repeat");
-  if (pattern) return pattern;
-  // createPattern failing on a real image is exceptional; fall back to a
-  // solid pattern rather than leaving the caller with nothing to draw.
-  const fallbackPattern = ctx.createPattern(solidCanvas(fallbackColor), "repeat");
-  if (!fallbackPattern) {
-    throw new Error(`Failed to create fallback pattern for ${src}`);
-  }
-  return fallbackPattern;
 }

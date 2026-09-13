@@ -81,6 +81,7 @@ body {
   height: 100vh;
   touch-action: none;
   display: block;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* --- Action Island (Top Left) --- */
@@ -224,11 +225,7 @@ body {
   right: calc(16px + var(--safe-right));
   width: 300px;
   max-height: calc(
-    100vh -
-    var(--settings-top) -
-    var(--safe-top) -
-    var(--safe-bottom) -
-    12px
+    100vh - var(--settings-top) - var(--safe-top) - var(--safe-bottom) - 12px
   );
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -251,11 +248,7 @@ body {
 @supports (height: 100dvh) {
   .settings-panel {
     max-height: calc(
-      100dvh -
-      var(--settings-top) -
-      var(--safe-top) -
-      var(--safe-bottom) -
-      12px
+      100dvh - var(--settings-top) - var(--safe-top) - var(--safe-bottom) - 12px
     );
   }
 }
@@ -403,6 +396,61 @@ body {
 
 .toggle-group input {
   display: none;
+}
+
+.paper-material-selector {
+  display: grid;
+  gap: 16px;
+}
+
+.material-side {
+  display: grid;
+  gap: 8px;
+}
+
+.material-side-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 6px;
+}
+
+.material-side .input-row {
+  justify-content: space-between;
+}
+
+.material-side .pick-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+}
+
+.pick-row .toggle-button {
+  width: auto;
+  white-space: nowrap;
+}
+
+.material-side [hidden] {
+  display: none !important;
+}
+
+.pick-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.paper-size-selector.is-disabled {
+  opacity: 0.45;
+}
+
+.paper-size-selector.is-disabled .toggle-group label {
+  cursor: not-allowed;
 }
 
 .toggle-button {
