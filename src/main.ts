@@ -44,13 +44,8 @@ import {
 } from "./paper/model";
 import { drawTable } from "./render/background";
 import { drawHingeCrosshair } from "./render/hinge";
-import {
-  drawActiveOutline,
-  drawFlatPaperFaces,
-  drawFlippingPaper,
-  drawFoldingPaper,
-  PLAY_STORE_URL,
-} from "./render/paper";
+import { createPaperRenderer, type PaperMotion } from "./render/backend";
+import { PLAY_STORE_URL } from "./render/paper";
 import {
   type FrontImageSource,
   loadTextures,
@@ -78,6 +73,18 @@ const motionSupported =
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
 ctx.imageSmoothingEnabled = true;
+
+/**
+ * Papers render through WebGL on canvases layered above the table canvas,
+ * falling back to drawing them into the table canvas with Canvas2D. The table
+ * and hinge crosshair always stay on the Canvas2D canvas underneath.
+ */
+const paperRenderer = createPaperRenderer({
+  ctx,
+  glCanvas: getRequiredElement("glc", HTMLCanvasElement),
+  overlayCanvas: getRequiredElement("paperOverlay", HTMLCanvasElement),
+  textures: () => textures,
+});
 
 const foldHelpEl = getRequiredElement("foldHelp", HTMLDivElement);
 const gestureHelpEl = getRequiredElement("gestureHelp", HTMLDivElement);
@@ -221,6 +228,15 @@ function resize() {
   canvasEl.style.height = `${cssH}px`;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  paperRenderer.resize({
+    cssW,
+    cssH,
+    dpr,
+    bufferW: canvasEl.width,
+    bufferH: canvasEl.height,
+  });
+
   hingeInfo = computeHingePoint(cssW, cssH);
   updateFoldFallbackIcon();
 }
@@ -1268,24 +1284,26 @@ function tick(now: number) {
       bannerTappable(getActivePaper());
     canvasEl.style.cursor = bannerClickable ? "pointer" : "";
 
+    const hasActiveAnim = activeFoldAnim || activeFlipAnim;
+    paperRenderer.beginFrame();
     for (const p of papers) {
-      const images = {
-        front: imageForMaterial("front", p.materials.front),
-        back: imageForMaterial("back", p.materials.back),
-      };
-      if (activeFoldAnim && activeFoldAnim.paperId === p.id) {
-        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper, images);
-      } else if (activeFlipAnim && activeFlipAnim.paperId === p.id) {
-        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper, images);
-      } else {
-        drawFlatPaperFaces(ctx, p, textures.paper, images);
-      }
-
-      const hasActiveAnim = activeFoldAnim || activeFlipAnim;
-      if (p.id === activePaperId && !hasActiveAnim && options.showPaperBorder) {
-        drawActiveOutline(ctx, p);
-      }
+      const motion: PaperMotion =
+        activeFoldAnim?.paperId === p.id
+          ? { kind: "fold", anim: activeFoldAnim }
+          : activeFlipAnim?.paperId === p.id
+            ? { kind: "flip", anim: activeFlipAnim }
+            : { kind: "flat" };
+      paperRenderer.drawPaper({
+        paper: p,
+        motion,
+        images: {
+          front: imageForMaterial("front", p.materials.front),
+          back: imageForMaterial("back", p.materials.back),
+        },
+        outline: p.id === activePaperId && !hasActiveAnim && options.showPaperBorder,
+      });
     }
+    paperRenderer.endFrame();
 
     const segs = hingeInfo.segments;
     const pt = hingeInfo.hingePoint;

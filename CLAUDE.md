@@ -33,8 +33,10 @@ Kami is an interactive paper-folding simulator that responds to physical device 
   - `motion.ts`: Smoothed accelerometer tracking
   - `tauri.ts`: Bridge to Rust backend for macOS hinge sensor
 
-- **`src/render/`** - Canvas 2D rendering
-  - `paper.ts`: 3D paper rendering with perspective projection, shadows, highlights
+- **`src/render/`** - Rendering
+  - `backend.ts`: `PaperRenderer` chosen at boot — WebGL, with live Canvas2D fallback on context loss
+  - `webgl/`: twgl.js paper renderer; `uniforms.ts` spec generates GLSL declarations + TS types
+  - `paper.ts`: Canvas2D paper rendering (fallback; also fold line + crease outline strokes, crop/lighting helpers shared with WebGL)
 
 - **`src/math/`** - Vector math (`Vec2`, `Vec3`) with `2`/`3` suffix convention
 - **`src/geom/`** - Computational geometry (line intersection, polygon clipping)
