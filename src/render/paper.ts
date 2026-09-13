@@ -766,12 +766,13 @@ export function drawFlippingPaper(
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
 
-  // Rotation axis should be vertical in SCREEN space (so flip is always right-to-left visually)
-  // Transform screen vertical (0, 1) to local space by rotating by -paper.rot
-  const axisDirLocal = {
-    x: Math.sin(paper.rot),
-    y: Math.cos(paper.rot),
-  };
+  // Rotation axis is vertical in SCREEN space for a horizontal flip, or
+  // horizontal in SCREEN space for a vertical flip; transformed to local
+  // space by rotating by -paper.rot.
+  const axisDirLocal =
+    anim.axis === "vertical"
+      ? { x: Math.cos(paper.rot), y: -Math.sin(paper.rot) }
+      : { x: Math.sin(paper.rot), y: Math.cos(paper.rot) };
   const axisDir: Vec3 = { x: axisDirLocal.x, y: axisDirLocal.y, z: 0 };
   const axisPoint: Vec3 = { x: centerX, y: centerY, z: 0 };
 

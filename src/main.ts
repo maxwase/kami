@@ -27,7 +27,13 @@ import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
 import { attachGestureHandlers, InputLock } from "./input/gestures";
 import { clamp } from "./math/scalars";
 import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
-import { buildFlipAnim, commitFlip, type FlipAnim, type FlipDirection } from "./paper/flip";
+import {
+  buildFlipAnim,
+  commitFlip,
+  type FlipAnim,
+  type FlipAxis,
+  type FlipDirection,
+} from "./paper/flip";
 import { buildFoldAnim, commitFold, type FoldAnim, FoldSide } from "./paper/fold";
 import { hitTestPaper } from "./paper/hitTest";
 import { createIdCounter } from "./paper/ids";
@@ -539,7 +545,15 @@ attachGestureHandlers({
       ? InputLock.Locked
       : InputLock.Unlocked,
   useAltRotate: true, // Enable alt+drag rotation
-  onFlip: (direction) => startFlip(direction),
+  onFlip: (direction, axis) => startFlip(direction, axis),
+  onTap: () => {
+    manualFoldQueued = true;
+    trackEvent("fold_triggered", {
+      trigger_method: FoldTrigger.Tap,
+      fold_source: FoldSource.Software,
+      fold_count: foldCount,
+    });
+  },
 });
 
 // Play Store banner tap-to-open. A tap opens the store; dragging to reposition
@@ -614,13 +628,13 @@ foldFallbackBtn.onclick = () => {
   });
 };
 
-const startFlip = (direction: FlipDirection = 1) => {
+const startFlip = (direction: FlipDirection = 1, axis: FlipAxis = "horizontal") => {
   if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
   // Start flip animation
   flipRuntime = {
     phase: "animating",
-    anim: buildFlipAnim(paper, direction),
+    anim: buildFlipAnim(paper, direction, axis),
   };
 };
 

@@ -182,7 +182,10 @@ export class WebGLPaperRenderer {
         maxY = Math.max(maxY, v.y);
       }
     }
-    const axisDir = { x: Math.sin(paper.rot), y: Math.cos(paper.rot) };
+    const axisDir =
+      anim.axis === "vertical"
+        ? { x: Math.cos(paper.rot), y: -Math.sin(paper.rot) }
+        : { x: Math.sin(paper.rot), y: Math.cos(paper.rot) };
     const normalRot = rotateAroundAxis(v3(0, 0, 1), { ...axisDir, z: 0 }, angle);
     const viewingBackSide = normalRot.z < 0;
 

@@ -5,8 +5,11 @@ import { composeAffine, mirrorAffine } from "../geom/affine";
 /** Animation duration for flip in seconds. */
 const FLIP_DURATION_SECONDS = 0.5;
 
-/** Visual sweep direction: 1 = right-to-left, -1 = left-to-right. */
+/** Visual sweep direction: 1 = right-to-left, -1 = left-to-right (or top-to-bottom/bottom-to-top for a vertical flip). */
 export type FlipDirection = 1 | -1;
+
+/** Screen-space axis the flip rotates/mirrors around. */
+export type FlipAxis = "horizontal" | "vertical";
 
 /** Animation data for an in-progress flip. */
 export interface FlipAnim {
@@ -22,10 +25,16 @@ export interface FlipAnim {
   maxLayer: number;
   /** Visual sweep direction: 1 = right-to-left, -1 = left-to-right. */
   direction: FlipDirection;
+  /** Screen-space axis the flip rotates around. */
+  axis: FlipAxis;
 }
 
 /** Build a flip animation for the given paper. */
-export function buildFlipAnim(paper: Paper, direction: FlipDirection = 1): FlipAnim {
+export function buildFlipAnim(
+  paper: Paper,
+  direction: FlipDirection = 1,
+  axis: FlipAxis = "horizontal",
+): FlipAnim {
   let maxLayer = 0;
   for (const f of paper.faces) {
     maxLayer = Math.max(maxLayer, f.layer);
@@ -47,6 +56,7 @@ export function buildFlipAnim(paper: Paper, direction: FlipDirection = 1): FlipA
     originalFaces,
     maxLayer,
     direction,
+    axis,
   };
 }
 
@@ -68,11 +78,13 @@ export function commitFlip(paper: Paper, anim: FlipAnim): void {
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
 
-  // Flip axis is vertical in screen space, transform to local space
-  // Axis direction in local space: (sin(rot), cos(rot))
-  // Normal to axis (for reflection): (-cos(rot), sin(rot))
-  const nx = -Math.cos(paper.rot);
-  const ny = Math.sin(paper.rot);
+  // Flip axis is vertical (horizontal flip) or horizontal (vertical flip) in
+  // screen space, transformed to local space. Normal to that axis is what we
+  // mirror across.
+  // Vertical axis local dir: (sin(rot), cos(rot)); normal: (-cos(rot), sin(rot))
+  // Horizontal axis local dir: (cos(rot), -sin(rot)); normal: (sin(rot), cos(rot))
+  const nx = anim.axis === "vertical" ? Math.sin(paper.rot) : -Math.cos(paper.rot);
+  const ny = anim.axis === "vertical" ? Math.cos(paper.rot) : Math.sin(paper.rot);
 
   // Same mirror, expressed as an affine, so the material map stays in lockstep
   // with the mirrored geometry.
