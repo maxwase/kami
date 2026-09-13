@@ -22,6 +22,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    env:
+      VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+      VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -36,11 +39,12 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Verify PostHog configuration
+        run: |
+          test -n "$VITE_POSTHOG_KEY" || { echo "::error::VITE_POSTHOG_KEY secret is missing"; exit 1; }
+          test -n "$VITE_POSTHOG_HOST" || { echo "::error::VITE_POSTHOG_HOST secret is missing"; exit 1; }
       - name: Build
         run: pnpm run build
-        env:
-          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
-          VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
