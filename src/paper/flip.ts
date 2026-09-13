@@ -5,6 +5,9 @@ import { composeAffine, mirrorAffine } from "../geom/affine";
 /** Animation duration for flip in seconds. */
 const FLIP_DURATION_SECONDS = 0.5;
 
+/** Visual sweep direction: 1 = right-to-left, -1 = left-to-right. */
+export type FlipDirection = 1 | -1;
+
 /** Animation data for an in-progress flip. */
 export interface FlipAnim {
   /** Target paper identifier. */
@@ -17,10 +20,12 @@ export interface FlipAnim {
   originalFaces: Paper["faces"];
   /** Max layer before flip (for layer inversion). */
   maxLayer: number;
+  /** Visual sweep direction: 1 = right-to-left, -1 = left-to-right. */
+  direction: FlipDirection;
 }
 
 /** Build a flip animation for the given paper. */
-export function buildFlipAnim(paper: Paper): FlipAnim {
+export function buildFlipAnim(paper: Paper, direction: FlipDirection = 1): FlipAnim {
   let maxLayer = 0;
   for (const f of paper.faces) {
     maxLayer = Math.max(maxLayer, f.layer);
@@ -41,6 +46,7 @@ export function buildFlipAnim(paper: Paper): FlipAnim {
     durationSeconds: FLIP_DURATION_SECONDS,
     originalFaces,
     maxLayer,
+    direction,
   };
 }
 
