@@ -46,3 +46,49 @@ export function createMotionTracker(config: MotionConfig = {}): MotionTracker {
     },
   };
 }
+
+interface DeviceMotionEventCtor {
+  requestPermission?: () => Promise<PermissionState | "granted" | "denied">;
+}
+
+let bound = false;
+
+/**
+ * Bind `devicemotion`, asking for permission first where iOS requires it.
+ *
+ * On iOS (Safari and WKWebView alike) `devicemotion` delivers nothing until
+ * `DeviceMotionEvent.requestPermission()` resolves to `"granted"`, and that
+ * call is only honoured inside a user gesture — so this must be invoked from
+ * an event handler, not at startup. Elsewhere the method does not exist and
+ * the listener binds directly.
+ *
+ * Safe to call more than once: only the first call does any work.
+ *
+ * @returns `true` once a listener is attached, `false` if permission was
+ *   denied or the request threw (the app stays fully usable either way).
+ */
+export async function bindDeviceMotion(
+  onEvent: (e: DeviceMotionEvent) => void,
+): Promise<boolean> {
+  if (bound) return true;
+
+  const ctor = window.DeviceMotionEvent as unknown as DeviceMotionEventCtor | undefined;
+  if (!ctor) return false;
+
+  if (typeof ctor.requestPermission === "function") {
+    try {
+      if ((await ctor.requestPermission()) !== "granted") return false;
+    } catch (err) {
+      // Thrown when called outside a user gesture, or when the user has
+      // permanently denied motion access for the app.
+      console.warn("Device motion permission request failed", err);
+      return false;
+    }
+    // The await above may have raced another caller.
+    if (bound) return true;
+  }
+
+  bound = true;
+  window.addEventListener("devicemotion", onEvent, { passive: true });
+  return true;
+}

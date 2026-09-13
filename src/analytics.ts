@@ -85,7 +85,7 @@ interface EventMap {
     device_pixel_ratio: number;
   };
   outbound_link: { link_type: string; link_url: string };
-  app_open: { launch_context: "twa" | "pwa" | "browser" };
+  app_open: { launch_context: "ios" | "twa" | "pwa" | "browser" };
   analytics_consent_changed: { granted: boolean };
 }
 

@@ -1,12 +1,12 @@
 import { clamp, easeInOutCubic } from "../math/scalars";
-import { add2, mul2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
-import { mul3, norm3, rotateAroundAxis, rotatePointAroundLine, v3 } from "../math/vec3";
+import { add2, mul2 } from "../math/vec2";
 import type { Vec3 } from "../math/vec3";
-import { localToScreen } from "../paper/space";
-import type { Face, Paper, PaperSide } from "../paper/model";
-import { FoldSide, type FoldAnim } from "../paper/fold";
+import { mul3, norm3, rotateAroundAxis, rotatePointAroundLine, v3 } from "../math/vec3";
 import type { FlipAnim } from "../paper/flip";
+import { type FoldAnim, FoldSide } from "../paper/fold";
+import type { Face, Paper, PaperSide } from "../paper/model";
+import { localToScreen } from "../paper/space";
 
 /**
  * Perspective foreshortening factor for 3D projection.

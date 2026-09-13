@@ -1,8 +1,8 @@
-import { add2, mul2, rotate2, sub2 } from "../math/vec2";
+import { trackEvent } from "../analytics";
 import type { Vec2 } from "../math/vec2";
+import { add2, mul2, rotate2, sub2 } from "../math/vec2";
 import type { Paper } from "../paper/model";
 import { localToScreen } from "../paper/space";
-import { trackEvent } from "../analytics";
 
 export const InputLock = {
   Locked: "locked",
@@ -32,7 +32,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     setActivePaper,
     bringPaperToTop,
     getLockState,
-    useAltRotate: useAltRotate = false,
+    useAltRotate = false,
   } = opts;
 
   interface PointerState {

@@ -16,7 +16,16 @@ local.properties
 *.keystore
 *.jks
 *.keystore.pw
+
+# Apple provisioning profiles - regenerable, don't commit
+*.provisionprofile
 twa-manifest.json
+
+# iOS build outputs (the Xcode project itself is committed; ios/.gitignore
+# covers the Capacitor-generated files inside it)
+build/ios/
+*.xcarchive
+*.ipa
 
 # Android / Gradle build outputs
 .gradle/

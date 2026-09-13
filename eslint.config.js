@@ -3,7 +3,9 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["build", "dist", "node_modules"],
+    // ios/ holds the generated Xcode project, including a copy of the built
+    // web bundle under ios/App/App/public.
+    ignores: ["build", "dist", "node_modules", "ios", "android", "App"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

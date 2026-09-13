@@ -1,6 +1,7 @@
+import { getCapacitorPostureType, isCapacitorHingeAvailable } from "./capacitor";
 import type { SegmentRect } from "./hinge";
+import { Device, Platform, resolveRuntimeInfo } from "./runtime";
 import { getTauriPostureType } from "./tauri";
-import { Platform, resolveRuntimeInfo } from "./runtime";
 
 const runtime = resolveRuntimeInfo();
 
@@ -24,10 +25,22 @@ export interface HelpCopy {
   gesture: string;
 }
 
-export function helpCopyForSupport(support: PostureSupport): HelpCopy {
+export function helpCopyForSupport(
+  support: PostureSupport,
+  device: Device = runtime.device,
+): HelpCopy {
   if (support === PostureSupport.Available) {
     return {
       controls: "<b>Fold</b>: close/open the device hinge.",
+      gesture: "<b>One finger</b>: move.<br><b>Two fingers</b>: move + rotate.",
+    };
+  }
+  // Phones without a readable hinge (every iPhone today) have no keyboard to
+  // reference — point at the on-screen buttons instead.
+  if (device === Device.Phone) {
+    return {
+      controls:
+        "<b>Fold</b>, <b>Flip</b>, <b>Undo</b> and <b>Reset</b>: use the buttons.",
       gesture: "<b>One finger</b>: move.<br><b>Two fingers</b>: move + rotate.",
     };
   }
@@ -46,15 +59,26 @@ export function readDevicePostureType(): string {
   if (runtime.platform === Platform.Tauri) {
     return getTauriPostureType();
   }
+  if (runtime.platform === Platform.Capacitor) {
+    return getCapacitorPostureType();
+  }
   return "unknown";
 }
 
-/** Detect whether the Device Posture API is present. */
+/**
+ * Detect whether a posture source is present. On Capacitor this is gated on
+ * the hinge bridge actually working (it does not yet on iOS), which keeps the
+ * manual-controls help copy and the Fold button as the primary interaction.
+ */
 export function resolvePostureSupport(): PostureSupport {
   const navAny = navigator as Navigator & { devicePosture?: { type?: string } };
-  return "devicePosture" in navAny || runtime.platform === Platform.Tauri
-    ? PostureSupport.Available
-    : PostureSupport.Unavailable;
+  if ("devicePosture" in navAny || runtime.platform === Platform.Tauri) {
+    return PostureSupport.Available;
+  }
+  if (runtime.platform === Platform.Capacitor && isCapacitorHingeAvailable()) {
+    return PostureSupport.Available;
+  }
+  return PostureSupport.Unavailable;
 }
 
 /**

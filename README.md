@@ -17,10 +17,7 @@ Try it online at https://kami.maxwase.eu
 
 ## See it in action
 
-
 https://github.com/user-attachments/assets/4016a644-f623-45a2-959b-9e070c18d7c2
-
-
 
 # Features
 
@@ -49,40 +46,26 @@ The game tries its best to auto-detect your device's folding posture and capabil
 1. Download the latest version for your Mac from the [releases](https://github.com/maxwase/kami/releases) page.
 2. Unzip it
 3. Install like any other dmg, drag the app into applications.
-4. Run `xattr -dr com.apple.quarantine /Applications/kami-tauri.app`. This is needed because I don't have an Apple account to sign the binary with.
 
-If you don't trust the GitHub actions output, consider building the app [yourself](#Native).
+If you don't trust the GitHub actions output, consider building the app yourself — see [BUILDING.md](BUILDING.md).
 
 ### Android
 
 Get it on Google Play (badge at the top of this page), or download the signed `kami-release.apk` (or `.aab`) from the [releases](https://github.com/maxwase/kami/releases) page.
 
-## Requirements
+### iOS
 
-- Node.js 18+ (Vite 8)
-- pnpm 11+
-- A modern [browser](https://developer.mozilla.org/en-US/docs/Web/API/Device_Posture_API) to actually test folding. Note that the API is only available on localhost or HTTPS connections.
-- Or [stable Rust](https://rustup.sh) when building with `tauri` for MacOS.
+Not on the App Store yet. To run it on your own device or the simulator, build
+it yourself — see [BUILDING.md](BUILDING.md#ios).
 
 ## Build and run
 
-### Web
-
 ```sh
 pnpm install
-pnpm run dev    # start Vite dev server
-pnpm run build  # type-check + production build to dist/
+pnpm run dev
 ```
 
-### Native
-
-To run it on MacOS do the following:
-
-```sh
-pnpm install
-pnpm run tauri dev    # start Vite dev server
-pnpm tauri build --bundles app    # build an app
-```
+See [BUILDING.md](BUILDING.md) for requirements, production builds, native macOS/iOS builds, and releasing.
 
 # Future of the project
 

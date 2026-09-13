@@ -5,11 +5,18 @@ import { VitePWA } from "vite-plugin-pwa";
 
 const host = process.env.TAURI_DEV_HOST;
 const isTauri = Boolean(process.env.TAURI_ENV_PLATFORM || host);
+// The Capacitor CLI sets no env of its own, so the iOS build opts in explicitly
+// (see the `build:ios` script).
+const isCapacitor = process.env.KAMI_TARGET === "capacitor";
+// Anything that loads the bundle off disk rather than over HTTP.
+const isNative = isTauri || isCapacitor;
 
 const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
-// PWA only for the web build; Tauri loads from disk and needs no service worker.
-const pwaPlugins = isTauri
+// PWA only for the web build; native shells load from disk, and a service
+// worker inside a WebView just duplicates the bundle and serves stale assets
+// after an app update.
+const pwaPlugins = isNative
   ? []
   : [
       VitePWA({
@@ -59,11 +66,11 @@ const pwaPlugins = isTauri
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: isTauri ? "./" : "/",
+  base: isNative ? "./" : "/",
   // Web is a multi-page static site (app at /, plus a standalone policy page).
   // MPA mode disables the SPA fallback so /privacy/ resolves to its own
   // index.html in dev and build — matches GitHub Pages serving.
-  appType: isTauri ? "spa" : "mpa",
+  appType: isNative ? "spa" : "mpa",
   plugins: pwaPlugins,
   clearScreen: false,
   server: {
@@ -78,22 +85,30 @@ export default defineConfig({
         }
       : undefined,
     watch: {
-      ignored: ["**/src-tauri/**"],
+      ignored: ["**/src-tauri/**", "**/ios/**"],
     },
   },
-  envPrefix: ["VITE_", "TAURI_ENV_*"],
-  build: isTauri
+  envPrefix: ["VITE_", "TAURI_ENV_*", "KAMI_"],
+  build: isCapacitor
     ? {
-        target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari15",
-        minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
-        sourcemap: Boolean(process.env.TAURI_ENV_DEBUG),
+        // WKWebView on the minimum supported iOS; the app ships no privacy
+        // page of its own (that link goes to the hosted site instead), so the
+        // default single index.html input is correct here.
+        target: "safari15",
       }
-    : {
-        rollupOptions: {
-          input: {
-            main: resolve(rootDir, "index.html"),
-            privacy: resolve(rootDir, "privacy/index.html"),
+    : isTauri
+      ? {
+          target:
+            process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari15",
+          minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
+          sourcemap: Boolean(process.env.TAURI_ENV_DEBUG),
+        }
+      : {
+          rollupOptions: {
+            input: {
+              main: resolve(rootDir, "index.html"),
+              privacy: resolve(rootDir, "privacy/index.html"),
+            },
           },
         },
-      },
 });

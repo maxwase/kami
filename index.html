@@ -66,11 +66,9 @@
       }
     </script>
 
-    <!-- Add Material Symbols Font -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
-    />
+    <!-- Material Symbols is bundled via src/style.css, not loaded from the
+         Google Fonts CDN: the icon glyphs are the entire UI, so they must
+         render offline (and inside the native app shells). -->
     <link rel="icon" type="image/png" href="icon.png" />
     <link rel="apple-touch-icon" href="pwa-192x192.png" />
     <style>
@@ -91,9 +89,9 @@
       .analytics-consent {
         display: none;
         position: fixed;
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
+        left: calc(16px + env(safe-area-inset-left, 0px));
+        right: calc(16px + env(safe-area-inset-right, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         z-index: 30;
         max-width: 420px;
         margin: 0 auto;
@@ -408,6 +406,7 @@
           <img
             src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
             alt="Buy Me A Coffee"
+            loading="lazy"
             style="height: 32px; width: auto"
           />
         </a>
