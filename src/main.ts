@@ -27,7 +27,7 @@ import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
 import { attachGestureHandlers, InputLock } from "./input/gestures";
 import { clamp } from "./math/scalars";
 import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
-import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
+import { buildFlipAnim, commitFlip, type FlipAnim, type FlipDirection } from "./paper/flip";
 import { buildFoldAnim, commitFold, type FoldAnim, FoldSide } from "./paper/fold";
 import { hitTestPaper } from "./paper/hitTest";
 import { createIdCounter } from "./paper/ids";
@@ -523,6 +523,7 @@ attachGestureHandlers({
       ? InputLock.Locked
       : InputLock.Unlocked,
   useAltRotate: true, // Enable alt+drag rotation
+  onFlip: (direction) => startFlip(direction),
 });
 
 // Play Store banner tap-to-open. A tap opens the store; dragging to reposition
@@ -597,15 +598,17 @@ foldFallbackBtn.onclick = () => {
   });
 };
 
-flipPaperBtn.onclick = () => {
+const startFlip = (direction: FlipDirection = 1) => {
   if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
   // Start flip animation
   flipRuntime = {
     phase: "animating",
-    anim: buildFlipAnim(paper),
+    anim: buildFlipAnim(paper, direction),
   };
 };
+
+flipPaperBtn.onclick = () => startFlip();
 
 const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.controls;

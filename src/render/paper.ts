@@ -733,9 +733,10 @@ export function drawFlippingPaper(
 ): void {
   alignTextureToPaper(texture, paper);
 
-  // Compute eased rotation angle (0 to -PI for full flip, right to left in screen space)
+  // Compute eased rotation angle (0 to ±PI for full flip); sign follows
+  // anim.direction so the sweep matches the gesture that triggered it.
   const progress = easeInOutCubic(anim.progress);
-  const angle = -progress * Math.PI;
+  const angle = -progress * Math.PI * anim.direction;
 
   // Compute the center of all faces for the axis point
   let minX = Infinity,
