@@ -1,7 +1,7 @@
 import { trackEvent } from "../analytics";
 import type { Vec2 } from "../math/vec2";
 import { add2, mul2, rotate2, sub2 } from "../math/vec2";
-import type { FlipDirection } from "../paper/flip";
+import type { FlipAxis, FlipDirection } from "../paper/flip";
 import type { Paper } from "../paper/model";
 import { localToScreen } from "../paper/space";
 
@@ -19,10 +19,15 @@ export interface GestureOptions {
   bringPaperToTop: (paper: Paper) => void;
   getLockState: () => InputLock;
   useAltRotate?: boolean;
-  onFlip?: (direction: FlipDirection) => void;
+  onFlip?: (direction: FlipDirection, axis: FlipAxis) => void;
+  onTap?: () => void;
 }
 
 const SWIPE_FLIP_THRESHOLD_PX = 120;
+// A pointerdown/up pair within this movement and duration counts as a tap
+// rather than a drag.
+const TAP_MAX_MOVE_PX = 6;
+const TAP_MAX_DURATION_MS = 300;
 // Gap that separates one physical swipe from the next, for accumulation purposes only.
 const SWIPE_SEGMENT_QUIET_MS = 100;
 // Cooldown after a flip fires before another swipe can trigger one. Scheduled
@@ -45,6 +50,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     getLockState,
     useAltRotate = false,
     onFlip,
+    onTap,
   } = opts;
 
   interface PointerState {
@@ -69,7 +75,10 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   let trackpadRotateAnchorLocal: Vec2 | undefined;
   let trackpadRotateAnchorScreen: Vec2 | undefined;
 
+  let tapCandidate: { pointerId: number; startPos: Vec2; startTime: number } | undefined;
+
   let swipeAccumX = 0;
+  let swipeAccumY = 0;
   let swipeSegmentTimer: ReturnType<typeof setTimeout> | undefined;
   let swipeLocked = false;
   let swipeLockTimer: ReturnType<typeof setTimeout> | undefined;
@@ -109,7 +118,13 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
     const paper = getActivePaper();
 
+    tapCandidate =
+      onTap && !hit && pointers.size === 1
+        ? { pointerId: e.pointerId, startPos: pos, startTime: performance.now() }
+        : undefined;
+
     if (pointers.size === 2) {
+      tapCandidate = undefined;
       const pts = Array.from(pointers.values()).map((s) => s.pos);
       const mid = mul2(add2(pts[0], pts[1]), 0.5);
       pinchLastMid = mid;
@@ -145,6 +160,14 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     if (!state) return;
     const pos = getPointerPos(e);
     state.pos = pos;
+
+    if (tapCandidate && tapCandidate.pointerId === e.pointerId) {
+      const moved = Math.hypot(
+        pos.x - tapCandidate.startPos.x,
+        pos.y - tapCandidate.startPos.y,
+      );
+      if (moved > TAP_MAX_MOVE_PX) tapCandidate = undefined;
+    }
 
     const paper = getActivePaper();
 
@@ -203,6 +226,12 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   const onPointerUp = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
 
+    if (tapCandidate && tapCandidate.pointerId === e.pointerId) {
+      const duration = performance.now() - tapCandidate.startTime;
+      if (duration <= TAP_MAX_DURATION_MS) onTap?.();
+    }
+    tapCandidate = undefined;
+
     trackGestureEnd();
 
     if (pointers.size < 2) {
@@ -222,6 +251,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
   const onPointerCancel = () => {
     pointers.clear();
+    tapCandidate = undefined;
     dragOffset = undefined;
     pinchLastMid = undefined;
     rotatePointerId = undefined;
@@ -282,24 +312,37 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   const onWheel = (e: WheelEvent) => {
     if (!onFlip) return;
     if (e.deltaMode !== 0) return;
-    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
 
     e.preventDefault();
+
+    const horizontalDominant = Math.abs(e.deltaX) > Math.abs(e.deltaY);
 
     // A gap this long means a new physical swipe, not the same one continuing.
     if (swipeSegmentTimer !== undefined) clearTimeout(swipeSegmentTimer);
     swipeSegmentTimer = setTimeout(() => {
       swipeAccumX = 0;
+      swipeAccumY = 0;
     }, SWIPE_SEGMENT_QUIET_MS);
 
     if (swipeLocked || getLockState() === InputLock.Locked) return;
 
-    swipeAccumX += e.deltaX;
-    if (Math.abs(swipeAccumX) >= SWIPE_FLIP_THRESHOLD_PX) {
-      const direction: FlipDirection = swipeAccumX > 0 ? 1 : -1;
+    if (horizontalDominant) {
+      swipeAccumX += e.deltaX;
+      swipeAccumY = 0;
+    } else {
+      swipeAccumY += e.deltaY;
       swipeAccumX = 0;
+    }
+
+    const accum = horizontalDominant ? swipeAccumX : swipeAccumY;
+    if (Math.abs(accum) >= SWIPE_FLIP_THRESHOLD_PX) {
+      const sign = accum > 0 ? 1 : -1;
+      const direction: FlipDirection = horizontalDominant ? sign : (-sign as FlipDirection);
+      const axis: FlipAxis = horizontalDominant ? "horizontal" : "vertical";
+      swipeAccumX = 0;
+      swipeAccumY = 0;
       swipeLocked = true;
-      onFlip(direction);
+      onFlip(direction, axis);
       trackEvent("gesture_used", { gesture_type: "swipe_flip", duration_ms: 0 });
 
       // Fixed cooldown, scheduled once and never renewed by later wheel

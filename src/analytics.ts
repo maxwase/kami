@@ -11,6 +11,7 @@ export enum FoldTrigger {
   KeyboardSpace = "keyboard_space",
   KeyboardEnter = "keyboard_enter",
   Hinge = "hinge",
+  Tap = "tap",
 }
 
 export enum FoldSource {
