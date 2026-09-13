@@ -1,0 +1,9 @@
+{
+  "bundle": {
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "signingIdentity": "Apple Distribution: Maksim Tatarchenkov (YX238Y6233)",
+      "infoPlist": "Info.appstore.plist"
+    }
+  }
+}

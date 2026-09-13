@@ -1,57 +1,72 @@
 import "./style.css";
 import "viewportsegments-polyfill";
-import { clamp } from "./math/scalars";
-import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
-import { computeHingePoint, type HingeInfo } from "./device/hinge";
-import { createMotionTracker } from "./device/motion";
 import {
-  helpCopyForSupport,
+  FoldSource,
+  FoldTrigger,
+  getAnalyticsConsent,
+  initAnalytics,
+  Panel,
+  PaperSide,
+  setAnalyticsConsent,
+  trackEvent,
+} from "./analytics";
+import { options, updateOptions } from "./config/options";
+import { computeHingePoint, type HingeInfo } from "./device/hinge";
+import { openExternal } from "./device/links";
+import { bindDeviceMotion, createMotionTracker } from "./device/motion";
+import {
   HingeState,
+  helpCopyForSupport,
   PostureSupport,
   readDevicePostureType,
   resolveHingeState,
   resolvePostureSupport,
 } from "./device/posture";
+import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
 import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
+import { attachGestureHandlers, InputLock } from "./input/gestures";
+import { clamp } from "./math/scalars";
+import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
+import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
+import { buildFoldAnim, commitFold, type FoldAnim, FoldSide } from "./paper/fold";
+import { hitTestPaper } from "./paper/hitTest";
 import { createIdCounter } from "./paper/ids";
 import {
   makePaper,
-  resetPaper,
-  snapshotPaper,
-  restorePaper,
   type Paper,
-  type PaperStyle,
   type PaperSnapshot,
+  type PaperStyle,
+  resetPaper,
+  restorePaper,
+  snapshotPaper,
 } from "./paper/model";
-import { buildFoldAnim, commitFold, FoldSide, type FoldAnim } from "./paper/fold";
-import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
-import { hitTestPaper } from "./paper/hitTest";
-import { attachGestureHandlers, InputLock } from "./input/gestures";
 import { drawTable } from "./render/background";
 import { drawHingeCrosshair } from "./render/hinge";
 import {
   drawActiveOutline,
   drawFlatPaperFaces,
-  drawFoldingPaper,
   drawFlippingPaper,
+  drawFoldingPaper,
 } from "./render/paper";
 import { loadTextures, type TextureSet } from "./render/textures";
-import { options, updateOptions } from "./config/options";
-import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
-import {
-  initAnalytics,
-  trackEvent,
-  getAnalyticsConsent,
-  setAnalyticsConsent,
-  FoldTrigger,
-  FoldSource,
-  PaperSide,
-  Panel,
-} from "./analytics";
 
 initAnalytics();
 
 const { platform, device } = resolveRuntimeInfo();
+
+/** Native iOS shell: a few links and controls behave differently there. */
+const isIosNative = platform === Platform.Capacitor;
+
+const PRIVACY_POLICY_URL = "https://kami.maxwase.eu/privacy/";
+
+/**
+ * Phones report acceleration; desktops and laptops either do not have the
+ * sensor or report noise, and the fold-direction heuristic reads better
+ * without it there.
+ */
+const motionSupported =
+  device === Device.Phone &&
+  (platform === Platform.Web || platform === Platform.Capacitor);
 
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
@@ -118,8 +133,11 @@ analyticsPreferencesBtn.onclick = () => {
   showAnalyticsConsent();
 };
 
-// How was the app launched: installed TWA, installed PWA, or browser tab.
-function getLaunchContext(): "twa" | "pwa" | "browser" {
+// How was the app launched: native iOS app, installed TWA, installed PWA, or
+// browser tab. A Capacitor WebView reports neither a display-mode nor
+// navigator.standalone, so it has to be checked before those.
+function getLaunchContext(): "ios" | "twa" | "pwa" | "browser" {
+  if (isIosNative) return "ios";
   if (document.referrer.startsWith("android-app://")) return "twa";
   if (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -132,18 +150,38 @@ function getLaunchContext(): "twa" | "pwa" | "browser" {
 }
 trackEvent("app_open", { launch_context: getLaunchContext() });
 
-buyCoffeeLink.addEventListener("click", () => {
-  trackEvent("outbound_link", {
-    link_type: "buy_me_a_coffee",
-    link_url: buyCoffeeLink.href,
+// App Store guideline 3.1.1 forbids collecting money through a link out of an
+// iOS app, so the tip jar only exists on web, TWA and macOS.
+if (isIosNative) {
+  buyCoffeeLink.remove();
+} else {
+  buyCoffeeLink.addEventListener("click", () => {
+    trackEvent("outbound_link", {
+      link_type: "buy_me_a_coffee",
+      link_url: buyCoffeeLink.href,
+    });
   });
-});
-repoLink.addEventListener("click", () => {
+}
+repoLink.addEventListener("click", (event) => {
   trackEvent("outbound_link", {
     link_type: "github",
     link_url: repoLink.href,
   });
+  if (openExternal(repoLink.href)) event.preventDefault();
 });
+// The native bundle has no /privacy/ page of its own (single-entry build), and
+// the policy has to stay reachable for App Store review, so point at the
+// hosted copy and open it in the in-app browser.
+if (isIosNative) {
+  for (const link of document.querySelectorAll<HTMLAnchorElement>(
+    'a[href="/privacy/"]',
+  )) {
+    link.href = PRIVACY_POLICY_URL;
+    link.addEventListener("click", (event) => {
+      if (openExternal(PRIVACY_POLICY_URL)) event.preventDefault();
+    });
+  }
+}
 
 let dpr = 1;
 let cssW = 0;
@@ -196,15 +234,24 @@ const devicePostureTarget = (navigator as Navigator & { devicePosture?: ChangeTa
 if (typeof devicePostureTarget?.addEventListener === "function") {
   devicePostureTarget.addEventListener("change", resize, { passive: true });
 }
-if (platform === Platform.Web && device === Device.Phone) {
-  window.addEventListener(
-    "devicemotion",
-    (event) => {
-      motionActive = true;
-      motion.handleEvent(event);
-    },
-    { passive: true },
-  );
+if (motionSupported) {
+  const onMotion = (event: DeviceMotionEvent) => {
+    motionActive = true;
+    motion.handleEvent(event);
+  };
+  if (platform === Platform.Capacitor) {
+    // iOS only grants motion access from inside a user gesture, so the request
+    // rides on the first touch of the canvas rather than on startup.
+    const requestOnFirstTouch = () => {
+      canvasEl.removeEventListener("pointerdown", requestOnFirstTouch);
+      void bindDeviceMotion(onMotion);
+    };
+    canvasEl.addEventListener("pointerdown", requestOnFirstTouch, {
+      passive: true,
+    });
+  } else {
+    void bindDeviceMotion(onMotion);
+  }
 }
 resize();
 
@@ -452,7 +499,6 @@ if (postureSupport === PostureSupport.Unavailable) {
   });
 }
 
-foldFallbackBtn.style.display = "inline-block";
 foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
   trackEvent("fold_triggered", {
@@ -586,7 +632,7 @@ manualHingeFlip.addEventListener("change", () => {
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
-const allowAccelAdjustments = platform === Platform.Web && device === Device.Phone;
+const allowAccelAdjustments = motionSupported;
 stableAccelInput.disabled = !allowAccelAdjustments;
 if (stableAccelRow instanceof HTMLElement) {
   stableAccelRow.style.display = allowAccelAdjustments ? "flex" : "none";
@@ -1003,7 +1049,7 @@ function tick(now: number) {
       }`,
       `useDir:${activeHingeDir.x.toFixed(0)},${activeHingeDir.y.toFixed(0)}`,
     ];
-    if (platform === Platform.Web && device === Device.Phone) {
+    if (motionSupported) {
       debugLines.push(`accel:${accelMag.toFixed(2)}`);
     }
     const debugText = debugLines.join("\n");

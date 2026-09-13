@@ -1,5 +1,5 @@
-import type { Vec2 } from "../math/vec2";
 import { pointInPoly } from "../geom/polygon";
+import type { Vec2 } from "../math/vec2";
 import type { Paper } from "./model";
 import { screenToLocal } from "./space";
 

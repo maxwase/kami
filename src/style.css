@@ -1,3 +1,14 @@
+/* Safe-area insets, named once. index.html sets viewport-fit=cover, so the
+   page extends under the Dynamic Island, the home indicator and (in landscape
+   on iPhone) the rounded corners — every fixed-position control has to be
+   pushed clear of them. Zero everywhere the insets do not exist. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
 html,
 body {
   margin: 0;
@@ -13,8 +24,40 @@ body {
     Arial;
 }
 
-/* Material Symbols */
+/* Material Symbols.
+   Bundled, not loaded from fonts.googleapis.com: every control in the app is
+   an icon glyph, so a blocked or offline CDN would leave a UI of blank boxes —
+   and the native iOS/macOS apps must work with no network at all. This is a
+   subset containing only the glyphs listed below (2.6 KB); regenerate it with
+   the icon_names query when adding an icon:
+   https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=analytics,code,delete_outline,devices_fold,devices_fold_2,flip,info,restart_alt,settings,undo */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/material-symbols-subset.woff2") format("woff2");
+}
+
 .material-symbols-outlined {
+  font-family: "Material Symbols Outlined", sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "rlig";
+  font-feature-settings: "rlig";
+  -webkit-font-smoothing: antialiased;
   font-variation-settings:
     "FILL" 0,
     "wght" 400,
@@ -43,8 +86,8 @@ body {
 /* --- Action Island (Top Left) --- */
 #action-island {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-top));
+  left: calc(16px + var(--safe-left));
   z-index: 20;
   display: flex;
   gap: 12px;
@@ -112,8 +155,8 @@ body {
 /* --- Settings & Info Buttons (Top Right) --- */
 #settings-btn-container {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: calc(16px + var(--safe-top));
+  right: calc(16px + var(--safe-right));
   z-index: 20;
   display: flex;
   gap: 12px;
@@ -176,10 +219,17 @@ body {
 .settings-panel {
   --settings-top: 104px;
   position: fixed;
-  top: var(--settings-top); /* Position below button container */
-  right: 16px;
+  /* Below the button container, which itself clears the top inset. */
+  top: calc(var(--settings-top) + var(--safe-top));
+  right: calc(16px + var(--safe-right));
   width: 300px;
-  max-height: calc(100vh - var(--settings-top) - 12px - env(safe-area-inset-bottom, 0));
+  max-height: calc(
+    100vh -
+    var(--settings-top) -
+    var(--safe-top) -
+    var(--safe-bottom) -
+    12px
+  );
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -195,13 +245,17 @@ body {
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0));
+  padding-bottom: calc(28px + var(--safe-bottom));
 }
 
 @supports (height: 100dvh) {
   .settings-panel {
     max-height: calc(
-      100dvh - var(--settings-top) - 12px - env(safe-area-inset-bottom, 0)
+      100dvh -
+      var(--settings-top) -
+      var(--safe-top) -
+      var(--safe-bottom) -
+      12px
     );
   }
 }
@@ -362,10 +416,10 @@ body {
   align-items: center;
   justify-content: center;
   white-space: normal;
+  font: inherit;
   line-height: 1.2;
   gap: 6px;
   cursor: pointer;
-  font: inherit;
   text-align: center;
 }
 
@@ -616,9 +670,9 @@ body {
     justify-content: center;
     gap: 10px;
     padding: 8px 12px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+    padding-bottom: calc(8px + var(--safe-bottom));
     width: max-content;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px - var(--safe-left) - var(--safe-right));
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -651,8 +705,8 @@ body {
 
   .settings-panel {
     --settings-top: 16px;
-    left: 12px;
-    right: 12px;
+    left: calc(12px + var(--safe-left));
+    right: calc(12px + var(--safe-right));
     width: auto;
   }
 }

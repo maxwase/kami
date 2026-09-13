@@ -1,10 +1,10 @@
-import { norm2, rotate2 } from "../math/vec2";
-import type { Vec2 } from "../math/vec2";
-import { reflectPoint, makeLine } from "../geom/line2";
 import type { Line2 } from "../geom/line2";
+import { makeLine, reflectPoint } from "../geom/line2";
 import { clipPolyHalfPlane, polyArea, signedPolyArea } from "../geom/polygon";
-import { toggleSide } from "./model";
+import type { Vec2 } from "../math/vec2";
+import { norm2, rotate2 } from "../math/vec2";
 import type { Face, Paper, PaperSide } from "./model";
+import { toggleSide } from "./model";
 import { screenToLocal } from "./space";
 
 /** Which side of the fold line moves. */
