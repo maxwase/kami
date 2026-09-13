@@ -52,6 +52,7 @@
     "gl-matrix": "^3.4.4",
     "polygon-clipping": "^0.15.7",
     "posthog-js": "^1.418.1",
+    "twgl.js": "^7.0.0",
     "viewportsegments-polyfill": "^1.0.4"
   },
   "pnpm": {

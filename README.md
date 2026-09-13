@@ -27,6 +27,7 @@ https://github.com/user-attachments/assets/4016a644-f623-45a2-959b-9e070c18d7c2
   - **Rotate**: Use on-screen buttons or **Alt/Option + Drag** vertically to rotate the paper.
   - **Fold**: Trigger folds manually or let the physics engine handle it.
 - **Realistic Visuals**:
+  - WebGL renderer with a live Canvas2D fallback if the context is lost.
   - Wood and paper textures with graceful fallbacks if they fail to load.
   - Dynamic, soft shadows that react to lifting and folding.
   - Smooth animations for folding and rotation.

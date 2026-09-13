@@ -84,6 +84,16 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Paper layers above #c: WebGL papers, then the 2D outline/fold-line overlay.
+   Input still lands on #c. */
+.paper-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
 /* --- Action Island (Top Left) --- */
 #action-island {
   position: fixed;

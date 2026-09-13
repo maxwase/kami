@@ -14,7 +14,7 @@ import type { FrontImageSource } from "./textures";
  * Perspective foreshortening factor for 3D projection.
  * Higher values increase perspective distortion during folding.
  */
-const PERSPECTIVE_FACTOR = 0.0022;
+export const PERSPECTIVE_FACTOR = 0.0022;
 
 /**
  * Shadow intensity when face is angled away from light (0-1).
@@ -33,6 +33,12 @@ const FOLD_LINE_ALPHA = 0.4;
 
 /** Extension length for fold line rendering in each direction from hinge. */
 const FOLD_LINE_EXTENT = 5000;
+
+/** globalAlpha of the "multiply" base-color tint over the paper pattern. */
+export const PATTERN_TINT_ALPHA = 0.9;
+
+/** Lighting overlays at or below this alpha are skipped. */
+export const LIGHTING_MIN_ALPHA = 0.001;
 
 /** Light direction for shading (normalized toward upper-left-front). */
 const LIGHT_DIR = norm3({ x: -0.35, y: -0.25, z: 0.9 });
@@ -75,7 +81,7 @@ interface FaceImage {
  * is true when the image needs a quarter turn to align its long axis with the
  * sheet's — `u0/v0/su/sv` are then expressed in that rotated frame.
  */
-interface Crop {
+export interface Crop {
   u0: number;
   v0: number;
   su: number;
@@ -116,7 +122,7 @@ function coverCrop(paper: Paper, img: FrontImageSource): Crop {
  * rotation — `iu = effV, iv = 1 - effU` — so the image turns rather than
  * mirrors.
  */
-function applyCrop(uv: Vec2, crop: Crop, side: PaperSide): Vec2 {
+export function applyCrop(uv: Vec2, crop: Crop, side: PaperSide): Vec2 {
   // The back is printed facing the opposite direction, so it reads normally
   // after the geometry turns over.
   const effU = crop.u0 + (side === "back" ? 1 - uv.x : uv.x) * crop.su;
@@ -130,7 +136,7 @@ function applyCrop(uv: Vec2, crop: Crop, side: PaperSide): Vec2 {
  * material map and are cropped for that side's image, so they stay attached
  * through folds and flips.
  */
-function cropsForImages(
+export function cropsForImages(
   paper: Paper,
   images: Partial<Record<PaperSide, FrontImageSource>>,
 ): Record<PaperSide, Crop> {
@@ -478,8 +484,14 @@ export function drawFoldingPaper(
   for (const it of items) {
     drawRenderItem(ctx, it, texture);
   }
+}
 
-  // Draw fold line indicator
+/** Draw the fold line indicator over a folding paper. */
+export function drawFoldLine(
+  ctx: CanvasRenderingContext2D,
+  paper: Paper,
+  anim: FoldAnim,
+): void {
   ctx.save();
   ctx.globalAlpha = FOLD_LINE_ALPHA;
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
@@ -548,7 +560,7 @@ function pathPoly(ctx: CanvasRenderingContext2D, screenVerts: Vec2[]): void {
 }
 
 /** Lighting values for shading a face. */
-interface Lighting {
+export interface Lighting {
   shadow: number;
   highlight: number;
 }
@@ -557,7 +569,7 @@ interface Lighting {
  * Calculate shadow and highlight intensities from surface normal.
  * Uses Lambertian shading: intensity based on dot product with light direction.
  */
-function calculateLighting(normal: Vec3): Lighting {
+export function calculateLighting(normal: Vec3): Lighting {
   const n = norm3(normal);
   const ndl = clamp(n.x * LIGHT_DIR.x + n.y * LIGHT_DIR.y + n.z * LIGHT_DIR.z, 0, 1);
 
@@ -578,7 +590,7 @@ function applyLightingOverlays(
 ): void {
   const { shadow, highlight } = lighting;
 
-  if (shadow > 0.001) {
+  if (shadow > LIGHTING_MIN_ALPHA) {
     ctx.save();
     ctx.globalAlpha = shadow;
     ctx.fillStyle = "#000";
@@ -587,7 +599,7 @@ function applyLightingOverlays(
     ctx.restore();
   }
 
-  if (highlight > 0.001) {
+  if (highlight > LIGHTING_MIN_ALPHA) {
     ctx.save();
     ctx.globalAlpha = highlight;
     ctx.fillStyle = "#fff";
@@ -618,7 +630,7 @@ function shadeFace(
 
     ctx.save();
     ctx.globalCompositeOperation = "multiply";
-    ctx.globalAlpha = 0.9;
+    ctx.globalAlpha = PATTERN_TINT_ALPHA;
     ctx.fillStyle = baseColor;
     pathPoly(ctx, screenVerts);
     ctx.fill();
