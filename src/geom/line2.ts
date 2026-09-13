@@ -1,5 +1,5 @@
-import { dot2, mul2, norm2, perp2, sub2 } from "../math/vec2";
 import type { Vec2 } from "../math/vec2";
+import { dot2, mul2, norm2, perp2, sub2 } from "../math/vec2";
 
 /** Infinite 2D line with a point, unit direction, and unit normal. */
 export interface Line2 {

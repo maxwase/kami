@@ -1,8 +1,12 @@
 import type { Paper } from "./model";
 import { toggleSide } from "./model";
+import { composeAffine, mirrorAffine } from "../geom/affine";
 
 /** Animation duration for flip in seconds. */
 const FLIP_DURATION_SECONDS = 0.5;
+
+/** Visual sweep direction: 1 = right-to-left, -1 = left-to-right. */
+export type FlipDirection = 1 | -1;
 
 /** Animation data for an in-progress flip. */
 export interface FlipAnim {
@@ -16,10 +20,12 @@ export interface FlipAnim {
   originalFaces: Paper["faces"];
   /** Max layer before flip (for layer inversion). */
   maxLayer: number;
+  /** Visual sweep direction: 1 = right-to-left, -1 = left-to-right. */
+  direction: FlipDirection;
 }
 
 /** Build a flip animation for the given paper. */
-export function buildFlipAnim(paper: Paper): FlipAnim {
+export function buildFlipAnim(paper: Paper, direction: FlipDirection = 1): FlipAnim {
   let maxLayer = 0;
   for (const f of paper.faces) {
     maxLayer = Math.max(maxLayer, f.layer);
@@ -31,6 +37,7 @@ export function buildFlipAnim(paper: Paper): FlipAnim {
     verts: f.verts.map((v) => ({ x: v.x, y: v.y })),
     up: f.up,
     layer: f.layer,
+    mat: { ...f.mat },
   }));
 
   return {
@@ -39,6 +46,7 @@ export function buildFlipAnim(paper: Paper): FlipAnim {
     durationSeconds: FLIP_DURATION_SECONDS,
     originalFaces,
     maxLayer,
+    direction,
   };
 }
 
@@ -66,6 +74,10 @@ export function commitFlip(paper: Paper, anim: FlipAnim): void {
   const nx = -Math.cos(paper.rot);
   const ny = Math.sin(paper.rot);
 
+  // Same mirror, expressed as an affine, so the material map stays in lockstep
+  // with the mirrored geometry.
+  const mirrorMat = mirrorAffine({ x: cx, y: cy }, { x: nx, y: ny });
+
   for (const f of paper.faces) {
     // Reflect each vertex across the axis line passing through (cx, cy)
     f.verts = f.verts.map((v) => {
@@ -77,6 +89,7 @@ export function commitFlip(paper: Paper, anim: FlipAnim): void {
         y: v.y - 2 * dot * ny,
       };
     });
+    f.mat = composeAffine(f.mat, mirrorMat);
     // Toggle which side is facing up
     f.up = toggleSide(f.up);
     // Invert layer order: what was on bottom (layer 0) is now on top (highest layer)

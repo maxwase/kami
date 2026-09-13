@@ -1,8 +1,9 @@
-import { add2, mul2, rotate2, sub2 } from "../math/vec2";
+import { trackEvent } from "../analytics";
 import type { Vec2 } from "../math/vec2";
+import { add2, mul2, rotate2, sub2 } from "../math/vec2";
+import type { FlipDirection } from "../paper/flip";
 import type { Paper } from "../paper/model";
 import { localToScreen } from "../paper/space";
-import { trackEvent } from "../analytics";
 
 export const InputLock = {
   Locked: "locked",
@@ -18,7 +19,17 @@ export interface GestureOptions {
   bringPaperToTop: (paper: Paper) => void;
   getLockState: () => InputLock;
   useAltRotate?: boolean;
+  onFlip?: (direction: FlipDirection) => void;
 }
+
+const SWIPE_FLIP_THRESHOLD_PX = 120;
+// Gap that separates one physical swipe from the next, for accumulation purposes only.
+const SWIPE_SEGMENT_QUIET_MS = 100;
+// Cooldown after a flip fires before another swipe can trigger one. Scheduled
+// once per trigger and never renewed by later wheel events, so a momentum
+// tail arriving in dense sub-100ms bursts can't starve it from ever firing
+// (that starvation was the "stops working after a couple of swipes" bug).
+const SWIPE_LOCK_MS = 700;
 
 /**
  * Attach pointer handlers for drag and pinch-rotate gestures.
@@ -32,7 +43,8 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     setActivePaper,
     bringPaperToTop,
     getLockState,
-    useAltRotate: useAltRotate = false,
+    useAltRotate = false,
+    onFlip,
   } = opts;
 
   interface PointerState {
@@ -50,8 +62,17 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   let rotateAnchorScreen: Vec2 | undefined;
 
   // Gesture tracking state
-  let gestureType: "drag" | "pinch_rotate" | "alt_rotate" | null = null;
+  let gestureType: "drag" | "pinch_rotate" | "alt_rotate" | "trackpad_rotate" | null = null;
   let gestureStartTime = 0;
+
+  let trackpadRotateStartRot = 0;
+  let trackpadRotateAnchorLocal: Vec2 | undefined;
+  let trackpadRotateAnchorScreen: Vec2 | undefined;
+
+  let swipeAccumX = 0;
+  let swipeSegmentTimer: ReturnType<typeof setTimeout> | undefined;
+  let swipeLocked = false;
+  let swipeLockTimer: ReturnType<typeof setTimeout> | undefined;
 
   const getPaperLocalCentroid = (paper: Paper): Vec2 => {
     let sumX = 0;
@@ -169,10 +190,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
   };
 
-  const onPointerUp = (e: PointerEvent) => {
-    pointers.delete(e.pointerId);
-
-    // Track gesture completion
+  const trackGestureEnd = () => {
     if (gestureType && gestureStartTime > 0) {
       const duration = Math.round(performance.now() - gestureStartTime);
       trackEvent("gesture_used", {
@@ -180,6 +198,12 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
         duration_ms: duration,
       });
     }
+  };
+
+  const onPointerUp = (e: PointerEvent) => {
+    pointers.delete(e.pointerId);
+
+    trackGestureEnd();
 
     if (pointers.size < 2) {
       pinchLastMid = undefined;
@@ -207,15 +231,106 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     gestureStartTime = 0;
   };
 
+  // Safari/Chrome on macOS emit these for a trackpad two-finger twist.
+  // `rotation` is cumulative degrees since gesturestart; not in lib.dom.d.ts.
+  interface MacGestureEvent extends Event {
+    rotation: number;
+  }
+
+  const onGestureStart = (e: Event) => {
+    e.preventDefault();
+    if (getLockState() === InputLock.Locked) return;
+
+    const paper = getActivePaper();
+    trackpadRotateAnchorLocal = getPaperLocalCentroid(paper);
+    trackpadRotateAnchorScreen = localToScreen(paper, trackpadRotateAnchorLocal);
+    trackpadRotateStartRot = paper.rot;
+    gestureType = "trackpad_rotate";
+    gestureStartTime = performance.now();
+  };
+
+  const onGestureChange = (e: Event) => {
+    e.preventDefault();
+    if (getLockState() === InputLock.Locked) return;
+    if (!trackpadRotateAnchorLocal || !trackpadRotateAnchorScreen) return;
+
+    const ge = e as MacGestureEvent;
+    const paper = getActivePaper();
+    paper.rot = trackpadRotateStartRot + (ge.rotation * Math.PI) / 180;
+    const anchorOffset = rotate2(
+      mul2(trackpadRotateAnchorLocal, paper.scale),
+      paper.rot,
+    );
+    paper.pos = sub2(trackpadRotateAnchorScreen, anchorOffset);
+  };
+
+  const onGestureEnd = (e: Event) => {
+    e.preventDefault();
+
+    trackGestureEnd();
+
+    trackpadRotateAnchorLocal = undefined;
+    trackpadRotateAnchorScreen = undefined;
+    gestureType = null;
+    gestureStartTime = 0;
+  };
+
+  // Two-finger trackpad swipe: reported as `wheel` events with deltaMode
+  // DOM_DELTA_PIXEL (0). A physical mouse wheel reports DOM_DELTA_LINE (1),
+  // so gating on deltaMode filters those out. Works identically in the
+  // browser build and the Tauri webview since both are WebKit/Blink.
+  const onWheel = (e: WheelEvent) => {
+    if (!onFlip) return;
+    if (e.deltaMode !== 0) return;
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+
+    e.preventDefault();
+
+    // A gap this long means a new physical swipe, not the same one continuing.
+    if (swipeSegmentTimer !== undefined) clearTimeout(swipeSegmentTimer);
+    swipeSegmentTimer = setTimeout(() => {
+      swipeAccumX = 0;
+    }, SWIPE_SEGMENT_QUIET_MS);
+
+    if (swipeLocked || getLockState() === InputLock.Locked) return;
+
+    swipeAccumX += e.deltaX;
+    if (Math.abs(swipeAccumX) >= SWIPE_FLIP_THRESHOLD_PX) {
+      const direction: FlipDirection = swipeAccumX > 0 ? 1 : -1;
+      swipeAccumX = 0;
+      swipeLocked = true;
+      onFlip(direction);
+      trackEvent("gesture_used", { gesture_type: "swipe_flip", duration_ms: 0 });
+
+      // Fixed cooldown, scheduled once and never renewed by later wheel
+      // events — a momentum tail arriving in dense sub-100ms bursts must not
+      // be able to keep pushing this out indefinitely.
+      if (swipeLockTimer !== undefined) clearTimeout(swipeLockTimer);
+      swipeLockTimer = setTimeout(() => {
+        swipeLocked = false;
+      }, SWIPE_LOCK_MS);
+    }
+  };
+
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
   canvas.addEventListener("pointercancel", onPointerCancel);
+  canvas.addEventListener("gesturestart", onGestureStart as EventListener);
+  canvas.addEventListener("gesturechange", onGestureChange as EventListener);
+  canvas.addEventListener("gestureend", onGestureEnd as EventListener);
+  canvas.addEventListener("wheel", onWheel, { passive: false });
 
   return () => {
     canvas.removeEventListener("pointerdown", onPointerDown);
     canvas.removeEventListener("pointermove", onPointerMove);
     canvas.removeEventListener("pointerup", onPointerUp);
     canvas.removeEventListener("pointercancel", onPointerCancel);
+    canvas.removeEventListener("gesturestart", onGestureStart as EventListener);
+    canvas.removeEventListener("gesturechange", onGestureChange as EventListener);
+    canvas.removeEventListener("gestureend", onGestureEnd as EventListener);
+    canvas.removeEventListener("wheel", onWheel);
+    if (swipeSegmentTimer !== undefined) clearTimeout(swipeSegmentTimer);
+    if (swipeLockTimer !== undefined) clearTimeout(swipeLockTimer);
   };
 }

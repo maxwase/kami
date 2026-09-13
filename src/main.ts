@@ -1,57 +1,79 @@
 import "./style.css";
 import "viewportsegments-polyfill";
-import { clamp } from "./math/scalars";
-import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
-import { computeHingePoint, type HingeInfo } from "./device/hinge";
-import { createMotionTracker } from "./device/motion";
 import {
-  helpCopyForSupport,
+  FoldSource,
+  FoldTrigger,
+  getAnalyticsConsent,
+  initAnalytics,
+  Panel,
+  PaperSide,
+  setAnalyticsConsent,
+  trackEvent,
+} from "./analytics";
+import { options, updateOptions } from "./config/options";
+import { computeHingePoint, type HingeInfo } from "./device/hinge";
+import { openExternal } from "./device/links";
+import { bindDeviceMotion, createMotionTracker } from "./device/motion";
+import {
   HingeState,
+  helpCopyForSupport,
   PostureSupport,
   readDevicePostureType,
   resolveHingeState,
   resolvePostureSupport,
 } from "./device/posture";
+import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
 import { getScreenAngleDeg, resolveScreenLandscape } from "./device/screen";
+import { attachGestureHandlers, InputLock } from "./input/gestures";
+import { clamp } from "./math/scalars";
+import { dot2, norm2, perp2, rotate2, type Vec2 } from "./math/vec2";
+import { buildFlipAnim, commitFlip, type FlipAnim, type FlipDirection } from "./paper/flip";
+import { buildFoldAnim, commitFold, type FoldAnim, FoldSide } from "./paper/fold";
+import { hitTestPaper } from "./paper/hitTest";
 import { createIdCounter } from "./paper/ids";
 import {
   makePaper,
-  resetPaper,
-  snapshotPaper,
-  restorePaper,
   type Paper,
-  type PaperStyle,
+  type PaperMaterial,
+  type PaperSide as SheetSide,
   type PaperSnapshot,
+  type PaperStyle,
+  resetPaper,
+  restorePaper,
+  snapshotPaper,
 } from "./paper/model";
-import { buildFoldAnim, commitFold, FoldSide, type FoldAnim } from "./paper/fold";
-import { buildFlipAnim, commitFlip, type FlipAnim } from "./paper/flip";
-import { hitTestPaper } from "./paper/hitTest";
-import { attachGestureHandlers, InputLock } from "./input/gestures";
 import { drawTable } from "./render/background";
 import { drawHingeCrosshair } from "./render/hinge";
 import {
   drawActiveOutline,
   drawFlatPaperFaces,
-  drawFoldingPaper,
   drawFlippingPaper,
+  drawFoldingPaper,
+  PLAY_STORE_URL,
 } from "./render/paper";
-import { loadTextures, type TextureSet } from "./render/textures";
-import { options, updateOptions } from "./config/options";
-import { Device, Platform, resolveRuntimeInfo } from "./device/runtime";
 import {
-  initAnalytics,
-  trackEvent,
-  getAnalyticsConsent,
-  setAnalyticsConsent,
-  FoldTrigger,
-  FoldSource,
-  PaperSide,
-  Panel,
-} from "./analytics";
+  type FrontImageSource,
+  loadTextures,
+  type TextureSet,
+} from "./render/textures";
 
 initAnalytics();
 
 const { platform, device } = resolveRuntimeInfo();
+
+/** Native iOS shell: a few links and controls behave differently there. */
+const isIosNative = platform === Platform.Capacitor;
+
+const PRIVACY_POLICY_URL = "https://kami.maxwase.eu/privacy/";
+
+/**
+ * Phones report acceleration; desktops and laptops either do not have the
+ * sensor or report noise, and the fold-direction heuristic reads better
+ * without it there.
+ */
+const motionSupported =
+  device === Device.Phone &&
+  (platform === Platform.Web || platform === Platform.Capacitor);
 
 const canvasEl = getRequiredElement("c", HTMLCanvasElement);
 const ctx = getRequiredCanvas2dContext(canvasEl);
@@ -94,6 +116,8 @@ const analyticsPreferencesBtn = getRequiredElement(
 );
 const buyCoffeeLink = getRequiredElement("buyCoffee", HTMLAnchorElement);
 const repoLink = getRequiredElement("repoLink", HTMLAnchorElement);
+const frontImageInput = getRequiredElement("frontImageInput", HTMLInputElement);
+const backImageInput = getRequiredElement("backImageInput", HTMLInputElement);
 
 // --- Analytics consent gate (opt-in; identical across web/TWA/iOS/macOS) ---
 function showAnalyticsConsent(): void {
@@ -118,8 +142,11 @@ analyticsPreferencesBtn.onclick = () => {
   showAnalyticsConsent();
 };
 
-// How was the app launched: installed TWA, installed PWA, or browser tab.
-function getLaunchContext(): "twa" | "pwa" | "browser" {
+// How was the app launched: native iOS app, installed TWA, installed PWA, or
+// browser tab. A Capacitor WebView reports neither a display-mode nor
+// navigator.standalone, so it has to be checked before those.
+function getLaunchContext(): "ios" | "twa" | "pwa" | "browser" {
+  if (isIosNative) return "ios";
   if (document.referrer.startsWith("android-app://")) return "twa";
   if (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -132,18 +159,44 @@ function getLaunchContext(): "twa" | "pwa" | "browser" {
 }
 trackEvent("app_open", { launch_context: getLaunchContext() });
 
-buyCoffeeLink.addEventListener("click", () => {
-  trackEvent("outbound_link", {
-    link_type: "buy_me_a_coffee",
-    link_url: buyCoffeeLink.href,
+// Web browser visitors (not TWA/PWA/native) default to the Kami banner
+// material, tappable to reach the Play Store — see bannerTappable below.
+// twaInstalled flips true once bootstrap() checks getInstalledRelatedApps().
+const isBrowserVisit = platform === Platform.Web && getLaunchContext() === "browser";
+let twaInstalled = false;
+
+// App Store guideline 3.1.1 forbids collecting money through a link out of an
+// iOS app, so the tip jar only exists on web, TWA and macOS.
+if (isIosNative) {
+  buyCoffeeLink.remove();
+} else {
+  buyCoffeeLink.addEventListener("click", () => {
+    trackEvent("outbound_link", {
+      link_type: "buy_me_a_coffee",
+      link_url: buyCoffeeLink.href,
+    });
   });
-});
-repoLink.addEventListener("click", () => {
+}
+repoLink.addEventListener("click", (event) => {
   trackEvent("outbound_link", {
     link_type: "github",
     link_url: repoLink.href,
   });
+  if (openExternal(repoLink.href)) event.preventDefault();
 });
+// The native bundle has no /privacy/ page of its own (single-entry build), and
+// the policy has to stay reachable for App Store review, so point at the
+// hosted copy and open it in the in-app browser.
+if (isIosNative) {
+  for (const link of document.querySelectorAll<HTMLAnchorElement>(
+    'a[href="/privacy/"]',
+  )) {
+    link.href = PRIVACY_POLICY_URL;
+    link.addEventListener("click", (event) => {
+      if (openExternal(PRIVACY_POLICY_URL)) event.preventDefault();
+    });
+  }
+}
 
 let dpr = 1;
 let cssW = 0;
@@ -196,15 +249,24 @@ const devicePostureTarget = (navigator as Navigator & { devicePosture?: ChangeTa
 if (typeof devicePostureTarget?.addEventListener === "function") {
   devicePostureTarget.addEventListener("change", resize, { passive: true });
 }
-if (platform === Platform.Web && device === Device.Phone) {
-  window.addEventListener(
-    "devicemotion",
-    (event) => {
-      motionActive = true;
-      motion.handleEvent(event);
-    },
-    { passive: true },
-  );
+if (motionSupported) {
+  const onMotion = (event: DeviceMotionEvent) => {
+    motionActive = true;
+    motion.handleEvent(event);
+  };
+  if (platform === Platform.Capacitor) {
+    // iOS only grants motion access from inside a user gesture, so the request
+    // rides on the first touch of the canvas rather than on startup.
+    const requestOnFirstTouch = () => {
+      canvasEl.removeEventListener("pointerdown", requestOnFirstTouch);
+      void bindDeviceMotion(onMotion);
+    };
+    canvasEl.addEventListener("pointerdown", requestOnFirstTouch, {
+      passive: true,
+    });
+  } else {
+    void bindDeviceMotion(onMotion);
+  }
 }
 resize();
 
@@ -220,6 +282,10 @@ const factory = { nextFaceId, nextPaperId };
 
 const undoStack: PaperSnapshot[] = [];
 let textures!: TextureSet;
+const pickedImages: Record<SheetSide, HTMLImageElement | null> = {
+  front: null,
+  back: null,
+};
 const motion = createMotionTracker();
 let motionActive = false;
 const postureSupport = resolvePostureSupport();
@@ -304,6 +370,21 @@ function getActivePaper(): Paper {
 
 function setActivePaper(p: Paper): void {
   activePaperId = p.id;
+}
+
+/**
+ * True when the sheet is an unfolded banner showing its image (front) side, so
+ * the Play Store ad is tappable. Derived from the sheet's own state — not the
+ * session fold counter — so it correctly returns after a paper reset, an undo,
+ * or a flip back to the front. Unfolded means a single face; a fold splits the
+ * sheet into 2+ faces, a flip toggles the single face's up side.
+ */
+function bannerTappable(paper: Paper): boolean {
+  return (
+    paper.materials.front === "banner" &&
+    paper.faces.length === 1 &&
+    paper.faces[0].up === "front"
+  );
 }
 
 function bringPaperToTop(p: Paper): void {
@@ -398,7 +479,7 @@ resetActiveBtn.onclick = () => {
   const prevFaceCount = paper.faces.length;
   undoStack.push(snapshotPaper(paper));
   updateUndoBtn(false);
-  const size = orientedPaperSize(cssW, cssH, currentAspect);
+  const size = sizeForCurrentSelection();
   paper.baseW = size.w;
   paper.baseH = size.h;
   resetPaper(paper, factory);
@@ -407,7 +488,7 @@ resetActiveBtn.onclick = () => {
 
   trackEvent("paper_reset", {
     previous_face_count: prevFaceCount,
-    aspect_ratio: currentAspect.toFixed(3),
+    aspect_ratio: effectiveAspect().toFixed(3),
     fold_count: foldCount,
   });
 };
@@ -442,6 +523,62 @@ attachGestureHandlers({
       ? InputLock.Locked
       : InputLock.Unlocked,
   useAltRotate: true, // Enable alt+drag rotation
+  onFlip: (direction) => startFlip(direction),
+});
+
+// Play Store banner tap-to-open. A tap opens the store; dragging to reposition
+// the sheet does not. This is detected on pointerup (which always fires) by how
+// far the pointer travelled while pressed — NOT via the click event, because the
+// browser suppresses click once the pointer moves during a press (the gesture
+// handler captures the pointer and moves the sheet with it). Relying on click
+// meant any sheet movement killed clickability. Now only folding removes it.
+// Listeners are attached alongside attachGestureHandlers rather than inside it,
+// since that already owns pointer capture on the same canvas; preventDefault is
+// never called here so dragging is unaffected.
+const TAP_SLOP_PX = 10;
+let tapStart: { x: number; y: number } | null = null;
+let tapMaxMove = 0;
+canvasEl.addEventListener("pointerdown", (e) => {
+  tapStart = { x: e.clientX, y: e.clientY };
+  tapMaxMove = 0;
+});
+canvasEl.addEventListener("pointermove", (e) => {
+  if (!tapStart) return;
+  tapMaxMove = Math.max(
+    tapMaxMove,
+    Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y),
+  );
+});
+const endTap = () => {
+  tapStart = null;
+  tapMaxMove = 0;
+};
+canvasEl.addEventListener("pointercancel", endTap);
+canvasEl.addEventListener("pointerup", (e) => {
+  const started = tapStart !== null;
+  const moved = tapMaxMove;
+  endTap();
+  // Moving or rotating the sheet keeps it clickable; folding, or flipping to the
+  // (plain) back, removes it. bannerTappable derives this from the sheet's own
+  // state, so reset/undo/flip-back restore it correctly.
+  if (
+    !isBrowserVisit ||
+    twaInstalled ||
+    foldRuntime.phase !== "idle" ||
+    flipRuntime.phase !== "idle" ||
+    !bannerTappable(getActivePaper())
+  )
+    return;
+  if (!started || moved > TAP_SLOP_PX) return; // a drag, not a tap
+  const rect = canvasEl.getBoundingClientRect();
+  const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  for (let i = papers.length - 1; i >= 0; i--) {
+    if (hitTestPaper(papers[i], pos)) {
+      window.open(PLAY_STORE_URL, "_blank", "noopener");
+      trackEvent("playstore_banner_tapped");
+      break;
+    }
+  }
 });
 
 if (postureSupport === PostureSupport.Unavailable) {
@@ -452,7 +589,6 @@ if (postureSupport === PostureSupport.Unavailable) {
   });
 }
 
-foldFallbackBtn.style.display = "inline-block";
 foldFallbackBtn.onclick = () => {
   manualFoldQueued = true;
   trackEvent("fold_triggered", {
@@ -462,15 +598,17 @@ foldFallbackBtn.onclick = () => {
   });
 };
 
-flipPaperBtn.onclick = () => {
+const startFlip = (direction: FlipDirection = 1) => {
   if (foldRuntime.phase === "animating" || flipRuntime.phase === "animating") return;
   const paper = getActivePaper();
   // Start flip animation
   flipRuntime = {
     phase: "animating",
-    anim: buildFlipAnim(paper),
+    anim: buildFlipAnim(paper, direction),
   };
 };
+
+flipPaperBtn.onclick = () => startFlip();
 
 const helpCopy = helpCopyForSupport(postureSupport);
 foldHelpEl.innerHTML = helpCopy.controls;
@@ -586,7 +724,7 @@ manualHingeFlip.addEventListener("change", () => {
 });
 manualHingeX.disabled = platform === Platform.Tauri && device === Device.Laptop;
 manualHingeY.disabled = platform === Platform.Tauri && device === Device.Laptop;
-const allowAccelAdjustments = platform === Platform.Web && device === Device.Phone;
+const allowAccelAdjustments = motionSupported;
 stableAccelInput.disabled = !allowAccelAdjustments;
 if (stableAccelRow instanceof HTMLElement) {
   stableAccelRow.style.display = allowAccelAdjustments ? "flex" : "none";
@@ -697,6 +835,158 @@ customHeightInput.addEventListener("input", () => {
     resetActiveBtn.click();
   }
 });
+
+const materialRadios: Record<SheetSide, NodeListOf<HTMLInputElement>> = {
+  front: document.querySelectorAll('input[name="frontMaterial"]'),
+  back: document.querySelectorAll('input[name="backMaterial"]'),
+};
+const textureRadios: Record<SheetSide, NodeListOf<HTMLInputElement>> = {
+  front: document.querySelectorAll('input[name="frontTexture"]'),
+  back: document.querySelectorAll('input[name="backTexture"]'),
+};
+const paperSizeSelector = getRequiredElement("paperSizeSelector", HTMLDivElement);
+const sideControls = {
+  front: {
+    color: getRequiredElement("frontColorRow", HTMLDivElement),
+    texture: getRequiredElement("frontTextureRow", HTMLDivElement),
+    pick: getRequiredElement("frontPickRow", HTMLDivElement),
+    button: getRequiredElement("frontPickButton", HTMLButtonElement),
+    name: getRequiredElement("frontPickName", HTMLSpanElement),
+    input: frontImageInput,
+  },
+  back: {
+    color: getRequiredElement("backColorRow", HTMLDivElement),
+    texture: getRequiredElement("backTextureRow", HTMLDivElement),
+    pick: getRequiredElement("backPickRow", HTMLDivElement),
+    button: getRequiredElement("backPickButton", HTMLButtonElement),
+    name: getRequiredElement("backPickName", HTMLSpanElement),
+    input: backImageInput,
+  },
+};
+
+function effectiveAspect(): number {
+  const image = selectedSizeImage();
+  return image ? image.width / image.height : currentAspect;
+}
+
+function selectedSizeImage(): HTMLImageElement | null {
+  const paper = getActivePaper();
+  const front = paper.materials.front === "custom" ? pickedImages.front : null;
+  const back = paper.materials.back === "custom" ? pickedImages.back : null;
+  return front ?? back;
+}
+
+function sizeForCurrentSelection(): { w: number; h: number } {
+  const image = selectedSizeImage();
+  return image
+    ? computePaperSize(cssW, cssH, image.width / image.height)
+    : orientedPaperSize(cssW, cssH, currentAspect);
+}
+
+function resizePaperIfNeeded(): void {
+  const paper = getActivePaper();
+  const size = sizeForCurrentSelection();
+  if (Math.abs(paper.baseW - size.w) > 0.01 || Math.abs(paper.baseH - size.h) > 0.01) {
+    resetActiveBtn.click();
+  }
+}
+
+function syncMaterialUi(): void {
+  const materials = getActivePaper().materials;
+  for (const side of ["front", "back"] as const) {
+    const material = materials[side];
+    materialRadios[side].forEach((radio) => {
+      radio.checked = radio.value === (material === "banner" ? "paper" : material);
+    });
+    sideControls[side].color.hidden = material !== "color";
+    sideControls[side].texture.hidden = material !== "paper" && material !== "banner";
+    sideControls[side].pick.hidden = material !== "custom";
+    textureRadios[side].forEach((radio) => {
+      radio.checked = radio.value === material;
+    });
+  }
+  const bothColor = materials.front === "color" && materials.back === "color";
+  paperSizeSelector.classList.toggle("is-disabled", !bothColor);
+  paperSizeSelector.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
+    input.disabled = !bothColor;
+  });
+}
+
+for (const side of ["front", "back"] as const) {
+  materialRadios[side].forEach((radio) => {
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      if (radio.value === "custom" && !pickedImages[side]) {
+        sideControls[side].input.click();
+        syncMaterialUi();
+        return;
+      }
+      getActivePaper().materials[side] =
+        radio.value === "paper"
+          ? [...textureRadios[side]].find((r) => r.checked)?.value === "banner"
+            ? "banner"
+            : "paper"
+          : (radio.value as PaperMaterial);
+      syncMaterialUi();
+      resizePaperIfNeeded();
+      trackEvent("paper_texture_changed", {
+        side,
+        texture: getActivePaper().materials[side],
+      });
+    });
+  });
+
+  const controls = sideControls[side];
+  controls.button.addEventListener("click", () => {
+    controls.input.value = "";
+    controls.input.click();
+  });
+  controls.input.addEventListener("change", () => {
+    const file = controls.input.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      if (pickedImages[side]) URL.revokeObjectURL(pickedImages[side].src);
+      pickedImages[side] = img;
+      controls.name.textContent = file.name;
+      getActivePaper().materials[side] = "custom";
+      syncMaterialUi();
+      resizePaperIfNeeded();
+      trackEvent("paper_custom_image_loaded", {
+        side,
+        width: img.width,
+        height: img.height,
+      });
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  });
+}
+
+for (const side of ["front", "back"] as const) {
+  textureRadios[side].forEach((radio) => {
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      getActivePaper().materials[side] = radio.value === "banner" ? "banner" : "paper";
+      syncMaterialUi();
+      trackEvent("paper_texture_changed", {
+        side,
+        texture: radio.value === "banner" ? "banner" : "paper",
+      });
+    });
+  });
+}
+
+function imageForMaterial(
+  side: SheetSide,
+  material: PaperMaterial,
+): FrontImageSource | undefined {
+  if (material === "banner") return textures.banner ?? undefined;
+  if (material === "paper") return textures.paperImg;
+  if (material === "custom") return pickedImages[side] ?? undefined;
+  return undefined;
+}
 
 // RGB Color pickers for front and back sides
 const paperFrontColorInput = document.getElementById(
@@ -970,13 +1260,25 @@ function tick(now: number) {
     const activeFlipAnim =
       flipRuntime.phase === "animating" ? flipRuntime.anim : undefined;
 
+    const bannerClickable =
+      isBrowserVisit &&
+      !twaInstalled &&
+      foldRuntime.phase === "idle" &&
+      flipRuntime.phase === "idle" &&
+      bannerTappable(getActivePaper());
+    canvasEl.style.cursor = bannerClickable ? "pointer" : "";
+
     for (const p of papers) {
+      const images = {
+        front: imageForMaterial("front", p.materials.front),
+        back: imageForMaterial("back", p.materials.back),
+      };
       if (activeFoldAnim && activeFoldAnim.paperId === p.id) {
-        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper);
+        drawFoldingPaper(ctx, p, activeFoldAnim, textures.paper, images);
       } else if (activeFlipAnim && activeFlipAnim.paperId === p.id) {
-        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper);
+        drawFlippingPaper(ctx, p, activeFlipAnim, textures.paper, images);
       } else {
-        drawFlatPaperFaces(ctx, p, textures.paper);
+        drawFlatPaperFaces(ctx, p, textures.paper, images);
       }
 
       const hasActiveAnim = activeFoldAnim || activeFlipAnim;
@@ -1003,7 +1305,7 @@ function tick(now: number) {
       }`,
       `useDir:${activeHingeDir.x.toFixed(0)},${activeHingeDir.y.toFixed(0)}`,
     ];
-    if (platform === Platform.Web && device === Device.Phone) {
+    if (motionSupported) {
       debugLines.push(`accel:${accelMag.toFixed(2)}`);
     }
     const debugText = debugLines.join("\n");
@@ -1018,6 +1320,29 @@ function tick(now: number) {
 void (async function bootstrap() {
   try {
     textures = await loadTextures(ctx);
+
+    if (isBrowserVisit) {
+      papers[0].materials.front = "banner";
+      // Progressive enhancement: most browsers lack this API, in which case
+      // the banner default above just stands.
+      const getInstalledRelatedApps = (
+        navigator as Navigator & {
+          getInstalledRelatedApps?: () => Promise<unknown[]>;
+        }
+      ).getInstalledRelatedApps;
+      if (getInstalledRelatedApps) {
+        try {
+          const apps = await getInstalledRelatedApps.call(navigator);
+          if (apps.length > 0) {
+            twaInstalled = true;
+            papers[0].materials.front = "color";
+          }
+        } catch {
+          // Treat a lookup failure as "not installed" — the banner stays.
+        }
+      }
+    }
+    syncMaterialUi();
 
     // Track session start with device context. `platform` is added automatically
     // by trackEvent() from resolveRuntimeInfo() - no need to pass it here.

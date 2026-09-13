@@ -1,0 +1,8 @@
+{
+  "bundle": {
+    "macOS": {
+      "entitlements": "entitlements.dev-sandbox.plist",
+      "signingIdentity": "Apple Development: Maksim Tatarchenkov (8PJ47GB99T)"
+    }
+  }
+}

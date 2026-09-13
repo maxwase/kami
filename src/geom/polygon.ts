@@ -1,7 +1,7 @@
-import { lerp, EPS } from "../math/scalars";
+import { EPS, lerp } from "../math/scalars";
 import type { Vec2 } from "../math/vec2";
-import { signedDistanceToLine } from "./line2";
 import type { Line2 } from "./line2";
+import { signedDistanceToLine } from "./line2";
 
 /**
  * Minimum distance between consecutive vertices before they collapse into one.

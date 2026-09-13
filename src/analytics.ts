@@ -85,8 +85,18 @@ interface EventMap {
     device_pixel_ratio: number;
   };
   outbound_link: { link_type: string; link_url: string };
-  app_open: { launch_context: "twa" | "pwa" | "browser" };
+  app_open: { launch_context: "ios" | "twa" | "pwa" | "browser" };
   analytics_consent_changed: { granted: boolean };
+  playstore_banner_tapped: Record<string, never>;
+  paper_texture_changed: {
+    side: "front" | "back";
+    texture: "color" | "paper" | "banner" | "custom";
+  };
+  paper_color_mode_changed: {
+    mode: "color" | "texture";
+    texture: "paper" | "banner" | "custom" | null;
+  };
+  paper_custom_image_loaded: { side: "front" | "back"; width: number; height: number };
 }
 
 let initialized = false;
@@ -95,12 +105,6 @@ export function initAnalytics(): void {
   if (initialized) return;
 
   if (!apiKey || !apiHost) {
-    if (import.meta.env.DEV) {
-      const missingVariable = !apiKey ? "VITE_POSTHOG_KEY" : "VITE_POSTHOG_HOST";
-      throw new Error(
-        `${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`,
-      );
-    }
     return;
   }
 

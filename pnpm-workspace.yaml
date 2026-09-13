@@ -1,3 +1,5 @@
 allowBuilds:
   core-js: true
   esbuild: true
+  # Native image codecs, used by @capacitor/assets to generate iOS app icons.
+  sharp: true

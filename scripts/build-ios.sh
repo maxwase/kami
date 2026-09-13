@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Build, sign, and package kami for the iOS App Store.
+# The macOS counterpart is scripts/build-appstore.sh; see RELEASING.md.
+#
+# Usage:
+#   scripts/build-ios.sh           # build + sign + export .ipa only
+#   scripts/build-ios.sh --upload  # also upload the .ipa via altool
+#
+# --upload reads APPLE_ID and APPLE_PASSWORD from .env (see .env.example).
+#
+# One-time prerequisites in the Apple Developer portal (not scriptable):
+#   - App ID eu.maxwase.kami.ios
+#   - An iOS App Store distribution certificate in the login keychain
+#   - An app record in App Store Connect, then put its Apple ID in
+#     APP_APPLE_ID below
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+TEAM_ID="YX238Y6233"
+BUNDLE_ID="eu.maxwase.kami.ios"
+APP_APPLE_ID="" # App Store Connect > App Information > Apple ID
+PROJECT="ios/App/App.xcodeproj"
+SCHEME="App"
+ARCHIVE="build/ios/kami.xcarchive"
+EXPORT_DIR="build/ios/export"
+EXPORT_OPTIONS="ios/ExportOptions.plist"
+
+UPLOAD=false
+for arg in "$@"; do
+  case "$arg" in
+    --upload) UPLOAD=true ;;
+    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
+  esac
+done
+
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
+echo "==> Building web bundle and syncing into the Xcode project"
+pnpm ios:sync
+
+echo "==> Archiving"
+rm -rf "$ARCHIVE" "$EXPORT_DIR"
+mkdir -p build/ios
+# Capacitor 8 uses SwiftPM, not CocoaPods, so this is -project (no workspace).
+xcodebuild \
+  -project "$PROJECT" \
+  -scheme "$SCHEME" \
+  -configuration Release \
+  -destination "generic/platform=iOS" \
+  -archivePath "$ARCHIVE" \
+  DEVELOPMENT_TEAM="$TEAM_ID" \
+  archive
+
+echo "==> Exporting signed .ipa"
+xcodebuild -exportArchive \
+  -archivePath "$ARCHIVE" \
+  -exportOptionsPlist "$EXPORT_OPTIONS" \
+  -exportPath "$EXPORT_DIR"
+
+IPA=$(find "$EXPORT_DIR" -name "*.ipa" -maxdepth 1 | head -1)
+if [ -z "$IPA" ]; then
+  echo "Export produced no .ipa" >&2
+  exit 1
+fi
+echo "==> Built: $IPA"
+
+# Catches most rejections (missing icons, bad plist keys, unsigned frameworks)
+# before a real upload burns a build number.
+if [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "$APP_APPLE_ID" ]; then
+  echo "==> Validating"
+  xcrun altool --validate-app -f "$IPA" --type ios \
+    --apple-id "$APP_APPLE_ID" \
+    --bundle-id "$BUNDLE_ID" \
+    --username "$APPLE_ID" \
+    --password "$APPLE_PASSWORD"
+else
+  echo "==> Skipping validation (needs .env credentials and APP_APPLE_ID)"
+fi
+
+if [ "$UPLOAD" = true ]; then
+  : "${APPLE_ID:?APPLE_ID not set in .env}"
+  : "${APPLE_PASSWORD:?APPLE_PASSWORD not set in .env}"
+  : "${APP_APPLE_ID:?Set APP_APPLE_ID in this script once the app record exists}"
+
+  echo "==> Uploading $IPA to App Store Connect"
+  xcrun altool --upload-app -f "$IPA" \
+    --type ios \
+    --apple-id "$APP_APPLE_ID" \
+    --bundle-id "$BUNDLE_ID" \
+    --username "$APPLE_ID" \
+    --password "$APPLE_PASSWORD"
+fi

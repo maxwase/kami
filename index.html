@@ -66,11 +66,9 @@
       }
     </script>
 
-    <!-- Add Material Symbols Font -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
-    />
+    <!-- Material Symbols is bundled via src/style.css, not loaded from the
+         Google Fonts CDN: the icon glyphs are the entire UI, so they must
+         render offline (and inside the native app shells). -->
     <link rel="icon" type="image/png" href="icon.png" />
     <link rel="apple-touch-icon" href="pwa-192x192.png" />
     <style>
@@ -91,9 +89,9 @@
       .analytics-consent {
         display: none;
         position: fixed;
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
+        left: calc(16px + env(safe-area-inset-left, 0px));
+        right: calc(16px + env(safe-area-inset-right, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         z-index: 30;
         max-width: 420px;
         margin: 0 auto;
@@ -295,15 +293,117 @@
       </div>
 
       <div class="settings-section">
-        <h4>Style</h4>
+        <h4>Material</h4>
         <div class="input-group">
-          <div class="paper-size-selector">
+          <div class="paper-material-selector">
+            <div class="material-side">
+              <span class="material-side-title">Front side</span>
+              <div class="toggle-group">
+                <label
+                  ><input type="radio" name="frontMaterial" value="color" checked />
+                  Color</label
+                >
+                <label
+                  ><input type="radio" name="frontMaterial" value="paper" />
+                  Texture</label
+                >
+                <label
+                  ><input type="radio" name="frontMaterial" value="custom" />
+                  Pick</label
+                >
+              </div>
+              <div id="frontColorRow" class="input-row">
+                <label for="paperFrontColor">Color</label>
+                <div class="color-picker-wrapper">
+                  <input id="paperFrontColor" type="color" value="#ffffff" />
+                  <div
+                    class="color-picker-display"
+                    id="paperFrontColorDisplay"
+                    style="background-color: #ffffff"
+                  ></div>
+                </div>
+              </div>
+              <div id="frontTextureRow" class="toggle-group" hidden>
+                <label
+                  ><input type="radio" name="frontTexture" value="paper" checked />
+                  Plain paper</label
+                >
+                <label
+                  ><input type="radio" name="frontTexture" value="banner" /> Kami
+                  banner</label
+                >
+              </div>
+              <div id="frontPickRow" class="input-row pick-row" hidden>
+                <button id="frontPickButton" type="button" class="toggle-button">
+                  Choose front image
+                </button>
+                <span id="frontPickName" class="pick-file-name"></span>
+                <input
+                  id="frontImageInput"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  hidden
+                />
+              </div>
+            </div>
+            <div class="material-side">
+              <span class="material-side-title">Back side</span>
+              <div class="toggle-group">
+                <label
+                  ><input type="radio" name="backMaterial" value="color" checked />
+                  Color</label
+                >
+                <label
+                  ><input type="radio" name="backMaterial" value="paper" />
+                  Texture</label
+                >
+                <label
+                  ><input type="radio" name="backMaterial" value="custom" /> Pick</label
+                >
+              </div>
+              <div id="backColorRow" class="input-row">
+                <label for="paperBackColor">Color</label>
+                <div class="color-picker-wrapper">
+                  <input id="paperBackColor" type="color" value="#f0f0f0" />
+                  <div
+                    class="color-picker-display"
+                    id="paperBackColorDisplay"
+                    style="background-color: #f0f0f0"
+                  ></div>
+                </div>
+              </div>
+              <div id="backTextureRow" class="toggle-group" hidden>
+                <label
+                  ><input type="radio" name="backTexture" value="paper" checked /> Plain
+                  paper</label
+                >
+                <label
+                  ><input type="radio" name="backTexture" value="banner" /> Kami
+                  banner</label
+                >
+              </div>
+              <div id="backPickRow" class="input-row pick-row" hidden>
+                <button id="backPickButton" type="button" class="toggle-button">
+                  Choose back image
+                </button>
+                <span id="backPickName" class="pick-file-name"></span>
+                <input
+                  id="backImageInput"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  hidden
+                />
+              </div>
+            </div>
+          </div>
+          <div id="paperSizeSelector" class="paper-size-selector">
+            <span class="material-side-title">Aspect ratio</span>
             <div class="toggle-group">
               <label
-                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
+                ><input type="radio" name="paperSize" value="square" /> Square</label
               >
               <label
-                ><input type="radio" name="paperSize" value="square" /> Square</label
+                ><input type="radio" name="paperSize" value="a4" checked /> A4</label
               >
               <label
                 ><input type="radio" name="paperSize" value="custom" /> Custom</label
@@ -343,28 +443,6 @@
             <input type="checkbox" id="showPaperBorder" checked />
             Show paper border
           </label>
-          <div class="input-row">
-            <label for="paperFrontColor">Front color</label>
-            <div class="color-picker-wrapper">
-              <input id="paperFrontColor" type="color" value="#ffffff" />
-              <div
-                class="color-picker-display"
-                id="paperFrontColorDisplay"
-                style="background-color: #ffffff"
-              ></div>
-            </div>
-          </div>
-          <div class="input-row">
-            <label for="paperBackColor">Back color</label>
-            <div class="color-picker-wrapper">
-              <input id="paperBackColor" type="color" value="#f0f0f0" />
-              <div
-                class="color-picker-display"
-                id="paperBackColorDisplay"
-                style="background-color: #f0f0f0"
-              ></div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -408,6 +486,7 @@
           <img
             src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
             alt="Buy Me A Coffee"
+            loading="lazy"
             style="height: 32px; width: auto"
           />
         </a>

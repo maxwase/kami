@@ -7,6 +7,8 @@ import { localToScreen } from "../paper/space";
 import type { Face, Paper, PaperSide } from "../paper/model";
 import { FoldSide, type FoldAnim } from "../paper/fold";
 import type { FlipAnim } from "../paper/flip";
+import { affineFromTriangle, applyAffine, type Mat2x3 } from "../geom/affine";
+import type { FrontImageSource } from "./textures";
 
 /**
  * Perspective foreshortening factor for 3D projection.
@@ -45,16 +47,119 @@ export function drawFlatPaperFaces(
   ctx: CanvasRenderingContext2D,
   paper: Paper,
   texture: CanvasPattern,
+  images: Partial<Record<PaperSide, FrontImageSource>> = {},
 ): void {
   const faces = [...paper.faces].sort((a, b) => a.layer - b.layer);
   alignTextureToPaper(texture, paper);
+  const crops = cropsForImages(paper, images);
 
   for (const f of faces) {
     const screenVerts = f.verts.map((p) => localToScreen(paper, p));
     const color = f.up === "front" ? paper.style.front : paper.style.back;
+    const image = imageForSide(f, f.up, images, crops);
 
-    shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture);
+    shadeFace(ctx, screenVerts, color, { x: 0, y: 0, z: 1 }, texture, image);
   }
+}
+
+/** Image-texture fill data for a face: the source image and per-vertex UVs. */
+interface FaceImage {
+  img: FrontImageSource;
+  uvs: Vec2[];
+}
+
+/**
+ * Sub-rectangle of an image (in [0,1] UV space) to sample, so the image covers
+ * the sheet without distortion ("object-fit: cover"): a centered crop matching
+ * the sheet's aspect rather than stretching the whole image to fill. `rotate`
+ * is true when the image needs a quarter turn to align its long axis with the
+ * sheet's — `u0/v0/su/sv` are then expressed in that rotated frame.
+ */
+interface Crop {
+  u0: number;
+  v0: number;
+  su: number;
+  sv: number;
+  rotate: boolean;
+}
+
+const NO_CROP: Crop = { u0: 0, v0: 0, su: 1, sv: 1, rotate: false };
+
+/**
+ * Compute the cover-crop for an image on a sheet. `Face.mat` (from
+ * baseLocalToUvAffine) is a plain, orientation-agnostic map, so orientation
+ * mismatches between the sheet and the image are handled here instead, where
+ * both are known: if the sheet and the image disagree on landscape/portrait,
+ * the image is rotated a quarter turn (a true rotation, not a mirror — see
+ * applyCrop) before cropping to the sheet's aspect.
+ */
+function coverCrop(paper: Paper, img: FrontImageSource): Crop {
+  if (img.width === 0 || img.height === 0) return NO_CROP;
+  const sheetLandscape = paper.baseW > paper.baseH;
+  const imgLandscape = img.width > img.height;
+  const rotate = sheetLandscape !== imgLandscape;
+  const effW = rotate ? img.height : img.width;
+  const effH = rotate ? img.width : img.height;
+  const target = paper.baseW / paper.baseH;
+  const effAspect = effW / effH;
+  if (effAspect > target) {
+    const su = target / effAspect; // crop width
+    return { u0: (1 - su) / 2, v0: 0, su, sv: 1, rotate };
+  }
+  const sv = effAspect / target; // crop height
+  return { u0: 0, v0: (1 - sv) / 2, su: 1, sv, rotate };
+}
+
+/**
+ * Map a full-sheet UV into the cropped sub-rectangle of the image. When
+ * `crop.rotate` is set, axes are swapped with a positive-determinant (proper)
+ * rotation — `iu = effV, iv = 1 - effU` — so the image turns rather than
+ * mirrors.
+ */
+function applyCrop(uv: Vec2, crop: Crop, side: PaperSide): Vec2 {
+  // The back is printed facing the opposite direction, so it reads normally
+  // after the geometry turns over.
+  const effU = crop.u0 + (side === "back" ? 1 - uv.x : uv.x) * crop.su;
+  const effV = crop.v0 + uv.y * crop.sv;
+  if (crop.rotate) return { x: effV, y: 1 - effU };
+  return { x: effU, y: effV };
+}
+
+/**
+ * Resolve the image for the visible side of a face. UVs come from the face's
+ * material map and are cropped for that side's image, so they stay attached
+ * through folds and flips.
+ */
+function cropsForImages(
+  paper: Paper,
+  images: Partial<Record<PaperSide, FrontImageSource>>,
+): Record<PaperSide, Crop> {
+  return {
+    front: images.front ? coverCrop(paper, images.front) : NO_CROP,
+    back: images.back ? coverCrop(paper, images.back) : NO_CROP,
+  };
+}
+
+function imageForSide(
+  face: Face,
+  visibleSide: PaperSide,
+  images: Partial<Record<PaperSide, FrontImageSource>>,
+  crops: Record<PaperSide, Crop>,
+): FaceImage | undefined {
+  const img = images[visibleSide];
+  if (!img) return undefined;
+  return {
+    img,
+    uvs: face.verts.map((v) =>
+      applyCrop(applyAffine(face.mat, v), crops[visibleSide], visibleSide),
+    ),
+  };
+}
+
+/** A small textured triangle: screen positions and matching image UVs. */
+interface SubTri {
+  s: [Vec2, Vec2, Vec2];
+  uv: [Vec2, Vec2, Vec2];
 }
 
 /** Intermediate structure for Z-sorted rendering. */
@@ -64,6 +169,106 @@ interface RenderItem {
   layer: number;
   color: string;
   normal: Vec3;
+  /** Flat (affine-exact) image fill, used when the face is not rotating. */
+  image?: FaceImage;
+  /**
+   * Perspective-correct image fill for rotating faces: a fine mesh of small
+   * textured triangles. Drawn instead of `image`, followed by a single lighting
+   * pass over `screenVerts` (lighting must not be applied per sub-triangle, or
+   * the expanded clips would double-darken the seams into a visible grid).
+   */
+  subImage?: { img: FrontImageSource; tris: SubTri[] };
+}
+
+/** Subdivisions per fan-triangle edge for perspective-correct texture mapping. */
+const IMG_SUBDIV = 6;
+
+/**
+ * Subdivide a convex face (its local-space vertices) into a fine triangle mesh,
+ * projecting each sub-vertex with `project` and computing its UV from the face's
+ * material map. Each small triangle is projected with true perspective and then
+ * mapped affinely, so the mesh approximates perspective-correct texturing and
+ * avoids the keystone "stretch" a single affine per face shows under rotation.
+ */
+function subdivideFaceImage(
+  localVerts: Vec2[],
+  mat: Mat2x3,
+  project: (p: Vec2) => Vec2,
+  n: number,
+  crop: Crop,
+  side: PaperSide,
+): SubTri[] {
+  const tris: SubTri[] = [];
+  const uvOf = (p: Vec2): Vec2 => applyCrop(applyAffine(mat, p), crop, side);
+  const make = (a: Vec2, b: Vec2, c: Vec2): SubTri => ({
+    s: [project(a), project(b), project(c)],
+    uv: [uvOf(a), uvOf(b), uvOf(c)],
+  });
+  for (let k = 1; k < localVerts.length - 1; k++) {
+    const A = localVerts[0];
+    const B = localVerts[k];
+    const C = localVerts[k + 1];
+    const at = (i: number, j: number): Vec2 => ({
+      x: A.x + ((B.x - A.x) * i + (C.x - A.x) * j) / n,
+      y: A.y + ((B.y - A.y) * i + (C.y - A.y) * j) / n,
+    });
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n - i; j++) {
+        tris.push(make(at(i, j), at(i + 1, j), at(i, j + 1)));
+        if (i + j < n - 1) {
+          tris.push(make(at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)));
+        }
+      }
+    }
+  }
+  return tris;
+}
+
+/** Draw one textured triangle, clipped to a slightly expanded triangle to hide seams. */
+function drawImageTri(
+  ctx: CanvasRenderingContext2D,
+  img: FrontImageSource,
+  s: [Vec2, Vec2, Vec2],
+  uv: [Vec2, Vec2, Vec2],
+): void {
+  const iw = img.width;
+  const ih = img.height;
+  if (iw === 0 || ih === 0) return;
+  const m = affineFromTriangle(
+    { x: uv[0].x * iw, y: uv[0].y * ih },
+    { x: uv[1].x * iw, y: uv[1].y * ih },
+    { x: uv[2].x * iw, y: uv[2].y * ih },
+    s[0],
+    s[1],
+    s[2],
+  );
+  if (!m) return;
+  const prev = ctx.getTransform();
+  ctx.save();
+  const [e0, e1, e2] = expandTriangle(s[0], s[1], s[2], 0.5);
+  ctx.beginPath();
+  ctx.moveTo(e0.x, e0.y);
+  ctx.lineTo(e1.x, e1.y);
+  ctx.lineTo(e2.x, e2.y);
+  ctx.closePath();
+  ctx.clip();
+  ctx.setTransform(prev.multiply(new DOMMatrix([m.a, m.b, m.c, m.d, m.e, m.f])));
+  ctx.drawImage(img, 0, 0);
+  ctx.restore();
+}
+
+/** Render one Z-sorted item: plain/flat-image via shadeFace, or a subdivided image mesh. */
+function drawRenderItem(
+  ctx: CanvasRenderingContext2D,
+  it: RenderItem,
+  texture: CanvasPattern,
+): void {
+  if (it.subImage) {
+    for (const t of it.subImage.tris) drawImageTri(ctx, it.subImage.img, t.s, t.uv);
+    applyLightingOverlays(ctx, it.screenVerts, calculateLighting(it.normal));
+    return;
+  }
+  shadeFace(ctx, it.screenVerts, it.color, it.normal, texture, it.image);
 }
 
 /**
@@ -82,6 +287,7 @@ export function drawFoldingPaper(
   paper: Paper,
   anim: FoldAnim,
   texture: CanvasPattern,
+  images: Partial<Record<PaperSide, FrontImageSource>> = {},
 ): void {
   alignTextureToPaper(texture, paper);
 
@@ -136,13 +342,46 @@ export function drawFoldingPaper(
     movingGeometry.push({ face: f, pts3, zAvg });
   }
 
-  // Use fold direction for consistent z sign (avoids floating-point instability near 0)
-  // Add minimum value to ensure moving faces are always sorted separately from keep faces
-  const zSign = anim.foldSide === FoldSide.Front ? 1 : -1;
-  const stackZSigned = zSign * Math.max(stackZMax, 0.01);
+  // === Moving-stack depth: ALWAYS draw the moving stack above the keep faces ===
+  //
+  // Why this is forced positive (a deliberate fix, do not "improve" it back to a
+  // geometry-derived sign):
+  //
+  // The fold model is "fold ONTO the top". `commitFold` always assigns the
+  // folded flap the highest layer (foldedLayer = maxLayer + 1), so the final
+  // flat render (drawFlatPaperFaces, sorted by layer) always draws the flap over
+  // the stationary half. For the animation to be continuous with that committed
+  // state, the moving stack must likewise be drawn above the keep faces for the
+  // whole fold — hence a positive depth here, larger than the keep faces' z = 0.
+  //
+  // Two earlier approaches were wrong and produced visible artifacts once the
+  // sheet carried an image texture (with plain paper both halves look identical,
+  // so the bug was invisible):
+  //
+  //   1. Sign from `foldSide` (Front → +1, Back → −1). `foldSide` only encodes
+  //      WHICH half moves, not which way the flap rotates in z. For one fold
+  //      direction this put the moving stack BEHIND the keep half.
+  //   2. Sign from the actual rotated z of the stack (its mean/representative
+  //      depth). This is self-consistent within the animation, but for folds
+  //      where the flap sweeps to negative z it draws the flap behind the keep
+  //      half the entire fold — so the stationary image stays visible "through"
+  //      the descending flap and then SNAPS to covered the instant commitFold
+  //      runs and the flat render puts the flap on top. That snap is the "pop"
+  //      / "shows through then disappears on re-render" symptom.
+  //
+  // Forcing positive removes the inconsistency: the flap occludes the keep image
+  // gradually as it sweeps past 90° and the committed frame matches the last
+  // animation frame, so there is no pop. During 0–90° the flap sits over the
+  // moving side and does not overlap the keep faces, so drawing it on top there
+  // is harmless. Internal ordering WITHIN the moving stack is handled separately
+  // by renderLayer below. The min magnitude (0.01) keeps moving and keep faces
+  // on distinct depths despite floating-point noise near the z ≈ 0 crossings
+  // (fold start and end), where there is no overlap to mis-sort anyway.
+  const stackZSigned = Math.max(stackZMax, 0.01);
 
   // Collect all faces into a single list for unified sorting
   const items: RenderItem[] = [];
+  const crops = cropsForImages(paper, images);
 
   // Add stationary (keep) faces - they remain flat at Z=0
   for (const f of anim.keepFaces) {
@@ -154,8 +393,25 @@ export function drawFoldingPaper(
       layer: f.layer,
       color,
       normal: { x: 0, y: 0, z: 1 },
+      image: imageForSide(f, f.up, images, crops),
     });
   }
+
+  // Projector for the moving stack: rotate a local point about the fold axis,
+  // apply perspective, then map to screen. Used to build a perspective-correct
+  // texture mesh per face.
+  const projectMoving = (p: Vec2): Vec2 =>
+    localToScreen(
+      paper,
+      project3To2Local(
+        rotatePointAroundLine(
+          { x: p.x, y: p.y, z: 0 },
+          axisPointLocal3,
+          axisDirLocal3,
+          signedAngle,
+        ),
+      ),
+    );
 
   // Add moving faces with 3D rotation applied
   for (const { face: f, pts3 } of movingGeometry) {
@@ -182,12 +438,28 @@ export function drawFoldingPaper(
     const effectiveLayer = viewingBackOfStack ? maxMovingLayer - f.layer : f.layer;
     const renderLayer = baseOffset + effectiveLayer;
 
+    const visibleImage = images[visibleSide];
+    const subImage = visibleImage
+      ? {
+          img: visibleImage,
+          tris: subdivideFaceImage(
+            f.verts,
+            f.mat,
+            projectMoving,
+            IMG_SUBDIV,
+            crops[visibleSide],
+            visibleSide,
+          ),
+        }
+      : undefined;
+
     items.push({
       screenVerts,
       zAvg: stackZSigned, // All moving faces use same z for coherent stack sorting
       layer: renderLayer,
       color,
       normal: visibleNormal,
+      subImage,
     });
   }
 
@@ -204,7 +476,7 @@ export function drawFoldingPaper(
   });
 
   for (const it of items) {
-    shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
+    drawRenderItem(ctx, it, texture);
   }
 
   // Draw fold line indicator
@@ -325,16 +597,19 @@ function applyLightingOverlays(
   }
 }
 
-/** Draw a polygon face with base color, optional texture, and lighting. */
+/** Draw a polygon face with base color, optional texture/image, and lighting. */
 function shadeFace(
   ctx: CanvasRenderingContext2D,
   screenVerts: Vec2[],
   baseColor: string,
   normal: Vec3,
   texture?: CanvasPattern,
+  image?: FaceImage,
 ): void {
-  // Draw base color or texture
-  if (texture) {
+  if (image) {
+    // Image material: map the source image onto the face via its UVs.
+    drawImageMappedPoly(ctx, image.img, screenVerts, image.uvs);
+  } else if (texture) {
     ctx.save();
     ctx.fillStyle = texture;
     pathPoly(ctx, screenVerts);
@@ -359,6 +634,80 @@ function shadeFace(
   applyLightingOverlays(ctx, screenVerts, lighting);
 }
 
+/**
+ * Draw an image mapped onto a convex polygon via per-vertex UV coordinates.
+ *
+ * The polygon is fan-triangulated; each triangle gets the affine transform that
+ * maps its image-pixel UV triangle to its screen triangle, and the image is
+ * drawn clipped to that triangle. An outer clip to the whole polygon plus a
+ * small per-triangle outset prevents background bleed at the internal seams.
+ *
+ * Note: the affine per-triangle map cannot reproduce the perspective applied
+ * during fold/flip animation, so the texture is mildly warped mid-animation;
+ * the committed flat state is exact.
+ */
+function drawImageMappedPoly(
+  ctx: CanvasRenderingContext2D,
+  img: FrontImageSource,
+  screenVerts: Vec2[],
+  uvs: Vec2[],
+): void {
+  if (screenVerts.length < 3 || uvs.length !== screenVerts.length) return;
+  const iw = img.width;
+  const ih = img.height;
+  if (iw === 0 || ih === 0) return;
+
+  const prev = ctx.getTransform();
+
+  ctx.save();
+  // Outer clip to the full polygon hides any sub-pixel triangle overspill.
+  pathPoly(ctx, screenVerts);
+  ctx.clip();
+
+  for (let i = 1; i < screenVerts.length - 1; i++) {
+    const d0 = screenVerts[0];
+    const d1 = screenVerts[i];
+    const d2 = screenVerts[i + 1];
+    const s0 = { x: uvs[0].x * iw, y: uvs[0].y * ih };
+    const s1 = { x: uvs[i].x * iw, y: uvs[i].y * ih };
+    const s2 = { x: uvs[i + 1].x * iw, y: uvs[i + 1].y * ih };
+
+    const m = affineFromTriangle(s0, s1, s2, d0, d1, d2);
+    if (!m) continue;
+
+    ctx.save();
+    const [e0, e1, e2] = expandTriangle(d0, d1, d2, 0.5);
+    ctx.beginPath();
+    ctx.moveTo(e0.x, e0.y);
+    ctx.lineTo(e1.x, e1.y);
+    ctx.lineTo(e2.x, e2.y);
+    ctx.closePath();
+    ctx.clip();
+    // Compose the triangle affine on top of the canvas DPR transform.
+    ctx.setTransform(prev.multiply(new DOMMatrix([m.a, m.b, m.c, m.d, m.e, m.f])));
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/** Expand a triangle outward from its centroid by `px` pixels per vertex. */
+function expandTriangle(a: Vec2, b: Vec2, c: Vec2, px: number): [Vec2, Vec2, Vec2] {
+  const cx = (a.x + b.x + c.x) / 3;
+  const cy = (a.y + b.y + c.y) / 3;
+  const push = (p: Vec2): Vec2 => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.x + (dx / len) * px, y: p.y + (dy / len) * px };
+  };
+  return [push(a), push(b), push(c)];
+}
+
+export const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa";
+
 function alignTextureToPaper(texture: CanvasPattern, paper: Paper): void {
   if (!("setTransform" in texture)) return;
   const m = new DOMMatrix();
@@ -380,12 +729,14 @@ export function drawFlippingPaper(
   paper: Paper,
   anim: FlipAnim,
   texture: CanvasPattern,
+  images: Partial<Record<PaperSide, FrontImageSource>> = {},
 ): void {
   alignTextureToPaper(texture, paper);
 
-  // Compute eased rotation angle (0 to -PI for full flip, right to left in screen space)
+  // Compute eased rotation angle (0 to ±PI for full flip); sign follows
+  // anim.direction so the sweep matches the gesture that triggered it.
   const progress = easeInOutCubic(anim.progress);
-  const angle = -progress * Math.PI;
+  const angle = -progress * Math.PI * anim.direction;
 
   // Compute the center of all faces for the axis point
   let minX = Infinity,
@@ -412,6 +763,17 @@ export function drawFlippingPaper(
   const axisDir: Vec3 = { x: axisDirLocal.x, y: axisDirLocal.y, z: 0 };
   const axisPoint: Vec3 = { x: centerX, y: centerY, z: 0 };
 
+  // Projector for the flip: rotate a local point about the flip axis, apply
+  // perspective, then map to screen. Used to build a perspective-correct texture
+  // mesh so the image does not stretch as the whole sheet swings out of plane.
+  const projectFlip = (p: Vec2): Vec2 =>
+    localToScreen(
+      paper,
+      project3To2Local(
+        rotatePointAroundLine({ x: p.x, y: p.y, z: 0 }, axisPoint, axisDir, angle),
+      ),
+    );
+
   // Compute rotated surface normal for lighting
   const baseNormal = v3(0, 0, 1);
   const normalRot = rotateAroundAxis(baseNormal, axisDir, angle);
@@ -422,6 +784,7 @@ export function drawFlippingPaper(
 
   // Collect faces for rendering
   const items: RenderItem[] = [];
+  const crops = cropsForImages(paper, images);
   const faces = [...anim.originalFaces].sort((a, b) => a.layer - b.layer);
 
   for (const f of faces) {
@@ -448,12 +811,28 @@ export function drawFlippingPaper(
     // Compute render layer: when viewing back, invert the layer order
     const renderLayer = viewingBackSide ? anim.maxLayer - f.layer : f.layer;
 
+    const visibleImage = images[visibleSide];
+    const subImage = visibleImage
+      ? {
+          img: visibleImage,
+          tris: subdivideFaceImage(
+            f.verts,
+            f.mat,
+            projectFlip,
+            IMG_SUBDIV,
+            crops[visibleSide],
+            visibleSide,
+          ),
+        }
+      : undefined;
+
     items.push({
       screenVerts,
       zAvg: 0, // Not used for sorting anymore
       layer: renderLayer,
       color,
       normal: visibleNormal,
+      subImage,
     });
   }
 
@@ -462,6 +841,6 @@ export function drawFlippingPaper(
   items.sort((a, b) => a.layer - b.layer);
 
   for (const it of items) {
-    shadeFace(ctx, it.screenVerts, it.color, it.normal, texture);
+    drawRenderItem(ctx, it, texture);
   }
 }
