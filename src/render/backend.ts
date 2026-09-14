@@ -12,6 +12,12 @@ import type { TextureSet } from "./textures";
 import { createGLContext } from "./webgl/context";
 import { type SideImages, WebGLPaperRenderer } from "./webgl/renderer";
 
+/** Which backend is drawing papers, for debug display. */
+export enum RenderEngine {
+  Canvas2D = "canvas2d",
+  WebGL = "webgl",
+}
+
 /** What a paper is doing this frame. */
 export type PaperMotion =
   | { kind: "flat" }
@@ -40,6 +46,8 @@ export interface PaperRenderer {
   /** Papers must be drawn bottom to top; the active paper last. */
   drawPaper(draw: PaperDraw): void;
   endFrame(): void;
+  /** Which backend is active, for debug display. */
+  engine(): RenderEngine;
 }
 
 /** The original renderer: papers drawn straight into the table's 2D canvas. */
@@ -76,6 +84,10 @@ class Canvas2DPaperRenderer implements PaperRenderer {
         break;
     }
     if (outline) drawActiveOutline(this.ctx, paper);
+  }
+
+  engine(): RenderEngine {
+    return RenderEngine.Canvas2D;
   }
 }
 
@@ -142,6 +154,10 @@ class WebGLPaperBackend implements PaperRenderer {
   endFrame(): void {
     this.gl.endFrame();
   }
+
+  engine(): RenderEngine {
+    return RenderEngine.WebGL;
+  }
 }
 
 export interface PaperRendererCanvases {
@@ -196,6 +212,10 @@ class ContextLossAwareRenderer implements PaperRenderer {
 
   endFrame(): void {
     this.active.endFrame();
+  }
+
+  engine(): RenderEngine {
+    return this.active.engine();
   }
 
   private use(renderer: PaperRenderer): void {

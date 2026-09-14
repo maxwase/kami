@@ -117,9 +117,15 @@ const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
 const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
 const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
+const closeSettingsBtn = getRequiredElement("closeSettings", HTMLButtonElement);
+const closeInfoBtn = getRequiredElement("closeInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
+const debugCopyBtn = getRequiredElement("debugCopy", HTMLButtonElement);
+debugCopyBtn.addEventListener("click", () => {
+  void navigator.clipboard.writeText(debugStatusEl.textContent ?? "");
+});
 const analyticsConsentEl = getRequiredElement("analyticsConsent", HTMLDivElement);
 const consentAcceptBtn = getRequiredElement("consentAccept", HTMLButtonElement);
 const consentDeclineBtn = getRequiredElement("consentDecline", HTMLButtonElement);
@@ -656,8 +662,8 @@ const syncInfoVisibility = () => {
   toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
 
-toggleSettingsBtn.onclick = () => {
-  settingsVisible = !settingsVisible;
+const setSettingsVisible = (visible: boolean) => {
+  settingsVisible = visible;
   if (settingsVisible) {
     infoVisible = false;
   }
@@ -669,8 +675,8 @@ toggleSettingsBtn.onclick = () => {
   });
 };
 
-toggleInfoBtn.onclick = () => {
-  infoVisible = !infoVisible;
+const setInfoVisible = (visible: boolean) => {
+  infoVisible = visible;
   if (infoVisible) {
     settingsVisible = false;
   }
@@ -681,6 +687,11 @@ toggleInfoBtn.onclick = () => {
     visible: infoVisible,
   });
 };
+
+toggleSettingsBtn.onclick = () => setSettingsVisible(!settingsVisible);
+toggleInfoBtn.onclick = () => setInfoVisible(!infoVisible);
+closeSettingsBtn.onclick = () => setSettingsVisible(false);
+closeInfoBtn.onclick = () => setInfoVisible(false);
 
 syncSettingsVisibility();
 syncInfoVisibility();
@@ -1108,12 +1119,22 @@ if (showPaperBorderInput) {
   });
 }
 
+/** One "key:value key:value" debug line, key order preserved from `row`. */
+type DebugRow = Record<string, string | number>;
+function fmtRow<T extends DebugRow>(row: T): string {
+  return (Object.keys(row) as (keyof T & string)[])
+    .map((k) => `${k}:${row[k]}`)
+    .join(" ");
+}
+
 let last = performance.now();
+let fps = 0;
 
 function tick(now: number) {
   try {
     const dt = clamp((now - last) / 1000, 0, 0.033);
     last = now;
+    fps = dt > 0 ? fps + (1 / dt - fps) * 0.1 : fps;
 
     // Read segments fresh each frame: viewport.segments can update without
     // firing an event our listeners catch, which otherwise delays detection.
@@ -1322,23 +1343,37 @@ function tick(now: number) {
     const segs = hingeInfo.segments;
     const pt = hingeInfo.hingePoint;
     const landscape = resolveScreenLandscape(cssW, cssH);
+    const faceCount = papers.reduce((n, p) => n + p.faces.length, 0);
     const debugLines = [
-      `state:${hingeState} posture:${postureType}`,
-      `vp:${cssW}x${cssH} ${landscape ? "land" : "port"} @${screenAngle}°`,
-      `segs:${segs.length}`,
-      ...segs.map(
-        (s, i) =>
-          ` [${i}] x${Math.round(s.left)} y${Math.round(s.top)} ${Math.round(
-            s.width,
-          )}x${Math.round(s.height)}`,
+      fmtRow({ fps: fps.toFixed(0), engine: paperRenderer.engine() }),
+      fmtRow({ platform, device }),
+      fmtRow({ papers: papers.length, faces: faceCount }),
+      fmtRow({ state: hingeState, posture: postureType }),
+      fmtRow({
+        vp: `${cssW}x${cssH}`,
+        orient: landscape ? "land" : "port",
+        angle: `${screenAngle}°`,
+      }),
+      fmtRow({ segs: segs.length }),
+      ...segs.map((s, i) =>
+        fmtRow({
+          seg: i,
+          x: Math.round(s.left),
+          y: Math.round(s.top),
+          w: Math.round(s.width),
+          h: Math.round(s.height),
+        }),
       ),
-      `segDir:${hingeInfo.hingeDir.x},${hingeInfo.hingeDir.y} pt:${
-        pt ? `${Math.round(pt.x)},${Math.round(pt.y)}` : "-"
-      }`,
-      `useDir:${activeHingeDir.x.toFixed(0)},${activeHingeDir.y.toFixed(0)}`,
+      fmtRow({
+        segDir: `${hingeInfo.hingeDir.x},${hingeInfo.hingeDir.y}`,
+        pt: pt ? `${Math.round(pt.x)},${Math.round(pt.y)}` : "-",
+      }),
+      fmtRow({
+        useDir: `${activeHingeDir.x.toFixed(0)},${activeHingeDir.y.toFixed(0)}`,
+      }),
     ];
     if (motionSupported) {
-      debugLines.push(`accel:${accelMag.toFixed(2)}`);
+      debugLines.push(fmtRow({ accel: accelMag.toFixed(2) }));
     }
     const debugText = debugLines.join("\n");
     if (debugStatusEl.textContent !== debugText) {

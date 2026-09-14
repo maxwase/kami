@@ -246,7 +246,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 20px;
-  z-index: 10;
+  z-index: 30;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -267,8 +267,35 @@ body {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 12px;
+}
+
+.panel-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: color 0.2s;
+  border-radius: 4px;
+}
+
+.panel-close-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.panel-close-btn svg {
+  display: block;
 }
 
 .settings-section h4 {
