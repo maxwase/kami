@@ -117,6 +117,8 @@ const manualHingeFlipRow = manualHingeFlip.closest(".input-row");
 const resetHingeBtn = getRequiredElement("resetHinge", HTMLButtonElement);
 const toggleSettingsBtn = getRequiredElement("toggleSettings", HTMLButtonElement);
 const toggleInfoBtn = getRequiredElement("toggleInfo", HTMLButtonElement);
+const closeSettingsBtn = getRequiredElement("closeSettings", HTMLButtonElement);
+const closeInfoBtn = getRequiredElement("closeInfo", HTMLButtonElement);
 const settingsPanelEl = getRequiredElement("settingsPanel", HTMLDivElement);
 const infoPanelEl = getRequiredElement("infoPanel", HTMLDivElement);
 const debugStatusEl = getRequiredElement("debugStatus", HTMLDivElement);
@@ -660,8 +662,8 @@ const syncInfoVisibility = () => {
   toggleInfoBtn.setAttribute("aria-pressed", infoVisible ? "true" : "false");
 };
 
-toggleSettingsBtn.onclick = () => {
-  settingsVisible = !settingsVisible;
+const setSettingsVisible = (visible: boolean) => {
+  settingsVisible = visible;
   if (settingsVisible) {
     infoVisible = false;
   }
@@ -673,8 +675,8 @@ toggleSettingsBtn.onclick = () => {
   });
 };
 
-toggleInfoBtn.onclick = () => {
-  infoVisible = !infoVisible;
+const setInfoVisible = (visible: boolean) => {
+  infoVisible = visible;
   if (infoVisible) {
     settingsVisible = false;
   }
@@ -685,6 +687,11 @@ toggleInfoBtn.onclick = () => {
     visible: infoVisible,
   });
 };
+
+toggleSettingsBtn.onclick = () => setSettingsVisible(!settingsVisible);
+toggleInfoBtn.onclick = () => setInfoVisible(!infoVisible);
+closeSettingsBtn.onclick = () => setSettingsVisible(false);
+closeInfoBtn.onclick = () => setInfoVisible(false);
 
 syncSettingsVisibility();
 syncInfoVisibility();
