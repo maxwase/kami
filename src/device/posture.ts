@@ -30,9 +30,19 @@ export function helpCopyForSupport(
   device: Device = runtime.device,
 ): HelpCopy {
   if (support === PostureSupport.Available) {
+    if (device === Device.Phone) {
+      return {
+        controls: "<b>Fold</b>: fold a half of the phone over the other, tap the paper.",
+        gesture: "<b>Move</b>: one finger.<br><b>Rotate</b>: two fingers.",
+      };
+    }
+    // Laptop with a readable hinge sensor (MacBook lid angle) — fold is
+    // physical, but flip/reset/undo still go through the keyboard/buttons.
     return {
-      controls: "<b>Fold</b>: close/open the device hinge.",
-      gesture: "<b>One finger</b>: move.<br><b>Two fingers</b>: move + rotate.",
+      controls:
+        "<b>Fold</b>: close the lid, tap the paper.<br><b>Flip</b>: F key.<br><b>Reset</b>: R key.<br><b>Undo</b>: button.",
+      gesture:
+        "<b>Move</b>: drag.<br><b>Rotate</b>: Alt/Opt + drag, two-finger trackpad twist (Safari/Chrome).",
     };
   }
   // Phones without a readable hinge (every iPhone today) have no keyboard to
@@ -40,13 +50,15 @@ export function helpCopyForSupport(
   if (device === Device.Phone) {
     return {
       controls:
-        "<b>Fold</b>, <b>Flip</b>, <b>Undo</b> and <b>Reset</b>: use the buttons.",
-      gesture: "<b>One finger</b>: move.<br><b>Two fingers</b>: move + rotate.",
+        "<b>Fold</b>: button, tap the paper.<br><b>Flip</b>: button.<br><b>Reset</b>: button.<br><b>Undo</b>: button.",
+      gesture: "<b>Move</b>: one finger.<br><b>Rotate</b>: two fingers.",
     };
   }
   return {
-    controls: "<b>Space</b>: fold.<br><b>F</b>: flip.<br><b>R</b>: reset.",
-    gesture: "<b>Drag</b>: move.<br><b>Alt/Opt + drag</b>: rotate.",
+    controls:
+      "<b>Fold</b>: Space, tap the paper.<br><b>Flip</b>: F key.<br><b>Reset</b>: R key.<br><b>Undo</b>: button.",
+    gesture:
+      "<b>Move</b>: drag.<br><b>Rotate</b>: Alt/Opt + drag, two-finger trackpad twist (Safari/Chrome).",
   };
 }
 

@@ -11,6 +11,8 @@ export interface GameOptions {
   manualHingeDirFlip: boolean;
   /** Whether to show a border around the paper. */
   showPaperBorder: boolean;
+  /** Fold/flip sound effect volume, 0 (muted) to 1 (full). */
+  sfxVolume: number;
 }
 
 export const options: GameOptions = {
@@ -19,6 +21,7 @@ export const options: GameOptions = {
   manualHingePos: { x: 0.5, y: 0.5 },
   manualHingeDirFlip: false,
   showPaperBorder: true,
+  sfxVolume: 0.5,
 };
 
 export function updateOptions(update: Partial<GameOptions>): void {
@@ -36,5 +39,8 @@ export function updateOptions(update: Partial<GameOptions>): void {
   }
   if (typeof update.showPaperBorder === "boolean") {
     options.showPaperBorder = update.showPaperBorder;
+  }
+  if (typeof update.sfxVolume === "number") {
+    options.sfxVolume = update.sfxVolume;
   }
 }

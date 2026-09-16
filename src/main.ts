@@ -10,6 +10,7 @@ import {
   setAnalyticsConsent,
   trackEvent,
 } from "./analytics";
+import { playFlapSound, playFoldSound } from "./audio/sfx";
 import { options, updateOptions } from "./config/options";
 import { computeHingePoint, type HingeInfo } from "./device/hinge";
 import { openExternal } from "./device/links";
@@ -104,6 +105,8 @@ const flipPaperBtn = getRequiredElement("flipPaper", HTMLButtonElement);
 const stableAccelInput = getRequiredElement("stableAccel", HTMLInputElement);
 const stableAccelValue = getRequiredElement("stableAccelValue", HTMLSpanElement);
 const stableAccelRow = stableAccelInput.closest(".input-row");
+const sfxVolumeInput = getRequiredElement("sfxVolume", HTMLInputElement);
+const sfxVolumeValue = getRequiredElement("sfxVolumeValue", HTMLSpanElement);
 const invertFoldDirectionInput = getRequiredElement(
   "invertFoldDirection",
   HTMLInputElement,
@@ -185,8 +188,9 @@ const isBrowserVisit = platform === Platform.Web && getLaunchContext() === "brow
 let twaInstalled = false;
 
 // App Store guideline 3.1.1 forbids collecting money through a link out of an
-// iOS app, so the tip jar only exists on web, TWA and macOS.
-if (isIosNative) {
+// app distributed via the App Store (iOS or the Mac App Store build), so the
+// tip jar only exists on web and TWA.
+if (isIosNative || platform === Platform.Tauri) {
   buyCoffeeLink.remove();
 } else {
   buyCoffeeLink.addEventListener("click", () => {
@@ -642,6 +646,7 @@ const startFlip = (direction: FlipDirection = 1, axis: FlipAxis = "horizontal") 
     phase: "animating",
     anim: buildFlipAnim(paper, direction, axis),
   };
+  playFlapSound();
 };
 
 flipPaperBtn.onclick = () => startFlip();
@@ -737,6 +742,21 @@ stableAccelInput.addEventListener("change", () => {
   trackEvent("stability_threshold_changed", { value: options.stableAccel });
 });
 stableAccelInput.addEventListener("input", updateStableAccelFromUi);
+
+function updateSfxVolumeFromUi() {
+  const value = Number(sfxVolumeInput.value);
+  const sfxVolume = Number.isFinite(value) ? value : options.sfxVolume;
+  updateOptions({ sfxVolume });
+  sfxVolumeValue.textContent = `${Math.round(options.sfxVolume * 100)}%`;
+}
+
+sfxVolumeInput.addEventListener("change", () => {
+  updateSfxVolumeFromUi();
+  trackEvent("sfx_volume_changed", { value: options.sfxVolume });
+});
+sfxVolumeInput.addEventListener("input", updateSfxVolumeFromUi);
+updateSfxVolumeFromUi();
+
 invertFoldDirectionInput.addEventListener("change", () => {
   updateOptions({ invertFoldDirection: invertFoldDirectionInput.checked });
   trackEvent("invert_fold_direction_changed", {
@@ -1223,6 +1243,7 @@ function tick(now: number) {
           hingeDir: activeHingeDir,
           foldSource,
         };
+        playFoldSound();
         // Button/keyboard paths already emit fold_triggered at the moment the
         // user acts (see foldFallbackBtn.onclick and the Space/Enter keydown
         // handler) - only the physical hinge path has no earlier trigger point.
@@ -1344,10 +1365,16 @@ function tick(now: number) {
     const pt = hingeInfo.hingePoint;
     const landscape = resolveScreenLandscape(cssW, cssH);
     const faceCount = papers.reduce((n, p) => n + p.faces.length, 0);
+    const debugActivePaper = getActivePaper();
     const debugLines = [
       fmtRow({ fps: fps.toFixed(0), engine: paperRenderer.engine() }),
       fmtRow({ platform, device }),
       fmtRow({ papers: papers.length, faces: faceCount }),
+      fmtRow({
+        paperPos: `${Math.round(debugActivePaper.pos.x)},${Math.round(debugActivePaper.pos.y)}`,
+        paperSize: `${Math.round(debugActivePaper.baseW * debugActivePaper.scale)}x${Math.round(debugActivePaper.baseH * debugActivePaper.scale)}`,
+        rot: `${((debugActivePaper.rot * 180) / Math.PI).toFixed(0)}°`,
+      }),
       fmtRow({ state: hingeState, posture: postureType }),
       fmtRow({
         vp: `${cssW}x${cssH}`,

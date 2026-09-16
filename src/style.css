@@ -332,6 +332,11 @@ body {
   flex: 1;
 }
 
+#sfxVolumeValue {
+  min-width: 34px;
+  display: inline-block;
+}
+
 .hinge-label span:last-child {
   color: rgba(255, 255, 255, 0.6);
 }
