@@ -127,8 +127,10 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
     const paper = getActivePaper();
 
+    // A tap can land on the paper (starts a drag/rotate gesture too, but a
+    // sub-threshold release still counts as a tap) or on empty canvas.
     tapCandidate =
-      onTap && !hit && pointers.size === 1
+      onTap && pointers.size === 1
         ? { pointerId: e.pointerId, startPos: pos, startTime: performance.now() }
         : undefined;
 
