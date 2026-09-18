@@ -63,6 +63,11 @@ initAnalytics();
 
 const { platform, device } = resolveRuntimeInfo();
 
+if (platform === Platform.Web) {
+  const { registerServiceWorker } = await import("./pwa");
+  registerServiceWorker();
+}
+
 /** Native iOS shell: a few links and controls behave differently there. */
 const isIosNative = platform === Platform.Capacitor;
 
