@@ -16,53 +16,50 @@ const rootDir = fileURLToPath(new URL(".", import.meta.url));
 // PWA only for the web build; native shells load from disk, and a service
 // worker inside a WebView just duplicates the bundle and serves stale assets
 // after an app update.
-const pwaPlugins = isNative
-  ? []
-  : [
-      VitePWA({
-        registerType: "autoUpdate",
-        manifest: {
-          name: "kami: Origami simulator",
-          short_name: "kami",
-          description:
-            "Interactive origami folding demo that responds to device posture.",
-          theme_color: "#201a14",
-          background_color: "#201a14",
-          display: "fullscreen",
-          orientation: "any",
-          // Lets the browser relate this PWA to the Play Store app so the
-          // install prompt can be suppressed when the native app is installed
-          // (checked at runtime via navigator.getInstalledRelatedApps()).
-          related_applications: [
-            {
-              platform: "play",
-              id: "eu.maxwase.kami.twa",
-              url: "https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa",
-            },
-          ],
-          icons: [
-            { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
-            { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
-            {
-              src: "pwa-maskable-512x512.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "maskable",
-            },
-          ],
+const pwaPlugins = [
+  VitePWA({
+    // Rolldown hard-errors on the unresolved "virtual:pwa-register" import in
+    // src/pwa.ts unless this plugin is registered, even on native builds
+    // that never call registerServiceWorker() at runtime.
+    disable: isNative,
+    registerType: "autoUpdate",
+    manifest: {
+      name: "kami: Origami simulator",
+      short_name: "kami",
+      description: "Interactive origami folding demo that responds to device posture.",
+      theme_color: "#201a14",
+      background_color: "#201a14",
+      display: "fullscreen",
+      orientation: "any",
+      // Lets the browser relate this PWA to the Play Store app so the
+      // install prompt can be suppressed when the native app is installed
+      // (checked at runtime via navigator.getInstalledRelatedApps()).
+      related_applications: [
+        {
+          platform: "play",
+          id: "eu.maxwase.kami.twa",
+          url: "https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa",
         },
-        workbox: {
-          globPatterns: ["**/*.{js,css,html,png,svg,jpg}"],
-          // These are real static pages, not SPA routes — don't serve the
-          // app shell for them via the navigate fallback.
-          navigateFallbackDenylist: [
-            /^\/privacy/,
-            /^\/\.well-known/,
-            /\.(txt|xml|json)$/,
-          ],
+      ],
+      icons: [
+        { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+        { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+        {
+          src: "pwa-maskable-512x512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
         },
-      }),
-    ];
+      ],
+    },
+    workbox: {
+      globPatterns: ["**/*.{js,css,html,png,svg,jpg}"],
+      // These are real static pages, not SPA routes — don't serve the
+      // app shell for them via the navigate fallback.
+      navigateFallbackDenylist: [/^\/privacy/, /^\/\.well-known/, /\.(txt|xml|json)$/],
+    },
+  }),
+];
 
 // https://vitejs.dev/config/
 export default defineConfig({
