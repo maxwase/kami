@@ -18,5 +18,8 @@ export function createGLContext(canvas: HTMLCanvasElement): GL | null {
 }
 
 export function isWebGL2(gl: GL): gl is WebGL2RenderingContext {
-  return typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
+  return (
+    typeof WebGL2RenderingContext !== "undefined" &&
+    gl instanceof WebGL2RenderingContext
+  );
 }

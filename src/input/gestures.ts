@@ -35,6 +35,11 @@ const SWIPE_SEGMENT_QUIET_MS = 100;
 // tail arriving in dense sub-100ms bursts can't starve it from ever firing
 // (that starvation was the "stops working after a couple of swipes" bug).
 const SWIPE_LOCK_MS = 700;
+// Touch two-finger flick: fingers travel together at least this far, fast,
+// without twisting. Slower or twisting two-finger motion stays a move/rotate.
+const TOUCH_FLICK_MIN_PX = 60;
+const TOUCH_FLICK_MAX_MS = 350;
+const TOUCH_FLICK_MAX_ROT_RAD = 0.35;
 
 // Each active gesture carries its own state as a discriminated union rather
 // than a pile of independently-optional variables, so a variant's fields
@@ -42,7 +47,16 @@ const SWIPE_LOCK_MS = 700;
 type Gesture =
   | { type: "idle" }
   | { type: "drag"; startTime: number; offset: Vec2 }
-  | { type: "pinch_rotate"; startTime: number; lastMid: Vec2; lastAngle: number }
+  | {
+      type: "pinch_rotate";
+      startTime: number;
+      lastMid: Vec2;
+      lastAngle: number;
+      startMid: Vec2;
+      startAngle: number;
+      startPos: Vec2;
+      startRot: number;
+    }
   | {
       type: "alt_rotate";
       startTime: number;
@@ -84,7 +98,8 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
   let gesture: Gesture = { type: "idle" };
 
-  let tapCandidate: { pointerId: number; startPos: Vec2; startTime: number } | undefined;
+  let tapCandidate:
+    { pointerId: number; startPos: Vec2; startTime: number } | undefined;
 
   let swipeAccumX = 0;
   let swipeAccumY = 0;
@@ -138,11 +153,16 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       tapCandidate = undefined;
       const pts = Array.from(pointers.values()).map((s) => s.pos);
       const mid = mul2(add2(pts[0], pts[1]), 0.5);
+      const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       gesture = {
         type: "pinch_rotate",
         startTime: performance.now(),
         lastMid: mid,
-        lastAngle: Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x),
+        lastAngle: angle,
+        startMid: mid,
+        startAngle: angle,
+        startPos: paper.pos,
+        startRot: paper.rot,
       };
       return;
     }
@@ -162,7 +182,11 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       return;
     }
 
-    gesture = { type: "drag", startTime: performance.now(), offset: sub2(pos, paper.pos) };
+    gesture = {
+      type: "drag",
+      startTime: performance.now(),
+      offset: sub2(pos, paper.pos),
+    };
   };
 
   const onPointerMove = (e: PointerEvent) => {
@@ -203,7 +227,10 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
 
     if (gesture.type === "alt_rotate" && gesture.pointerId === e.pointerId) {
-      const ang = Math.atan2(pos.y - gesture.anchorScreen.y, pos.x - gesture.anchorScreen.x);
+      const ang = Math.atan2(
+        pos.y - gesture.anchorScreen.y,
+        pos.x - gesture.anchorScreen.x,
+      );
       paper.rot = gesture.startRot + (ang - gesture.startAngle);
       const anchorOffset = rotate2(mul2(gesture.anchorLocal, paper.scale), paper.rot);
       paper.pos = sub2(gesture.anchorScreen, anchorOffset);
@@ -225,7 +252,51 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
   };
 
+  /**
+   * Touch counterpart of the trackpad swipe: a quick two-finger flick flips
+   * the paper. The flick also moved the paper through pinch_rotate, so that
+   * motion is undone first — the flip should happen in place.
+   */
+  const tryTouchFlick = (): boolean => {
+    if (!onFlip || gesture.type !== "pinch_rotate") return false;
+    if (getLockState() === InputLock.Locked) return false;
+    if (performance.now() - gesture.startTime > TOUCH_FLICK_MAX_MS) return false;
+
+    let twist = gesture.lastAngle - gesture.startAngle;
+    twist = Math.atan2(Math.sin(twist), Math.cos(twist));
+    if (Math.abs(twist) > TOUCH_FLICK_MAX_ROT_RAD) return false;
+
+    const d = sub2(gesture.lastMid, gesture.startMid);
+    const horizontalDominant = Math.abs(d.x) > Math.abs(d.y);
+    const travel = horizontalDominant ? d.x : d.y;
+    if (Math.abs(travel) < TOUCH_FLICK_MIN_PX) return false;
+
+    const paper = getActivePaper();
+    paper.pos = gesture.startPos;
+    paper.rot = gesture.startRot;
+
+    // Same mapping as the trackpad path: wheel deltas run opposite to finger
+    // motion horizontally and with it vertically.
+    const sign = travel > 0 ? 1 : -1;
+    const direction: FlipDirection = horizontalDominant
+      ? (-sign as FlipDirection)
+      : sign;
+    onFlip(direction, horizontalDominant ? "horizontal" : "vertical");
+    trackEvent("gesture_used", {
+      gesture_type: "touch_flick_flip",
+      duration_ms: Math.round(performance.now() - gesture.startTime),
+    });
+    return true;
+  };
+
   const onPointerUp = (e: PointerEvent) => {
+    // Checked while both fingers are still counted: the first lift ends it.
+    if (pointers.size === 2 && tryTouchFlick()) {
+      pointers.delete(e.pointerId);
+      tapCandidate = undefined;
+      gesture = { type: "idle" };
+      return;
+    }
     pointers.delete(e.pointerId);
 
     if (tapCandidate && tapCandidate.pointerId === e.pointerId) {
@@ -315,7 +386,9 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     const accum = horizontalDominant ? swipeAccumX : swipeAccumY;
     if (Math.abs(accum) >= SWIPE_FLIP_THRESHOLD_PX) {
       const sign = accum > 0 ? 1 : -1;
-      const direction: FlipDirection = horizontalDominant ? sign : (-sign as FlipDirection);
+      const direction: FlipDirection = horizontalDominant
+        ? sign
+        : (-sign as FlipDirection);
       const axis: FlipAxis = horizontalDominant ? "horizontal" : "vertical";
       swipeAccumX = 0;
       swipeAccumY = 0;

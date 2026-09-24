@@ -7,8 +7,6 @@ export interface TextureSet {
   paper: CanvasPattern;
   /** Same paper photo as an image, UV-mapped for material "paper". */
   paperImg: FrontImageSource;
-  /** Kami Play Store banner, or null if it fails to load. */
-  banner: FrontImageSource | null;
 }
 
 const LOAD_TIMEOUT_MS = 8000;
@@ -19,25 +17,17 @@ const PAPER_FALLBACK_COLOR = "#f5f0e6";
  * Load texture images and create repeating patterns when ready. Falls back
  * to a solid-color source if an image fails to load or takes too long, so a
  * flaky network request can never permanently block the render loop. The
- * banner has no fallback color — a load failure just leaves it null and the
- * banner material is skipped.
+ * banner is not loaded here — it's fetched lazily and on demand by
+ * `loadBanner()` in ./banners, so a slow or missing banner asset can never
+ * delay first paint.
  */
 export async function loadTextures(ctx: CanvasRenderingContext2D): Promise<TextureSet> {
-  const [wood, paperImg, banner] = await Promise.all([
+  const [wood, paperImg] = await Promise.all([
     loadImageWithFallback("textures/wood.jpg", WOOD_FALLBACK_COLOR),
     loadImageWithFallback("textures/paper.jpg", PAPER_FALLBACK_COLOR),
-    loadBanner(),
   ]);
   const paper = patternFromImage(ctx, paperImg, PAPER_FALLBACK_COLOR);
-  return { wood, paper, paperImg, banner };
-}
-
-async function loadBanner(): Promise<FrontImageSource | null> {
-  try {
-    return await withTimeout(loadImage("textures/kami-banner.jpg"), LOAD_TIMEOUT_MS);
-  } catch {
-    return null;
-  }
+  return { wood, paper, paperImg };
 }
 
 function patternFromImage(
@@ -68,7 +58,9 @@ function solidCanvas(color: string, size = 64): HTMLCanvasElement {
   return canvas;
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+export { LOAD_TIMEOUT_MS };
+
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = src;
@@ -77,7 +69,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("Texture load timed out")), ms);
     promise.then(

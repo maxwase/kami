@@ -117,7 +117,6 @@ Store record — it does **not** share the macOS bundle identifier.
 | Artifact  | sandboxed `.pkg`            | `.ipa`                 |
 | Script    | `scripts/build-appstore.sh` | `scripts/build-ios.sh` |
 
-
 ### Build and upload
 
 ```sh

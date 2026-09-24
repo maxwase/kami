@@ -133,7 +133,8 @@ export class WebGLPaperRenderer {
   drawFoldingPaper(paper: Paper, anim: FoldAnim, images: SideImages): void {
     const pc = this.paperContext(paper, images);
     const progress = easeInOutCubic(anim.progress);
-    const signedAngle = progress * Math.PI * (anim.foldSide === FoldSide.Front ? -1 : 1);
+    const signedAngle =
+      progress * Math.PI * (anim.foldSide === FoldSide.Front ? -1 : 1);
     const axisDir = norm2(anim.lineLocal.dir);
     const normalRot = rotateAroundAxis(
       v3(0, 0, 1),
@@ -195,7 +196,8 @@ export class WebGLPaperRenderer {
       angle,
       normal: viewingBackSide ? mul3(normalRot, -1) : normalRot,
     };
-    const renderLayer = (f: Face) => (viewingBackSide ? anim.maxLayer - f.layer : f.layer);
+    const renderLayer = (f: Face) =>
+      viewingBackSide ? anim.maxLayer - f.layer : f.layer;
     // Canvas2D sorts by layer, then (stably) by render layer.
     const faces = [...anim.originalFaces]
       .sort((a, b) => a.layer - b.layer)
@@ -224,7 +226,12 @@ export class WebGLPaperRenderer {
     };
   }
 
-  private drawFace(pc: PaperContext, face: Face, side: PaperSide, pose: FacePose): void {
+  private drawFace(
+    pc: PaperContext,
+    face: Face,
+    side: PaperSide,
+    pose: FacePose,
+  ): void {
     const { verts } = face;
     if (verts.length < 3) return;
     const image = pc.images[side];
@@ -248,7 +255,9 @@ export class WebGLPaperRenderer {
     }
 
     const lighting = calculateLighting(pose.normal);
-    const color = parseColor(side === "front" ? pc.paper.style.front : pc.paper.style.back);
+    const color = parseColor(
+      side === "front" ? pc.paper.style.front : pc.paper.style.back,
+    );
     const uniforms: Uniforms = {
       ...pc.uniforms,
       u_axisPoint: [pose.axisPoint.x, pose.axisPoint.y],
@@ -283,14 +292,24 @@ export class WebGLPaperRenderer {
 }
 
 /** twgl attribute layout for one buffer interleaving ATTRIBUTE_SPEC in order. */
-function interleavedAttribs(buffer: WebGLBuffer): Record<keyof typeof ATTRIBUTE_SPEC, twgl.AttribInfo> {
+function interleavedAttribs(
+  buffer: WebGLBuffer,
+): Record<keyof typeof ATTRIBUTE_SPEC, twgl.AttribInfo> {
   let offset = 0;
   const entries = Object.entries(ATTRIBUTE_SPEC).map(([name, numComponents]) => {
-    const info: twgl.AttribInfo = { buffer, numComponents, offset, stride: VERTEX_STRIDE };
+    const info: twgl.AttribInfo = {
+      buffer,
+      numComponents,
+      offset,
+      stride: VERTEX_STRIDE,
+    };
     offset += numComponents * Float32Array.BYTES_PER_ELEMENT;
     return [name, info] as const;
   });
-  return Object.fromEntries(entries) as Record<keyof typeof ATTRIBUTE_SPEC, twgl.AttribInfo>;
+  return Object.fromEntries(entries) as Record<
+    keyof typeof ATTRIBUTE_SPEC,
+    twgl.AttribInfo
+  >;
 }
 
 interface ParsedColor {

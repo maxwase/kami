@@ -52,7 +52,12 @@ import {
 import { drawTable } from "./render/background";
 import { drawHingeCrosshair } from "./render/hinge";
 import { createPaperRenderer, type PaperMotion } from "./render/backend";
-import { PLAY_STORE_URL } from "./render/paper";
+import {
+  type BannerName,
+  bannerUrl,
+  loadBanner,
+  resolveDefaultBannerName,
+} from "./render/banners";
 import {
   type FrontImageSource,
   loadTextures,
@@ -70,6 +75,18 @@ if (platform === Platform.Web) {
 
 /** Native iOS shell: a few links and controls behave differently there. */
 const isIosNative = platform === Platform.Capacitor;
+
+// Seed the iOS hinge cache before `resolvePostureSupport()` runs below —
+// support is computed once, so a late answer would latch it to Unavailable.
+let readCapacitorHingeAngle: () => number | null = () => null;
+let isFoldable = false;
+if (isIosNative) {
+  const { initCapacitorHinge, getCapacitorHingeAngle, isCapacitorHingeAvailable } =
+    await import("./device/capacitor");
+  await initCapacitorHinge();
+  readCapacitorHingeAngle = getCapacitorHingeAngle;
+  isFoldable = isCapacitorHingeAvailable();
+}
 
 const PRIVACY_POLICY_URL = "https://kami.maxwase.eu/privacy/";
 
@@ -192,6 +209,15 @@ trackEvent("app_open", { launch_context: getLaunchContext() });
 const isBrowserVisit = platform === Platform.Web && getLaunchContext() === "browser";
 let twaInstalled = false;
 
+// Which banner (Play Store / App Store / Mac) a browser visitor gets, and
+// its lazily-loaded image once loadBanner() resolves. bannerImage stays
+// null until the fetch completes (or fails), so bootstrap only switches the
+// active paper's front material to "banner" once there's something to draw.
+const activeBannerName: BannerName | null = isBrowserVisit
+  ? resolveDefaultBannerName()
+  : null;
+let bannerImage: FrontImageSource | null = null;
+
 // App Store guideline 3.1.1 forbids collecting money through a link out of an
 // app distributed via the App Store (iOS or the Mac App Store build), so the
 // tip jar only exists on web and TWA.
@@ -261,6 +287,23 @@ function resize() {
   hingeInfo = computeHingePoint(cssW, cssH);
   updateFoldFallbackIcon();
 }
+/* Foldables (Duo cover display) leave a tall unused column on the right of
+   the portrait canvas, while a bottom bar eats height the paper wants. On
+   those devices the control footer becomes a vertical rail in that column.
+   `isFoldable` is the test: only hardware with a real hinge reports through
+   the Capacitor hinge plugin. */
+const syncSideRail = () => {
+  const portrait = window.innerHeight >= window.innerWidth;
+  document.body.classList.toggle(
+    "side-rail",
+    portrait && isFoldable,
+  );
+};
+syncSideRail();
+
+window.addEventListener("resize", syncSideRail, { passive: true });
+window.addEventListener("orientationchange", syncSideRail, { passive: true });
+
 window.addEventListener("resize", resize, { passive: true });
 window.addEventListener("orientationchange", resize, { passive: true });
 if (window.visualViewport) {
@@ -450,7 +493,9 @@ type FlipRuntime = { phase: "idle" } | { phase: "animating"; anim: FlipAnim };
 
 let foldRuntime: FoldRuntime = { phase: "idle" };
 let flipRuntime: FlipRuntime = { phase: "idle" };
-let deviceFolded = false;
+// Null until the first frame seeds it with the hinge state at launch, so
+// opening the app already folded (Duo outer screen) is not a fold edge.
+let deviceFolded: boolean | null = null;
 
 function normalizeScreenAngle(angle: number): number {
   return ((Math.round(angle) % 360) + 360) % 360;
@@ -609,6 +654,7 @@ canvasEl.addEventListener("pointerup", (e) => {
   if (
     !isBrowserVisit ||
     twaInstalled ||
+    !activeBannerName ||
     foldRuntime.phase !== "idle" ||
     flipRuntime.phase !== "idle" ||
     !bannerTappable(getActivePaper())
@@ -619,8 +665,8 @@ canvasEl.addEventListener("pointerup", (e) => {
   const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   for (let i = papers.length - 1; i >= 0; i--) {
     if (hitTestPaper(papers[i], pos)) {
-      window.open(PLAY_STORE_URL, "_blank", "noopener");
-      trackEvent("playstore_banner_tapped");
+      window.open(bannerUrl(activeBannerName), "_blank", "noopener");
+      trackEvent("playstore_banner_tapped", { banner: activeBannerName });
       break;
     }
   }
@@ -1048,7 +1094,7 @@ function imageForMaterial(
   side: SheetSide,
   material: PaperMaterial,
 ): FrontImageSource | undefined {
-  if (material === "banner") return textures.banner ?? undefined;
+  if (material === "banner") return bannerImage ?? undefined;
   if (material === "paper") return textures.paperImg;
   if (material === "custom") return pickedImages[side] ?? undefined;
   return undefined;
@@ -1200,7 +1246,12 @@ function tick(now: number) {
     // Auto-fold on the fresh posture signal (folded-type = Creased or Closed),
     // not on segments alone: this device has a continuous screen that reports a
     // single segment, so a segment-only trigger lags or never fires.
-    const foldedNow = hingeState !== HingeState.Flat || manualFoldQueued;
+    // Physical and manual triggers are edge-detected separately: on the Duo's
+    // outer display the hinge reports Closed for as long as it is in use, so a
+    // combined flag would stay high and swallow every tap/button fold.
+    const physicallyFolded = hingeState !== HingeState.Flat;
+    deviceFolded ??= physicallyFolded;
+    const foldedNow = (physicallyFolded && !deviceFolded) || manualFoldQueued;
     const screenAngle = normalizeScreenAngle(getScreenAngleDeg());
     const accel = motion.getAccel();
     const accelMag = Math.hypot(accel.x, accel.y);
@@ -1230,7 +1281,7 @@ function tick(now: number) {
       manualFoldQueued = false;
     }
 
-    if (foldRuntime.phase === "idle" && foldedNow && !deviceFolded) {
+    if (foldRuntime.phase === "idle" && foldedNow) {
       const buildResult = buildFoldAnim(
         {
           paper: getActivePaper(),
@@ -1261,7 +1312,7 @@ function tick(now: number) {
         }
       }
     }
-    deviceFolded = foldedNow;
+    deviceFolded = physicallyFolded;
     const isAnimating =
       foldRuntime.phase === "animating" || flipRuntime.phase === "animating";
     updateUndoBtn(isAnimating);
@@ -1340,6 +1391,7 @@ function tick(now: number) {
     const bannerClickable =
       isBrowserVisit &&
       !twaInstalled &&
+      activeBannerName !== null &&
       foldRuntime.phase === "idle" &&
       flipRuntime.phase === "idle" &&
       bannerTappable(getActivePaper());
@@ -1407,6 +1459,12 @@ function tick(now: number) {
     if (motionSupported) {
       debugLines.push(fmtRow({ accel: accelMag.toFixed(2) }));
     }
+    if (isIosNative) {
+      const hingeDegrees = readCapacitorHingeAngle();
+      debugLines.push(
+        fmtRow({ hinge: hingeDegrees === null ? "-" : `${hingeDegrees.toFixed(0)}°` }),
+      );
+    }
     const debugText = debugLines.join("\n");
     if (debugStatusEl.textContent !== debugText) {
       debugStatusEl.textContent = debugText;
@@ -1420,8 +1478,7 @@ void (async function bootstrap() {
   try {
     textures = await loadTextures(ctx);
 
-    if (isBrowserVisit) {
-      papers[0].materials.front = "banner";
+    if (isBrowserVisit && activeBannerName) {
       // Progressive enhancement: most browsers lack this API, in which case
       // the banner default above just stands.
       const getInstalledRelatedApps = (
@@ -1434,11 +1491,25 @@ void (async function bootstrap() {
           const apps = await getInstalledRelatedApps.call(navigator);
           if (apps.length > 0) {
             twaInstalled = true;
-            papers[0].materials.front = "color";
           }
         } catch {
           // Treat a lookup failure as "not installed" — the banner stays.
         }
+      }
+      // Fetch the banner lazily so it can never delay first paint; only
+      // switch the sheet to the "banner" material once an image actually
+      // resolves. A failed/missing fetch (e.g. the App Store or Mac
+      // banner placeholders — see render/banners.ts) leaves the sheet on
+      // its plain paper default instead of a broken render.
+      if (!twaInstalled) {
+        const name = activeBannerName;
+        void loadBanner(name).then((img) => {
+          bannerImage = img;
+          if (img && activeBannerName === name && !twaInstalled) {
+            papers[0].materials.front = "banner";
+            syncMaterialUi();
+          }
+        });
       }
     }
     syncMaterialUi();

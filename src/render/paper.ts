@@ -717,9 +717,6 @@ function expandTriangle(a: Vec2, b: Vec2, c: Vec2, px: number): [Vec2, Vec2, Vec
   return [push(a), push(b), push(c)];
 }
 
-export const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa";
-
 function alignTextureToPaper(texture: CanvasPattern, paper: Paper): void {
   if (!("setTransform" in texture)) return;
   const m = new DOMMatrix();
