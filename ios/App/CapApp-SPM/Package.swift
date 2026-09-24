@@ -13,7 +13,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.1"),
         .package(name: "CapacitorBrowser", path: "../../../node_modules/.pnpm/@capacitor+browser@8.0.4_@capacitor+core@8.5.1/node_modules/@capacitor/browser"),
-        .package(name: "MaxwaseCapacitorHinge", path: "../../../node_modules/.pnpm/@maxwase+capacitor-hinge@git+ssh+++git@github.com+maxwase+capacitor-hinge.git+276b55415_91485003438d561f256d12448cd1b2de/node_modules/@maxwase/capacitor-hinge")
+        .package(name: "MaxwaseCapacitorHinge", path: "../../../node_modules/.pnpm/@maxwase+capacitor-hinge@git+ssh+++git@github.com+maxwase+capacitor-hinge.git+63fbb4469_7ef46953d05a25491468845c537f287d/node_modules/@maxwase/capacitor-hinge")
     ],
     targets: [
         .target(

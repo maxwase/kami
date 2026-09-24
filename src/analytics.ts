@@ -47,6 +47,7 @@ interface EventMap {
   hinge_reset: Record<string, never>;
   stability_threshold_changed: { value: number };
   sfx_volume_changed: { value: number };
+  paper_scale_changed: { value: number };
   invert_fold_direction_changed: { enabled: boolean };
   hinge_flip_changed: { enabled: boolean };
   show_paper_border_changed: { enabled: boolean };

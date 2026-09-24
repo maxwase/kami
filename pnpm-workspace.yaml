@@ -5,4 +5,5 @@ allowBuilds:
   sharp: true
   # Git dependency; its prepare script builds dist/, which is gitignored upstream.
   # Pinned to the locked commit, so bumping capacitor-hinge means updating this too.
-  "@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#276b55415d4b9a6c655f8c44c9274c29b01bbcdf": true
+  "@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#63fbb4469627c2b0f5c0fbc48df05c5743ea0b29": true
+  '@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#276b55415d4b9a6c655f8c44c9274c29b01bbcdf': set this to true or false

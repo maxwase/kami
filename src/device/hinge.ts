@@ -181,6 +181,8 @@ function fallbackHingeDir(
   if (ratio > 0.85 && ratio < 1.18) {
     return hingeDirForAngle(angleDeg);
   }
+  // Clearly elongated: crease across the long side, splitting the screen into
+  // two squarer halves regardless of how the device is rotated.
   if (canvasCssH >= canvasCssW) return { x: 1, y: 0 };
-  return hingeDirForAngle(angleDeg);
+  return { x: 0, y: 1 };
 }

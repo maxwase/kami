@@ -139,9 +139,11 @@ body {
   transition: all 0.2s ease;
 }
 
-#action-island button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  #action-island button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
 }
 
 #action-island button:active:not(:disabled) {
@@ -213,11 +215,13 @@ body {
   opacity: 0.8;
 }
 
-#toggleStyle:hover,
-#toggleSettings:hover,
-#toggleInfo:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  #toggleStyle:hover,
+  #toggleSettings:hover,
+  #toggleInfo:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
 }
 
 #toggleStyle:active,
@@ -290,8 +294,10 @@ body {
   border-radius: 4px;
 }
 
-.panel-close-btn:hover {
-  color: rgba(255, 255, 255, 0.8);
+@media (hover: hover) {
+  .panel-close-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
 }
 
 .panel-close-btn svg {
@@ -351,8 +357,10 @@ body {
   transition: background 0.2s;
 }
 
-.styled-range:hover {
-  background: rgba(255, 255, 255, 0.2);
+@media (hover: hover) {
+  .styled-range:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
 .styled-range::-webkit-slider-thumb {
@@ -365,8 +373,10 @@ body {
   transition: transform 0.2s;
 }
 
-.styled-range::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
+@media (hover: hover) {
+  .styled-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
 }
 
 .checkbox-label {
@@ -401,8 +411,10 @@ body {
   border-radius: 4px;
 }
 
-.reset-inline-btn:hover {
-  color: rgba(255, 255, 255, 0.8);
+@media (hover: hover) {
+  .reset-inline-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
 }
 
 .reset-inline-btn .material-symbols-outlined {
@@ -513,8 +525,10 @@ body {
   text-align: center;
 }
 
-.toggle-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+@media (hover: hover) {
+  .toggle-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .custom-aspect-inputs {
@@ -573,8 +587,10 @@ body {
   justify-content: center;
 }
 
-.color-option:hover {
-  transform: scale(1.1);
+@media (hover: hover) {
+  .color-option:hover {
+    transform: scale(1.1);
+  }
 }
 
 .color-option.active {
@@ -607,12 +623,20 @@ body {
   display: inline-block;
 }
 
+/* The real input sits invisibly on top of the swatch so taps hit it directly:
+   iOS WebKit won't open the color popover from showPicker()/click() on a
+   hidden input. */
 .color-picker-wrapper input[type="color"] {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
   opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
+  cursor: pointer;
+  z-index: 1;
 }
 
 .color-picker-display {
@@ -627,12 +651,14 @@ body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-.color-picker-display:hover {
-  transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.4);
+@media (hover: hover) {
+  .color-picker-wrapper:hover .color-picker-display {
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
 }
 
-.color-picker-display:active {
+.color-picker-wrapper:active .color-picker-display {
   transform: scale(0.98);
 }
 
@@ -648,8 +674,10 @@ body {
   user-select: none;
 }
 
-.debug-spoiler summary:hover {
-  color: rgba(255, 255, 255, 0.7);
+@media (hover: hover) {
+  .debug-spoiler summary:hover {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 #debugStatus {
@@ -692,9 +720,11 @@ body {
   border-radius: 6px;
 }
 
-.footer-link:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+@media (hover: hover) {
+  .footer-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 /* Utilities */
@@ -752,7 +782,9 @@ body {
     position: fixed;
     left: 50%;
     right: auto;
-    bottom: 12px;
+    /* Float the panel above the home indicator instead of padding it inside,
+       which stretched the panel on Face ID iPhones. */
+    bottom: max(12px, var(--safe-bottom));
     z-index: 20;
     display: inline-flex;
     /* Never wrap: the Duo's cover display reserves an 84px right safe-area
@@ -764,7 +796,6 @@ body {
     justify-content: center;
     gap: 10px;
     padding: 8px 12px;
-    padding-bottom: calc(8px + var(--safe-bottom));
     width: max-content;
     max-width: calc(100vw - 24px - var(--safe-left) - var(--safe-right));
     background: rgba(0, 0, 0, 0.4);
@@ -902,9 +933,11 @@ body {
     height: max-content;
     /* Centered in the inset column, which is where the status pill sits, so
        the rail lines up under the Wi-Fi icon instead of hugging the edge,
-       then nudged 5px toward the edge to sit under the camera and pill. */
+       then nudged 5px toward the edge to sit under the camera and pill.
+       Floored at 10px: when the inset is small or unreported the centering
+       math goes negative and pushes the rail off screen. */
     left: auto;
-    right: calc(var(--safe-right) / 2 - var(--rail-width) / 2 - 3px);
+    right: max(10px, calc(var(--safe-right) / 2 - var(--rail-width) / 2 - 3px));
     --rail-width: 56px;
     width: var(--rail-width);
     max-width: none;

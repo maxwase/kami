@@ -13,6 +13,8 @@ export interface GameOptions {
   showPaperBorder: boolean;
   /** Fold/flip sound effect volume, 0 (muted) to 1 (full). */
   sfxVolume: number;
+  /** Paper size as a fraction of the screen, applied on reset. */
+  paperScale: number;
 }
 
 export const options: GameOptions = {
@@ -22,6 +24,7 @@ export const options: GameOptions = {
   manualHingeDirFlip: false,
   showPaperBorder: true,
   sfxVolume: 0.5,
+  paperScale: 0.6,
 };
 
 export function updateOptions(update: Partial<GameOptions>): void {
@@ -42,5 +45,8 @@ export function updateOptions(update: Partial<GameOptions>): void {
   }
   if (typeof update.sfxVolume === "number") {
     options.sfxVolume = update.sfxVolume;
+  }
+  if (typeof update.paperScale === "number") {
+    options.paperScale = update.paperScale;
   }
 }

@@ -8,18 +8,16 @@
 #
 # --upload reads APPLE_ID and APPLE_PASSWORD from .env (see .env.example).
 #
-# One-time prerequisites in the Apple Developer portal (not scriptable):
-#   - App ID eu.maxwase.kami.ios
-#   - An iOS App Store distribution certificate in the login keychain
-#   - An app record in App Store Connect, then put its Apple ID in
-#     APP_APPLE_ID below
+# One-time prerequisites (not scriptable):
+#   - An app record in App Store Connect for eu.maxwase.kami.ios. altool picks
+#     the listing from the .ipa's bundle ID, so no App Apple ID is needed here.
+#   - Xcode signed in to the team account (Settings > Accounts), so export can
+#     create the App Store distribution certificate and profile on demand.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 TEAM_ID="YX238Y6233"
-BUNDLE_ID="eu.maxwase.kami.ios"
-APP_APPLE_ID="" # App Store Connect > App Information > Apple ID
 PROJECT="ios/App/App.xcodeproj"
 SCHEME="App"
 ARCHIVE="build/ios/kami.xcarchive"
@@ -48,6 +46,8 @@ echo "==> Archiving"
 rm -rf "$ARCHIVE" "$EXPORT_DIR"
 mkdir -p build/ios
 # Capacitor 8 uses SwiftPM, not CocoaPods, so this is -project (no workspace).
+# Archived unsigned: automatic signing would first want an iOS Development
+# profile, which can't exist without a registered device. Export signs it.
 xcodebuild \
   -project "$PROJECT" \
   -scheme "$SCHEME" \
@@ -55,13 +55,15 @@ xcodebuild \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE" \
   DEVELOPMENT_TEAM="$TEAM_ID" \
+  CODE_SIGNING_ALLOWED=NO \
   archive
 
 echo "==> Exporting signed .ipa"
 xcodebuild -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportOptionsPlist "$EXPORT_OPTIONS" \
-  -exportPath "$EXPORT_DIR"
+  -exportPath "$EXPORT_DIR" \
+  -allowProvisioningUpdates
 
 IPA=$(find "$EXPORT_DIR" -name "*.ipa" -maxdepth 1 | head -1)
 if [ -z "$IPA" ]; then
@@ -72,27 +74,22 @@ echo "==> Built: $IPA"
 
 # Catches most rejections (missing icons, bad plist keys, unsigned frameworks)
 # before a real upload burns a build number.
-if [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "$APP_APPLE_ID" ]; then
+if [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ]; then
   echo "==> Validating"
   xcrun altool --validate-app -f "$IPA" --type ios \
-    --apple-id "$APP_APPLE_ID" \
-    --bundle-id "$BUNDLE_ID" \
     --username "$APPLE_ID" \
     --password "$APPLE_PASSWORD"
 else
-  echo "==> Skipping validation (needs .env credentials and APP_APPLE_ID)"
+  echo "==> Skipping validation (needs .env credentials)"
 fi
 
 if [ "$UPLOAD" = true ]; then
   : "${APPLE_ID:?APPLE_ID not set in .env}"
   : "${APPLE_PASSWORD:?APPLE_PASSWORD not set in .env}"
-  : "${APP_APPLE_ID:?Set APP_APPLE_ID in this script once the app record exists}"
 
   echo "==> Uploading $IPA to App Store Connect"
   xcrun altool --upload-app -f "$IPA" \
     --type ios \
-    --apple-id "$APP_APPLE_ID" \
-    --bundle-id "$BUNDLE_ID" \
     --username "$APPLE_ID" \
     --password "$APPLE_PASSWORD"
 fi
