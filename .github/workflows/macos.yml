@@ -36,6 +36,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      # capacitor-hinge is a private git dependency; HINGE_DEPLOY_KEY is a
+      # read-only deploy key on that repo.
+      - name: Load capacitor-hinge deploy key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.HINGE_DEPLOY_KEY }}
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build Tauri app bundle

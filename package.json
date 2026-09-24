@@ -20,7 +20,7 @@
     "build:ios": "KAMI_TARGET=capacitor pnpm build",
     "ios:sync": "pnpm build:ios && cap sync ios",
     "ios:open": "cap open ios",
-    "ios:run": "pnpm ios:sync && cap run ios",
+    "ios:run": "scripts/run-ios-sim.sh",
     "ios:assets": "capacitor-assets generate --ios --assetPath public/icons/capacitor --iosProject ios/App",
     "build:ios:appstore": "scripts/build-ios.sh",
     "build:ios:appstore:upload": "scripts/build-ios.sh --upload"
@@ -47,6 +47,7 @@
   "dependencies": {
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.1",
+    "@maxwase/capacitor-hinge": "git+ssh://git@github.com/maxwase/capacitor-hinge.git#master",
     "@capacitor/ios": "^8.5.1",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-opener": "^2.5.4",

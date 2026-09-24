@@ -755,7 +755,11 @@ body {
     bottom: 12px;
     z-index: 20;
     display: inline-flex;
-    flex-wrap: wrap;
+    /* Never wrap: the Duo's cover display reserves an 84px right safe-area
+       strip for the sensor housing, leaving ~358px of usable width, and a
+       wrapped Info button was landing on a second row there. The buttons
+       shrink to fit instead (see the flex rules below). */
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
     gap: 10px;
@@ -791,6 +795,28 @@ body {
 
   .action-btn-group {
     display: contents;
+  }
+
+  /* `display: contents` above makes every button a direct flex child of the
+     footer, so they all shrink together when the usable width is tight. The
+     56px stays the preferred size; min-width: 0 is what actually lets a flex
+     item go below its content width. */
+  #control-footer #action-island button,
+  #control-footer #toggleStyle,
+  #control-footer #toggleSettings,
+  #control-footer #toggleInfo {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* Labels are the first thing to overflow a shrunken button; clip them to
+     the button rather than letting them push it wider. */
+  #control-footer button span:not(.material-symbols-outlined) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .settings-panel {
@@ -855,5 +881,50 @@ body {
     font-size: 12px;
     padding: 6px 6px;
     gap: 4px;
+  }
+}
+
+/* --- Side Rail (foldable cover display) ---------------------------------
+   The Duo's cover display reserves a tall strip on the right for the sensor
+   housing, exposed as a large safe-area-inset-right. That strip can never
+   hold paper, so on foldables the control footer moves into it as a vertical
+   rail instead of eating canvas height at the bottom. `body.side-rail` is set
+   from main.ts. Only layout is overridden here: the panel surface, button
+   fill and type sizes stay the ones the bottom bar uses, so the rail reads as
+   the same control, rotated. */
+@media (orientation: portrait) {
+  body.side-rail #control-footer {
+    /* The housing is painted over the strip but is never reported as a top
+       inset on the Duo, so the rail clears it with a floor rather than
+       trusting --safe-top. */
+    top: calc(max(var(--safe-top), 176px) + 10px);
+    bottom: auto;
+    height: max-content;
+    /* Centered in the inset column, which is where the status pill sits, so
+       the rail lines up under the Wi-Fi icon instead of hugging the edge,
+       then nudged 5px toward the edge to sit under the camera and pill. */
+    left: auto;
+    right: calc(var(--safe-right) / 2 - var(--rail-width) / 2 - 3px);
+    --rail-width: 56px;
+    width: var(--rail-width);
+    max-width: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 8px;
+    padding-bottom: 8px;
+    border-radius: 20px;
+    transform: none;
+  }
+
+  body.side-rail #control-footer #action-island button,
+  body.side-rail #control-footer #toggleStyle,
+  body.side-rail #control-footer #toggleSettings,
+  body.side-rail #control-footer #toggleInfo {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
   }
 }

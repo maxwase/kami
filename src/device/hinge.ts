@@ -1,5 +1,9 @@
 import type { Vec2 } from "../math/vec2";
+import { getCapacitorCreaseDir, getCapacitorSegments } from "./capacitor";
+import { Platform, resolveRuntimeInfo } from "./runtime";
 import { getScreenAngleDeg } from "./screen";
+
+const runtime = resolveRuntimeInfo();
 
 export interface SegmentRect {
   left: number;
@@ -27,6 +31,23 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
   const wAny = window as WindowWithSegments;
 
   try {
+    // iOS has no `viewport.segments`: the hinge plugin is the only source, and
+    // it synthesizes the crease from the hinge angle. Checked first because on
+    // Capacitor every API below is guaranteed absent.
+    if (runtime.platform === Platform.Capacitor) {
+      const capacitorSegments = getCapacitorSegments();
+      if (capacitorSegments.length > 0) {
+        return buildHingeInfo(capacitorSegments, canvasCssW, canvasCssH);
+      }
+      // Flat, but the hardware still has a fold line: use its real direction
+      // rather than the aspect-ratio guess below, which reads the Duo's
+      // landscape inner display as a horizontal hinge.
+      const capacitorCreaseDir = getCapacitorCreaseDir();
+      if (capacitorCreaseDir) {
+        return { segments: [], hingeDir: capacitorCreaseDir };
+      }
+    }
+
     const viewportSegmentsRaw = wAny.viewport?.segments;
     if (viewportSegmentsRaw !== undefined) {
       if (!Array.isArray(viewportSegmentsRaw)) {

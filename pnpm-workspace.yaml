@@ -3,3 +3,6 @@ allowBuilds:
   esbuild: true
   # Native image codecs, used by @capacitor/assets to generate iOS app icons.
   sharp: true
+  # Git dependency; its prepare script builds dist/, which is gitignored upstream.
+  # Pinned to the locked commit, so bumping capacitor-hinge means updating this too.
+  "@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#276b55415d4b9a6c655f8c44c9274c29b01bbcdf": true

@@ -8,6 +8,8 @@ on:
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
+    # Passes HINGE_DEPLOY_KEY through for the private capacitor-hinge git dependency.
+    secrets: inherit
     permissions:
       contents: read
 

@@ -1,5 +1,5 @@
 import posthog from "posthog-js";
-import { resolveRuntimeInfo } from "./device/runtime";
+import { Platform, resolveRuntimeInfo } from "./device/runtime";
 
 const apiKey = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
 const apiHost = import.meta.env.VITE_POSTHOG_HOST as string | undefined;
@@ -89,7 +89,7 @@ interface EventMap {
   outbound_link: { link_type: string; link_url: string };
   app_open: { launch_context: "ios" | "twa" | "pwa" | "browser" };
   analytics_consent_changed: { granted: boolean };
-  playstore_banner_tapped: Record<string, never>;
+  playstore_banner_tapped: { banner: "playstore" | "appstore" | "mac" };
   paper_texture_changed: {
     side: "front" | "back";
     texture: "color" | "paper" | "banner" | "custom";
@@ -103,7 +103,17 @@ interface EventMap {
 
 let initialized = false;
 
+/**
+ * Start analytics at boot, but only for a user who already opted in. PostHog
+ * is not even initialized before consent: `init()` itself writes `ph_*`
+ * storage and fetches remote config, which the privacy policy promises not to
+ * do until the user taps "Allow".
+ */
 export function initAnalytics(): void {
+  if (getAnalyticsConsent() === "granted") startPostHog();
+}
+
+function startPostHog(): void {
   if (initialized) return;
 
   if (!apiKey || !apiHost) {
@@ -112,6 +122,9 @@ export function initAnalytics(): void {
 
   posthog.init(apiKey, {
     api_host: apiHost,
+    // Only ever reached after consent; opted out by default so a stale or
+    // cleared SDK consent record can never make it capture on its own.
+    opt_out_capturing_by_default: true,
     defaults: "2026-05-30",
     capture_exceptions: {
       capture_unhandled_errors: true,
@@ -122,12 +135,12 @@ export function initAnalytics(): void {
     // it doesn't record pixels by default) balloons a session to tens of MB
     // here — even at 4fps/0.4 quality one session hit ~74MB and stalled
     // processing. Left off; session replay will show a blank canvas.
+    // The iOS build never records sessions: the App Store privacy manifest
+    // declares product interaction only, and replay would add more data types.
+    disable_session_recording: resolveRuntimeInfo().platform === Platform.Capacitor,
   });
   initialized = true;
-
-  if (getAnalyticsConsent() === "denied") {
-    posthog.opt_out_capturing();
-  }
+  posthog.opt_in_capturing({ captureEventName: false });
 }
 
 /**
@@ -157,10 +170,27 @@ export function getAnalyticsConsent(): "granted" | "denied" | "unset" {
 /** Persists the user's consent choice and toggles PostHog capturing accordingly. */
 export function setAnalyticsConsent(granted: boolean): void {
   localStorage.setItem(CONSENT_STORAGE_KEY, granted ? "granted" : "denied");
-  if (!initialized) return;
   if (granted) {
-    posthog.opt_in_capturing({ captureEventName: false });
-  } else {
-    posthog.opt_out_capturing();
+    // First grant starts (and opts in) PostHog; a re-grant after withdrawal
+    // finds it already running and only needs the opt-in.
+    if (initialized) {
+      posthog.set_config({ disable_persistence: false });
+      posthog.opt_in_capturing({ captureEventName: false });
+    } else {
+      startPostHog();
+    }
+    return;
+  }
+  if (!initialized) return;
+  // Withdrawal also wipes the SDK's stored ID and `ph_*` keys. reset() first:
+  // it restores the default (opted-out) consent state, then make it explicit.
+  posthog.reset();
+  posthog.opt_out_capturing();
+  // Opting out leaves what was already written (the random ID, cached flags)
+  // and the SDK keeps saving to it, so switch persistence off before dropping
+  // it. Next boot won't init without consent, so nothing brings it back.
+  posthog.set_config({ disable_persistence: true });
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(`ph_${apiKey}`)) localStorage.removeItem(key);
   }
 }

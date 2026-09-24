@@ -44,7 +44,8 @@ export class TextureCache {
       hit.lastUsedFrame = this.frame;
       return hit.texture;
     }
-    const texture = kind === "image" ? this.createImage(source) : this.createPattern(source);
+    const texture =
+      kind === "image" ? this.createImage(source) : this.createPattern(source);
     map.set(source, { texture, lastUsedFrame: this.frame });
     return texture;
   }
@@ -125,7 +126,11 @@ function nextPowerOfTwo(n: number): number {
   return 2 ** Math.ceil(Math.log2(Math.max(1, n)));
 }
 
-function resample(source: FrontImageSource, width: number, height: number): HTMLCanvasElement {
+function resample(
+  source: FrontImageSource,
+  width: number,
+  height: number,
+): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;

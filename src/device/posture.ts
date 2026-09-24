@@ -32,8 +32,10 @@ export function helpCopyForSupport(
   if (support === PostureSupport.Available) {
     if (device === Device.Phone) {
       return {
-        controls: "<b>Fold</b>: fold a half of the phone over the other, tap the paper.",
-        gesture: "<b>Move</b>: one finger.<br><b>Rotate</b>: two fingers.",
+        controls:
+          "<b>Fold</b>: fold a half of the phone over the other, tap the paper.",
+        gesture:
+          "<b>Move</b>: one finger.<br><b>Rotate</b>: two fingers.<br><b>Flip</b>: quick two-finger swipe.",
       };
     }
     // Laptop with a readable hinge sensor (MacBook lid angle) — fold is
@@ -51,7 +53,8 @@ export function helpCopyForSupport(
     return {
       controls:
         "<b>Fold</b>: button, tap the paper.<br><b>Flip</b>: button.<br><b>Reset</b>: button.<br><b>Undo</b>: button.",
-      gesture: "<b>Move</b>: one finger.<br><b>Rotate</b>: two fingers.",
+      gesture:
+        "<b>Move</b>: one finger.<br><b>Rotate</b>: two fingers.<br><b>Flip</b>: quick two-finger swipe.",
     };
   }
   return {
@@ -79,8 +82,10 @@ export function readDevicePostureType(): string {
 
 /**
  * Detect whether a posture source is present. On Capacitor this is gated on
- * the hinge bridge actually working (it does not yet on iOS), which keeps the
- * manual-controls help copy and the Fold button as the primary interaction.
+ * the hinge bridge actually reporting a hinge — true on an iPhone Duo running
+ * iOS 27.1 or later, false on every other iPhone, which keeps the
+ * manual-controls help copy and the Fold button as the primary interaction
+ * there.
  */
 export function resolvePostureSupport(): PostureSupport {
   const navAny = navigator as Navigator & { devicePosture?: { type?: string } };
