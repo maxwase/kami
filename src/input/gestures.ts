@@ -1,4 +1,3 @@
-import { trackEvent } from "../analytics";
 import type { Vec2 } from "../math/vec2";
 import { add2, mul2, rotate2, sub2 } from "../math/vec2";
 import type { FlipAxis, FlipDirection } from "../paper/flip";
@@ -242,16 +241,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
   };
 
-  const trackGestureEnd = () => {
-    if (gesture.type !== "idle") {
-      const duration = Math.round(performance.now() - gesture.startTime);
-      trackEvent("gesture_used", {
-        gesture_type: gesture.type,
-        duration_ms: duration,
-      });
-    }
-  };
-
   /**
    * Touch counterpart of the trackpad swipe: a quick two-finger flick flips
    * the paper. The flick also moved the paper through pinch_rotate, so that
@@ -282,10 +271,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       ? (-sign as FlipDirection)
       : sign;
     onFlip(direction, horizontalDominant ? "horizontal" : "vertical");
-    trackEvent("gesture_used", {
-      gesture_type: "touch_flick_flip",
-      duration_ms: Math.round(performance.now() - gesture.startTime),
-    });
     return true;
   };
 
@@ -305,7 +290,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
     }
     tapCandidate = undefined;
 
-    trackGestureEnd();
     gesture = { type: "idle" };
   };
 
@@ -350,7 +334,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
   const onGestureEnd = (e: Event) => {
     e.preventDefault();
-    trackGestureEnd();
     gesture = { type: "idle" };
   };
 
@@ -394,7 +377,6 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       swipeAccumY = 0;
       swipeLocked = true;
       onFlip(direction, axis);
-      trackEvent("gesture_used", { gesture_type: "swipe_flip", duration_ms: 0 });
 
       // Fixed cooldown, scheduled once and never renewed by later wheel
       // events — a momentum tail arriving in dense sub-100ms bursts must not

@@ -19,7 +19,7 @@ importers:
         version: 8.5.1(@capacitor/core@8.5.1)
       '@maxwase/capacitor-hinge':
         specifier: git+ssh://git@github.com/maxwase/capacitor-hinge.git#master
-        version: git+ssh://git@github.com/maxwase/capacitor-hinge.git#276b55415d4b9a6c655f8c44c9274c29b01bbcdf(@capacitor/core@8.5.1)
+        version: git+ssh://git@github.com/maxwase/capacitor-hinge.git#63fbb4469627c2b0f5c0fbc48df05c5743ea0b29(@capacitor/core@8.5.1)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -978,8 +978,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#276b55415d4b9a6c655f8c44c9274c29b01bbcdf':
-    resolution: {commit: 276b55415d4b9a6c655f8c44c9274c29b01bbcdf, repo: git@github.com:maxwase/capacitor-hinge.git, type: git}
+  '@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#63fbb4469627c2b0f5c0fbc48df05c5743ea0b29':
+    resolution: {commit: 63fbb4469627c2b0f5c0fbc48df05c5743ea0b29, repo: git@github.com:maxwase/capacitor-hinge.git, type: git}
     version: 0.1.0
     peerDependencies:
       '@capacitor/core': ^8.0.0
@@ -4435,7 +4435,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#276b55415d4b9a6c655f8c44c9274c29b01bbcdf(@capacitor/core@8.5.1)':
+  '@maxwase/capacitor-hinge@git+ssh://git@github.com/maxwase/capacitor-hinge.git#63fbb4469627c2b0f5c0fbc48df05c5743ea0b29(@capacitor/core@8.5.1)':
     dependencies:
       '@capacitor/core': 8.5.1
 

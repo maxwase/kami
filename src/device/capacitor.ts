@@ -19,15 +19,16 @@
  * `@capacitor/core`.
  */
 
-import type { HingeCrease, HingeState } from "@maxwase/capacitor-hinge";
+import type { HingeState } from "@maxwase/capacitor-hinge";
 import type { Vec2 } from "../math/vec2";
 import type { SegmentRect } from "./hinge";
 
 let available = false;
 let postureType = "unknown";
 let angleDegrees: number | null = null;
-let segments: SegmentRect[] = [];
-let creaseDir: Vec2 | null = null;
+/** Crease half-width from the plugin; `null` when no crease is known. */
+let creaseHalfSpan: number | null = null;
+let creased = false;
 let initialized = false;
 
 /**
@@ -56,35 +57,59 @@ function applyState(state: HingeState): void {
     case "indeterminate":
       postureType = "unknown";
       angleDegrees = null;
-      creaseDir = null;
-      segments = [];
+      creaseHalfSpan = null;
+      creased = false;
       return;
 
     case "closed":
       postureType = "folded";
       angleDegrees = state.angle?.degrees ?? null;
-      creaseDir = null;
-      segments = [];
+      creaseHalfSpan = null;
+      creased = false;
       return;
 
     case "open":
       postureType = state.flat ? "continuous" : "folded";
       angleDegrees = state.angle?.degrees ?? null;
-      // The crease axis is the real fold line even before anything is bent,
-      // so report the direction flat or not.
-      creaseDir = state.crease ? creaseDirection(state.crease) : null;
+      // Only the crease width is kept: its axis and center are re-derived on
+      // every read (see `currentCrease()`).
+      creaseHalfSpan = state.crease?.halfSpan ?? null;
       // Segments only while the device is actually bent: `resolveHingeState()`
       // reads two segments as book mode, and a flat Duo is not in book mode.
-      segments = !state.flat && state.crease ? segmentsForCrease(state.crease) : [];
+      creased = !state.flat;
       return;
   }
 }
 
-function creaseDirection(crease: HingeCrease): Vec2 {
+/** The plugin's `HingeCrease` shape, in plain CSS pixels. */
+interface Crease {
+  axis: "vertical" | "horizontal";
+  center: number;
+  halfSpan: number;
+}
+
+/**
+ * The crease in the viewport's *current* orientation. The plugin derives its
+ * crease from the view bounds, but only when a hinge event fires, and turning
+ * the phone fires none, so its axis and center go stale. The Duo folds across
+ * its long edge, so the crease is always the bisector of the longer side:
+ * recomputing it here keeps the fold line on the physical hinge after a
+ * rotation.
+ */
+function currentCrease(): Crease | null {
+  if (creaseHalfSpan === null) return null;
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  return width >= height
+    ? { axis: "vertical", center: width / 2, halfSpan: creaseHalfSpan }
+    : { axis: "horizontal", center: height / 2, halfSpan: creaseHalfSpan };
+}
+
+function creaseDirection(crease: Crease): Vec2 {
   return crease.axis === "vertical" ? { x: 0, y: 1 } : { x: 1, y: 0 };
 }
 
-function segmentsForCrease(crease: HingeCrease): SegmentRect[] {
+function segmentsForCrease(crease: Crease): SegmentRect[] {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const halfSpan = Math.max(crease.halfSpan, MIN_CREASE_HALF_SPAN_PX);
@@ -105,8 +130,8 @@ function clearState(): void {
   available = false;
   postureType = "unknown";
   angleDegrees = null;
-  segments = [];
-  creaseDir = null;
+  creaseHalfSpan = null;
+  creased = false;
 }
 
 /**
@@ -140,7 +165,8 @@ export function isCapacitorHingeAvailable(): boolean {
 
 /** Two synthesized segments while the device is creased; empty otherwise. */
 export function getCapacitorSegments(): SegmentRect[] {
-  return segments;
+  const crease = creased ? currentCrease() : null;
+  return crease ? segmentsForCrease(crease) : [];
 }
 
 /**
@@ -149,7 +175,8 @@ export function getCapacitorSegments(): SegmentRect[] {
  * crease instead of being guessed from the viewport aspect ratio.
  */
 export function getCapacitorCreaseDir(): Vec2 | null {
-  return creaseDir;
+  const crease = currentCrease();
+  return crease ? creaseDirection(crease) : null;
 }
 
 /** Live hinge angle in degrees, or `null` when no hinge is readable. */

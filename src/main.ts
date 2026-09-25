@@ -256,7 +256,6 @@ let dpr = 1;
 let cssW = 0;
 let cssH = 0;
 let hingeInfo: HingeInfo = computeHingePoint(0, 0);
-let lastPostureType: string | null = null;
 let foldCount = 0;
 
 function resize() {
@@ -372,7 +371,6 @@ const postureSupport = resolvePostureSupport();
 let manualFoldQueued = false;
 
 const A4_ASPECT = 210 / 297;
-const PAPER_SCREEN_FRACTION = 0.6;
 
 const styles: Record<string, PaperStyle> = {
   white: { front: "#ffffff", back: "#f0f0f0", edge: "rgba(0,0,0,0.16)" },
@@ -380,14 +378,14 @@ const styles: Record<string, PaperStyle> = {
 
 let currentAspect = A4_ASPECT;
 
-// A4 paper size that fits within a fraction of the screen
+// Paper size that fits within the chosen fraction of the screen
 function computePaperSize(
   viewW: number,
   viewH: number,
   aspect: number,
 ): { w: number; h: number } {
-  const maxW = viewW * PAPER_SCREEN_FRACTION;
-  const maxH = viewH * PAPER_SCREEN_FRACTION;
+  const maxW = viewW * options.paperScale;
+  const maxH = viewH * options.paperScale;
   if (maxW / maxH > aspect) {
     return { w: maxH * aspect, h: maxH };
   }
@@ -405,10 +403,13 @@ function orientPaperSize(
 
 // Open inner screen = near-square/wide; closed cover screen = tall and narrow.
 // Device posture can't tell them apart (both report "continuous"), so use the
-// aspect ratio.
+// aspect ratio, compared short side to long side so rotation doesn't matter.
 function isOpenFoldableScreen(): boolean {
-  if (platform !== Platform.Web || device !== Device.Phone) return false;
-  return cssH > 0 && cssW / cssH > 0.7;
+  const onFoldablePhone =
+    (platform === Platform.Web && device === Device.Phone) ||
+    (platform === Platform.Capacitor && isFoldable);
+  if (!onFoldablePhone || cssW <= 0 || cssH <= 0) return false;
+  return Math.min(cssW, cssH) / Math.max(cssW, cssH) > 0.7;
 }
 
 // Orient the sheet horizontal (landscape) when the foldable is open, otherwise
@@ -419,11 +420,17 @@ function orientedPaperSize(
   viewH: number,
   aspect: number,
 ): { w: number; h: number } {
-  const base = computePaperSize(viewW, viewH, aspect);
   if (isOpenFoldableScreen()) {
+    // Sized against the short side on both axes, so a reset gives the same
+    // sheet in either rotation.
+    const side = Math.min(viewW, viewH);
+    const base = computePaperSize(side, side, aspect);
+    // The iOS app keeps the sheet oriented with the screen; the web app lays
+    // it horizontal on the open inner screen.
+    if (platform === Platform.Capacitor) return orientPaperSize(base, viewW, viewH);
     return { w: Math.max(base.w, base.h), h: Math.min(base.w, base.h) };
   }
-  return orientPaperSize(base, viewW, viewH);
+  return orientPaperSize(computePaperSize(viewW, viewH, aspect), viewW, viewH);
 }
 
 const initialCenter = getScreenCenterInViewport();
@@ -1003,6 +1010,20 @@ function resizePaperIfNeeded(): void {
   }
 }
 
+const paperScaleInput = getRequiredElement("paperScale", HTMLInputElement);
+const paperScaleValue = getRequiredElement("paperScaleValue", HTMLSpanElement);
+
+paperScaleInput.addEventListener("input", () => {
+  const value = Number(paperScaleInput.value);
+  if (!Number.isFinite(value)) return;
+  updateOptions({ paperScale: value });
+  paperScaleValue.textContent = `${Math.round(value * 100)}%`;
+  resizePaperIfNeeded();
+});
+paperScaleInput.addEventListener("change", () => {
+  trackEvent("paper_scale_changed", { value: options.paperScale });
+});
+
 function syncMaterialUi(): void {
   const materials = getActivePaper().materials;
   for (const side of ["front", "back"] as const) {
@@ -1150,11 +1171,6 @@ if (paperFrontColorInput && paperFrontColorDisplay) {
       color: paperFrontColorInput.value,
     });
   });
-
-  paperFrontColorDisplay.addEventListener("click", () => {
-    paperFrontColorInput.showPicker?.();
-    if (!paperFrontColorInput.showPicker) paperFrontColorInput.click();
-  });
 }
 
 if (paperBackColorInput && paperBackColorDisplay) {
@@ -1170,11 +1186,6 @@ if (paperBackColorInput && paperBackColorDisplay) {
       side: PaperSide.Back,
       color: paperBackColorInput.value,
     });
-  });
-
-  paperBackColorDisplay.addEventListener("click", () => {
-    paperBackColorInput.showPicker?.();
-    if (!paperBackColorInput.showPicker) paperBackColorInput.click();
   });
 }
 
@@ -1256,17 +1267,6 @@ function tick(now: number) {
     const accel = motion.getAccel();
     const accelMag = Math.hypot(accel.x, accel.y);
     const isStable = motionActive && accelMag <= options.stableAccel;
-    if (postureType !== lastPostureType) {
-      lastPostureType = postureType;
-      trackEvent("posture_change", {
-        posture_type: postureType,
-        hinge_x: Math.round(activeHinge.x),
-        hinge_y: Math.round(activeHinge.y),
-        screen_angle: Number(screenAngle.toFixed(1)),
-        stable: isStable,
-        accel: accel,
-      });
-    }
     const foldSide = resolveFoldSide(
       activeHingeDir,
       isStable,
