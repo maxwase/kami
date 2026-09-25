@@ -58,14 +58,6 @@ interface EventMap {
     custom_height?: number;
   };
   color_changed: { side: PaperSide; color: string };
-  posture_change: {
-    posture_type: string;
-    hinge_x: number;
-    hinge_y: number;
-    screen_angle: number;
-    stable: boolean;
-    accel: { x: number; y: number };
-  };
   fold_complete: {
     fold_count: number;
     fold_side: PaperSide;
@@ -79,7 +71,6 @@ interface EventMap {
     fold_count: number;
     duration_ms: number;
   };
-  gesture_used: { gesture_type: string; duration_ms: number };
   session_start: {
     device_type: string;
     posture_support: string;
@@ -127,6 +118,8 @@ function startPostHog(): void {
     // cleared SDK consent record can never make it capture on its own.
     opt_out_capturing_by_default: true,
     defaults: "2026-05-30",
+    autocapture: false,
+    capture_performance: false,
     capture_exceptions: {
       capture_unhandled_errors: true,
       capture_unhandled_rejections: true,

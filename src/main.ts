@@ -256,7 +256,6 @@ let dpr = 1;
 let cssW = 0;
 let cssH = 0;
 let hingeInfo: HingeInfo = computeHingePoint(0, 0);
-let lastPostureType: string | null = null;
 let foldCount = 0;
 
 function resize() {
@@ -1268,17 +1267,6 @@ function tick(now: number) {
     const accel = motion.getAccel();
     const accelMag = Math.hypot(accel.x, accel.y);
     const isStable = motionActive && accelMag <= options.stableAccel;
-    if (postureType !== lastPostureType) {
-      lastPostureType = postureType;
-      trackEvent("posture_change", {
-        posture_type: postureType,
-        hinge_x: Math.round(activeHinge.x),
-        hinge_y: Math.round(activeHinge.y),
-        screen_angle: Number(screenAngle.toFixed(1)),
-        stable: isStable,
-        accel: accel,
-      });
-    }
     const foldSide = resolveFoldSide(
       activeHingeDir,
       isStable,
