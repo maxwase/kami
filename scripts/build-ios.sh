@@ -42,6 +42,14 @@ fi
 echo "==> Building web bundle and syncing into the Xcode project"
 pnpm ios:sync
 
+# HINGE_DISABLED=1 compiles out the capacitor-hinge UIHingeInteraction code,
+# which needs the iOS 27.1 SDK. Set it when archiving with an older Xcode
+# (e.g. stable 27.0 via DEVELOPER_DIR); the app then reports no hinge.
+SWIFT_CONDITIONS='$(inherited)'
+if [ -n "${HINGE_DISABLED:-}" ]; then
+  SWIFT_CONDITIONS="$SWIFT_CONDITIONS HINGE_DISABLED"
+fi
+
 echo "==> Archiving"
 rm -rf "$ARCHIVE" "$EXPORT_DIR"
 mkdir -p build/ios
@@ -56,6 +64,7 @@ xcodebuild \
   -archivePath "$ARCHIVE" \
   DEVELOPMENT_TEAM="$TEAM_ID" \
   CODE_SIGNING_ALLOWED=NO \
+  SWIFT_ACTIVE_COMPILATION_CONDITIONS="$SWIFT_CONDITIONS" \
   archive
 
 echo "==> Exporting signed .ipa"
