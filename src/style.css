@@ -727,6 +727,17 @@ body {
   }
 }
 
+.footer-credit {
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.footer-credit a {
+  color: inherit;
+}
+
 /* Utilities */
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

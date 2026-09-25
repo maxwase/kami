@@ -5,7 +5,8 @@
 <h1 align="center">Kami</h1>
 
 <p align="center">
-  <a href='https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' height="80"/></a>
+  <a href='https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' height="80" align="middle"/></a>
+  <a href='https://apps.apple.com/app/kami-lid-driven-origami/id6810974882'><img alt='Download on the Mac App Store' src='docs/badges/mac-app-store.svg' height="54" align="middle"/></a>
 </p>
 
 Kami is a paper-folding simulation built to be driven by a physical hinge, using folding device APIs when available.
@@ -43,6 +44,8 @@ The game tries its best to auto-detect your device's folding posture and capabil
 ## Installation
 
 ### macOS
+
+Get it on the Mac App Store (badge at the top of this page), or install manually:
 
 1. Download the latest version for your Mac from the [releases](https://github.com/maxwase/kami/releases) page.
 2. Unzip it
