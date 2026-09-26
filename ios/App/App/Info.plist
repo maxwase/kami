@@ -28,6 +28,10 @@
 	<true/>
 	<!-- Acceleration biases which way a fold swings; the app is fully usable
 	     if this is denied. -->
+	<key>NSCameraUsageDescription</key>
+	<string>kami can use the camera to take a photo to print on the paper.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>kami lets you pick a photo to print on the paper.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>kami reads device motion to decide which way the paper folds when you hold the phone at an angle.</string>
 	<!-- kami ships no encryption beyond OS-provided HTTPS, so declaring this

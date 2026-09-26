@@ -23,7 +23,7 @@ export const options: GameOptions = {
   manualHingePos: { x: 0.5, y: 0.5 },
   manualHingeDirFlip: false,
   showPaperBorder: true,
-  sfxVolume: 0.5,
+  sfxVolume: 0.25,
   paperScale: 0.6,
 };
 

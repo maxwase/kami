@@ -293,10 +293,7 @@ function resize() {
    the Capacitor hinge plugin. */
 const syncSideRail = () => {
   const portrait = window.innerHeight >= window.innerWidth;
-  document.body.classList.toggle(
-    "side-rail",
-    portrait && isFoldable,
-  );
+  document.body.classList.toggle("side-rail", portrait && isFoldable);
 };
 syncSideRail();
 
@@ -333,16 +330,19 @@ if (motionSupported) {
     motionActive = true;
     motion.handleEvent(event);
   };
-  if (platform === Platform.Capacitor) {
-    // iOS only grants motion access from inside a user gesture, so the request
-    // rides on the first touch of the canvas rather than on startup.
-    const requestOnFirstTouch = () => {
-      canvasEl.removeEventListener("pointerdown", requestOnFirstTouch);
-      void bindDeviceMotion(onMotion);
+  const needsPermission =
+    typeof (window.DeviceMotionEvent as unknown as { requestPermission?: unknown })
+      ?.requestPermission === "function";
+  if (needsPermission) {
+    // iOS (Safari and the Capacitor WKWebView) only grants motion access from
+    // a user activation, and WebKit counts pointerup/touchend/click as one but
+    // not pointerdown/touchstart. Keep trying on each tap until it binds.
+    const requestOnTap = () => {
+      void bindDeviceMotion(onMotion).then((ok) => {
+        if (ok) document.removeEventListener("pointerup", requestOnTap);
+      });
     };
-    canvasEl.addEventListener("pointerdown", requestOnFirstTouch, {
-      passive: true,
-    });
+    document.addEventListener("pointerup", requestOnTap, { passive: true });
   } else {
     void bindDeviceMotion(onMotion);
   }
