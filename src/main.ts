@@ -1498,8 +1498,8 @@ void (async function bootstrap() {
       }
       // Fetch the banner lazily so it can never delay first paint; only
       // switch the sheet to the "banner" material once an image actually
-      // resolves. A failed/missing fetch (e.g. the App Store or Mac
-      // banner placeholders — see render/banners.ts) leaves the sheet on
+      // resolves. A failed/missing fetch (e.g. the App Store banner
+      // placeholder — see render/banners.ts) leaves the sheet on
       // its plain paper default instead of a broken render.
       if (!twaInstalled) {
         const name = activeBannerName;
