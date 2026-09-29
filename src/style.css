@@ -15,6 +15,13 @@ body {
   height: 100%;
   overflow: hidden;
   background: #201a14;
+  /* Long-press on iOS would otherwise start text selection / the copy
+     callout over the canvas and UI. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  /* No double-tap zoom on iOS (e.g. tapping an action-island button twice). */
+  touch-action: manipulation;
   font-family:
     ui-sans-serif,
     system-ui,
@@ -725,6 +732,17 @@ body {
     color: #fff;
     background: rgba(255, 255, 255, 0.05);
   }
+}
+
+.footer-credit {
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.footer-credit a {
+  color: inherit;
 }
 
 /* Utilities */

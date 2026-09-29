@@ -34,11 +34,23 @@ const SWIPE_SEGMENT_QUIET_MS = 100;
 // tail arriving in dense sub-100ms bursts can't starve it from ever firing
 // (that starvation was the "stops working after a couple of swipes" bug).
 const SWIPE_LOCK_MS = 700;
-// Touch two-finger flick: fingers travel together at least this far, fast,
-// without twisting. Slower or twisting two-finger motion stays a move/rotate.
+// Touch two-finger flick: fingers travel together at least this far, fast.
+// Slower or twisting two-finger motion stays a move/rotate.
 const TOUCH_FLICK_MIN_PX = 60;
 const TOUCH_FLICK_MAX_MS = 350;
-const TOUCH_FLICK_MAX_ROT_RAD = 0.35;
+// Two-finger gestures are classified before the paper moves, like Chrome's
+// touch slop, from each finger's own travel: once both have moved, heading
+// the same way is a flick candidate and anything else a move/rotate. While
+// only one has moved it may just be lagging (it looks identical to a pivot
+// around the still finger), so a pivot only counts after a short wait. A
+// flick candidate becomes a move if the fingers are still down after
+// TOUCH_FLICK_MAX_MS.
+const TWO_FINGER_SLOP_PX = 10;
+const TWO_FINGER_PIVOT_SLOP_PX = 40;
+const TWO_FINGER_PIVOT_MIN_MS = 100;
+// cos of the largest angle between the fingers' paths that still counts as
+// moving together (~45°).
+const TWO_FINGER_PARALLEL_COS = 0.7;
 
 // Each active gesture carries its own state as a discriminated union rather
 // than a pile of independently-optional variables, so a variant's fields
@@ -48,11 +60,16 @@ type Gesture =
   | { type: "drag"; startTime: number; offset: Vec2 }
   | {
       type: "pinch_rotate";
+      /** pending: undecided, paper still; swipe: flick candidate, paper still;
+       * transform: paper follows the fingers. */
+      mode: "pending" | "swipe" | "transform";
       startTime: number;
       lastMid: Vec2;
       lastAngle: number;
       startMid: Vec2;
       startAngle: number;
+      /** Finger positions at touch-down, in pointer-map order. */
+      startPts: Vec2[];
       startPos: Vec2;
       startRot: number;
     }
@@ -155,11 +172,13 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       gesture = {
         type: "pinch_rotate",
+        mode: "pending",
         startTime: performance.now(),
         lastMid: mid,
         lastAngle: angle,
         startMid: mid,
         startAngle: angle,
+        startPts: pts,
         startPos: paper.pos,
         startRot: paper.rot,
       };
@@ -211,6 +230,42 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
       const mid = mul2(add2(pts[0], pts[1]), 0.5);
       const ang = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
 
+      if (gesture.mode !== "transform") {
+        const d = sub2(mid, gesture.startMid);
+        const elapsed = performance.now() - gesture.startTime;
+        let twist = ang - gesture.startAngle;
+        twist = Math.atan2(Math.sin(twist), Math.cos(twist));
+        const span = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        // Arc swept by the moving finger when pivoting around the still one.
+        const pivotArc = Math.abs(twist) * span;
+        const m0 = sub2(pts[0], gesture.startPts[0]);
+        const m1 = sub2(pts[1], gesture.startPts[1]);
+        const len0 = Math.hypot(m0.x, m0.y);
+        const len1 = Math.hypot(m1.x, m1.y);
+        const bothMoved = len0 > TWO_FINGER_SLOP_PX && len1 > TWO_FINGER_SLOP_PX;
+        const parallel =
+          bothMoved &&
+          (m0.x * m1.x + m0.y * m1.y) / (len0 * len1) > TWO_FINGER_PARALLEL_COS;
+        const rotating = bothMoved
+          ? !parallel
+          : pivotArc > TWO_FINGER_PIVOT_SLOP_PX && elapsed > TWO_FINGER_PIVOT_MIN_MS;
+        const panning = parallel;
+        const flickExpired = elapsed > TOUCH_FLICK_MAX_MS;
+
+        if (gesture.mode === "pending" && panning && !rotating) {
+          gesture.mode = "swipe";
+        }
+        if (rotating || (flickExpired && (gesture.mode === "swipe" || panning))) {
+          // Catch up to where the fingers are now, then track incrementally.
+          gesture.mode = "transform";
+          paper.pos = add2(mid, rotate2(sub2(add2(gesture.startPos, d), mid), twist));
+          paper.rot = gesture.startRot + twist;
+        }
+        gesture.lastMid = mid;
+        gesture.lastAngle = ang;
+        return;
+      }
+
       let dAng = ang - gesture.lastAngle;
       if (dAng > Math.PI) dAng -= Math.PI * 2;
       if (dAng < -Math.PI) dAng += Math.PI * 2;
@@ -243,33 +298,28 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
   /**
    * Touch counterpart of the trackpad swipe: a quick two-finger flick flips
-   * the paper. The flick also moved the paper through pinch_rotate, so that
-   * motion is undone first — the flip should happen in place.
+   * the paper. Only a gesture still classified as a swipe qualifies, and the
+   * paper never moved during it, so the flip happens in place.
    */
   const tryTouchFlick = (): boolean => {
-    if (!onFlip || gesture.type !== "pinch_rotate") return false;
+    if (!onFlip || gesture.type !== "pinch_rotate" || gesture.mode !== "swipe") {
+      return false;
+    }
     if (getLockState() === InputLock.Locked) return false;
     if (performance.now() - gesture.startTime > TOUCH_FLICK_MAX_MS) return false;
-
-    let twist = gesture.lastAngle - gesture.startAngle;
-    twist = Math.atan2(Math.sin(twist), Math.cos(twist));
-    if (Math.abs(twist) > TOUCH_FLICK_MAX_ROT_RAD) return false;
 
     const d = sub2(gesture.lastMid, gesture.startMid);
     const horizontalDominant = Math.abs(d.x) > Math.abs(d.y);
     const travel = horizontalDominant ? d.x : d.y;
     if (Math.abs(travel) < TOUCH_FLICK_MIN_PX) return false;
 
-    const paper = getActivePaper();
-    paper.pos = gesture.startPos;
-    paper.rot = gesture.startRot;
-
-    // Same mapping as the trackpad path: wheel deltas run opposite to finger
-    // motion horizontally and with it vertically.
+    // Opposite of the trackpad mapping (wheel deltas run opposite to finger
+    // motion horizontally and with it vertically), so the sheet turns the way
+    // the fingers travel.
     const sign = travel > 0 ? 1 : -1;
     const direction: FlipDirection = horizontalDominant
-      ? (-sign as FlipDirection)
-      : sign;
+      ? sign
+      : (-sign as FlipDirection);
     onFlip(direction, horizontalDominant ? "horizontal" : "vertical");
     return true;
   };
@@ -308,6 +358,9 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
   const onGestureStart = (e: Event) => {
     e.preventDefault();
     if (getLockState() === InputLock.Locked) return;
+    // iOS WebKit also fires these for two-finger touch; pointer events already
+    // drive that as pinch_rotate (and the flick), so don't hijack it.
+    if (pointers.size > 0) return;
 
     const paper = getActivePaper();
     const anchorLocal = getPaperLocalCentroid(paper);
@@ -334,6 +387,7 @@ export function attachGestureHandlers(opts: GestureOptions): () => void {
 
   const onGestureEnd = (e: Event) => {
     e.preventDefault();
+    if (gesture.type !== "trackpad_rotate") return;
     gesture = { type: "idle" };
   };
 
