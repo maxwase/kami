@@ -24,17 +24,13 @@ export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=eu.maxwase.kami.twa";
 
 export const APP_STORE_URL =
-  "https://apps.apple.com/us/app/kami-lid-driven-origami/id6810974882";
+  "https://apps.apple.com/us/app/kami-hinge-driven-origami/id6810977836";
 export const MAC_APP_STORE_URL =
   "https://apps.apple.com/app/kami-lid-driven-origami/id6810974882";
 
 const REGISTRY: Record<BannerName, BannerEntry> = {
   playstore: { src: "textures/kami-banner.jpg", url: PLAY_STORE_URL },
-  // Placeholder asset — the user has not supplied App Store banner artwork
-  // yet. Drop the real image in at public/textures/kami-banner-appstore.jpg;
-  // until then loadBanner() resolves null
-  // here and the caller falls back to a plain paper sheet (see main.ts).
-  appstore: { src: "textures/kami-banner-appstore.jpg", url: APP_STORE_URL },
+  appstore: { src: "textures/kami-banner-ios.jpg", url: APP_STORE_URL },
   mac: { src: "textures/kami-banner-mac.jpg", url: MAC_APP_STORE_URL },
 };
 
