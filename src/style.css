@@ -745,6 +745,24 @@ body {
   color: inherit;
 }
 
+.footer-legal {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.footer-legal a {
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .footer-legal a:hover {
+    color: #fff;
+  }
+}
+
 /* Utilities */
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
