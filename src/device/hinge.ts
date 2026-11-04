@@ -32,8 +32,9 @@ export function computeHingePoint(canvasCssW: number, canvasCssH: number): Hinge
 
   try {
     // iOS has no `viewport.segments`: the hinge plugin is the only source, and
-    // it synthesizes the crease from the hinge angle. Checked first because on
-    // Capacitor every API below is guaranteed absent.
+    // it synthesizes the crease from the view bounds. On Android the plugin
+    // reports the real WindowManager fold bounds. Checked first; if the plugin
+    // reports nothing, an Android WebView may still expose the APIs below.
     if (runtime.platform === Platform.Capacitor) {
       const capacitorSegments = getCapacitorSegments();
       if (capacitorSegments.length > 0) {

@@ -1,7 +1,7 @@
 # Building & releasing kami
 
-iOS is a separate app (bundle `eu.maxwase.kami.ios`, Capacitor) — see
-[iOS](#ios) at the end. The rest of this document is macOS.
+iOS and Android are Capacitor apps — see [iOS](#ios) and [Android](#android)
+at the end. The rest of this document is macOS.
 
 ## Requirements
 
@@ -10,6 +10,7 @@ iOS is a separate app (bundle `eu.maxwase.kami.ios`, Capacitor) — see
 - A modern [browser](https://developer.mozilla.org/en-US/docs/Web/API/Device_Posture_API) to actually test folding. Note that the API is only available on localhost or HTTPS connections.
 - Or [stable Rust](https://rustup.sh) when building with `tauri` for MacOS.
 - Or Xcode 16+ when building for iOS.
+- Or Android Studio (JDK 21 + Android SDK 36) when building for Android.
 
 ## Web
 
@@ -98,9 +99,9 @@ pnpm ios:open    # or open the Xcode project to run on a device
 pnpm ios:sync    # re-copy the web build after changing src/
 ```
 
-iPhone-only, and there is no hinge sensor to read: iOS exposes no fold/posture
-API (checked against the iOS 26.5 SDK), so `src/device/capacitor.ts` is a stub
-and folding is driven by the on-screen buttons plus the accelerometer. Motion
+The hinge comes from `@maxwase/capacitor-hinge`, which wraps iOS 27.1's
+`UIHingeInteraction`; on iPhones without a hinge, folding is driven by the
+on-screen buttons plus the accelerometer. Motion
 access is requested on the first tap, since iOS only grants it from inside a
 user gesture — denying it leaves everything else working.
 
@@ -127,3 +128,38 @@ pnpm build:ios:appstore:upload   # ...and upload it via altool
 Bump `MARKETING_VERSION` (currently `0.1.0`) and `CURRENT_PROJECT_VERSION` in
 `ios/App/App.xcodeproj/project.pbxproj` before each upload; App Store Connect
 rejects a build number it has already seen.
+
+# Android
+
+The Android app is the same Capacitor build as iOS. `android/` holds the Gradle
+project; the web assets are copied into it on every sync. It replaced the
+Bubblewrap TWA but keeps its package id (`eu.maxwase.kami.twa`, set in
+`android/app/build.gradle`, not `capacitor.config.ts`) and upload key, so Play
+ships it as an update to the existing listing.
+
+```sh
+pnpm android:run      # build, sync, and launch on a device/emulator
+pnpm android:open     # or open the project in Android Studio
+pnpm android:sync     # re-copy the web build after changing src/
+pnpm android:assets   # regenerate launcher icons + splash from public/icons/capacitor
+```
+
+The hinge plugin reads the `TYPE_HINGE_ANGLE` sensor and Jetpack WindowManager's
+`FoldingFeature`. The `Pixel Fold`-style emulator images have both; use the
+emulator's extended controls → Virtual sensors → Hinge angle to move it.
+
+## Release
+
+```sh
+ANDROID_KEYSTORE_PATH=... ANDROID_KEYSTORE_PASSWORD=... \
+ANDROID_KEY_ALIAS=kami ANDROID_KEY_PASSWORD=... \
+  pnpm build:android   # signed APK + AAB under android/app/build/outputs/
+```
+
+Without `ANDROID_KEYSTORE_PATH` the release build is unsigned. CI
+(`.github/workflows/android.yml`) does the same with the keystore from secrets.
+Bump `versionCode` / `versionName` in `android/app/build.gradle` before each
+upload; Play rejects a version code it has already seen.
+
+`public/.well-known/assetlinks.json` was only needed by the TWA. It is still
+served so TWA installs that haven't updated keep working without a URL bar.

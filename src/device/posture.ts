@@ -67,6 +67,12 @@ export function helpCopyForSupport(
 
 /** Resolve the current device posture string. */
 export function readDevicePostureType(): string {
+  // The native plugin wins on Capacitor: an Android WebView may also expose
+  // `devicePosture`, but the plugin reads the same WindowManager state plus
+  // the hinge sensor, so its posture stays consistent with its angle.
+  if (runtime.platform === Platform.Capacitor && isCapacitorHingeAvailable()) {
+    return getCapacitorPostureType();
+  }
   const navAny = navigator as Navigator & {
     devicePosture?: { type?: string };
   };
@@ -74,16 +80,14 @@ export function readDevicePostureType(): string {
   if (runtime.platform === Platform.Tauri) {
     return getTauriPostureType();
   }
-  if (runtime.platform === Platform.Capacitor) {
-    return getCapacitorPostureType();
-  }
   return "unknown";
 }
 
 /**
  * Detect whether a posture source is present. On Capacitor this is gated on
  * the hinge bridge actually reporting a hinge — true on an iPhone Duo running
- * iOS 27.1 or later, false on every other iPhone, which keeps the
+ * iOS 27.1 or later and on Android foldables (hinge sensor or WindowManager
+ * fold), false on every other phone, which keeps the
  * manual-controls help copy and the Fold button as the primary interaction
  * there.
  */

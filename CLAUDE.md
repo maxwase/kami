@@ -17,7 +17,7 @@ pnpm tauri build --bundles app  # Build macOS app bundle
 
 ## Architecture Overview
 
-Kami is an interactive paper-folding simulator that responds to physical device hinges (foldable phones, laptop lids). It runs as both a web app and a native macOS app via Tauri.
+Kami is an interactive paper-folding simulator that responds to physical device hinges (foldable phones, laptop lids). It runs as a web app, a native macOS app via Tauri, and native iOS/Android apps via Capacitor (`ios/`, `android/`).
 
 ### Module Structure
 
@@ -32,6 +32,7 @@ Kami is an interactive paper-folding simulator that responds to physical device 
   - `hinge.ts`: Viewport segment parsing for foldable devices
   - `motion.ts`: Smoothed accelerometer tracking
   - `tauri.ts`: Bridge to Rust backend for macOS hinge sensor
+  - `capacitor.ts`: Bridge to `@maxwase/capacitor-hinge` (iOS `UIHingeInteraction`, Android hinge sensor + WindowManager)
 
 - **`src/render/`** - Rendering
   - `backend.ts`: `PaperRenderer` chosen at boot — WebGL, with live Canvas2D fallback on context loss

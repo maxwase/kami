@@ -1,10 +1,11 @@
 /**
- * iOS hinge bridge.
+ * Native hinge bridge (iOS and Android).
  *
  * Apple shipped `UIHingeInteraction` / `UIHinge` in iOS 27.1 (Xcode 27.1) —
  * the first public fold API on the platform, and the thing this file was
- * always waiting for. It is wrapped by the standalone
- * `@maxwase/capacitor-hinge` plugin, which reports a Chrome-compatible
+ * always waiting for. On Android the same plugin reads the hinge angle
+ * sensor and Jetpack WindowManager's fold feature. Both are wrapped by the
+ * standalone `@maxwase/capacitor-hinge` plugin, which reports a Chrome-compatible
  * posture string, the raw hinge angle, and crease geometry. This module is
  * the only place in Kami that knows the plugin exists: call sites
  * (`posture.ts`, `hinge.ts`) see plain strings and `SegmentRect`s.
@@ -28,6 +29,11 @@ let postureType = "unknown";
 let angleDegrees: number | null = null;
 /** Crease half-width from the plugin; `null` when no crease is known. */
 let creaseHalfSpan: number | null = null;
+/**
+ * The plugin's full crease, used as-is on Android: WindowManager reports real
+ * fold bounds and re-reports them on every rotation, so they never go stale.
+ */
+let reportedCrease: Crease | null = null;
 let creased = false;
 let initialized = false;
 
@@ -58,6 +64,7 @@ function applyState(state: HingeState): void {
       postureType = "unknown";
       angleDegrees = null;
       creaseHalfSpan = null;
+      reportedCrease = null;
       creased = false;
       return;
 
@@ -65,15 +72,23 @@ function applyState(state: HingeState): void {
       postureType = "folded";
       angleDegrees = state.angle?.degrees ?? null;
       creaseHalfSpan = null;
+      reportedCrease = null;
       creased = false;
       return;
 
     case "open":
       postureType = state.flat ? "continuous" : "folded";
       angleDegrees = state.angle?.degrees ?? null;
-      // Only the crease width is kept: its axis and center are re-derived on
-      // every read (see `currentCrease()`).
+      // iOS: only the crease width is trusted, axis and center are re-derived
+      // on every read (see `currentCrease()`). Android: all of it is trusted.
       creaseHalfSpan = state.crease?.halfSpan ?? null;
+      reportedCrease = state.crease
+        ? {
+            axis: state.crease.axis,
+            center: state.crease.center,
+            halfSpan: state.crease.halfSpan,
+          }
+        : null;
       // Segments only while the device is actually bent: `resolveHingeState()`
       // reads two segments as book mode, and a flat Duo is not in book mode.
       creased = !state.flat;
@@ -98,6 +113,10 @@ interface Crease {
  */
 function currentCrease(): Crease | null {
   if (creaseHalfSpan === null) return null;
+  // Android foldables don't share the Duo's geometry (a Pixel Fold's inner
+  // display is near-square, with the hinge on the *shorter* bisector in
+  // portrait), so the longer-side rule would pick the wrong axis there.
+  if (isAndroid()) return reportedCrease;
   const width = window.innerWidth;
   const height = window.innerHeight;
   return width >= height
@@ -126,11 +145,19 @@ function rect(left: number, top: number, right: number, bottom: number): Segment
   return { left, top, right, bottom, width: right - left, height: bottom - top };
 }
 
+function isAndroid(): boolean {
+  const capacitor = (
+    window as unknown as { Capacitor?: { getPlatform?: () => string } }
+  ).Capacitor;
+  return capacitor?.getPlatform?.() === "android";
+}
+
 function clearState(): void {
   available = false;
   postureType = "unknown";
   angleDegrees = null;
   creaseHalfSpan = null;
+  reportedCrease = null;
   creased = false;
 }
 

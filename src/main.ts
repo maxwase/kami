@@ -73,14 +73,20 @@ if (platform === Platform.Web) {
   registerServiceWorker();
 }
 
-/** Native iOS shell: a few links and controls behave differently there. */
-const isIosNative = platform === Platform.Capacitor;
+/** Native Capacitor shell (iOS or Android): bundle loads off disk, hinge comes from the plugin. */
+const isCapacitorNative = platform === Platform.Capacitor;
+/** Native iOS shell: App Store rules make a few links behave differently there. */
+const isIosNative =
+  isCapacitorNative &&
+  (
+    window as unknown as { Capacitor?: { getPlatform?: () => string } }
+  ).Capacitor?.getPlatform?.() === "ios";
 
-// Seed the iOS hinge cache before `resolvePostureSupport()` runs below —
+// Seed the native hinge cache before `resolvePostureSupport()` runs below —
 // support is computed once, so a late answer would latch it to Unavailable.
 let readCapacitorHingeAngle: () => number | null = () => null;
 let isFoldable = false;
-if (isIosNative) {
+if (isCapacitorNative) {
   const { initCapacitorHinge, getCapacitorHingeAngle, isCapacitorHingeAvailable } =
     await import("./device/capacitor");
   await initCapacitorHinge();
@@ -186,11 +192,13 @@ analyticsPreferencesBtn.onclick = () => {
   showAnalyticsConsent();
 };
 
-// How was the app launched: native iOS app, installed TWA, installed PWA, or
-// browser tab. A Capacitor WebView reports neither a display-mode nor
-// navigator.standalone, so it has to be checked before those.
-function getLaunchContext(): "ios" | "twa" | "pwa" | "browser" {
+// How was the app launched: native iOS/Android app, installed TWA (older
+// Play builds), installed PWA, or browser tab. A Capacitor WebView reports
+// neither a display-mode nor navigator.standalone, so it has to be checked
+// before those.
+function getLaunchContext(): "ios" | "android" | "twa" | "pwa" | "browser" {
   if (isIosNative) return "ios";
+  if (isCapacitorNative) return "android";
   if (document.referrer.startsWith("android-app://")) return "twa";
   if (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -220,7 +228,7 @@ let bannerImage: FrontImageSource | null = null;
 
 // App Store guideline 3.1.1 forbids collecting money through a link out of an
 // app distributed via the App Store (iOS or the Mac App Store build), so the
-// tip jar only exists on web and TWA.
+// tip jar only exists on web and Android.
 if (isIosNative || platform === Platform.Tauri) {
   buyCoffeeLink.remove();
 } else {
@@ -241,7 +249,7 @@ repoLink.addEventListener("click", (event) => {
 // The native bundle has no /privacy/ or /terms/ pages of its own (single-entry
 // build), and they have to stay reachable for store review, so point at the
 // hosted copies and open them in the in-app browser.
-if (isIosNative) {
+if (isCapacitorNative) {
   for (const link of document.querySelectorAll<HTMLAnchorElement>(
     'a[href="/privacy/"], a[href="/terms/"]',
   )) {
@@ -1460,7 +1468,7 @@ function tick(now: number) {
     if (motionSupported) {
       debugLines.push(fmtRow({ accel: accelMag.toFixed(2) }));
     }
-    if (isIosNative) {
+    if (isCapacitorNative) {
       const hingeDegrees = readCapacitorHingeAngle();
       debugLines.push(
         fmtRow({ hinge: hingeDegrees === null ? "-" : `${hingeDegrees.toFixed(0)}°` }),

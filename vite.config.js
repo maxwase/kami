@@ -5,8 +5,8 @@ import { VitePWA } from "vite-plugin-pwa";
 
 const host = process.env.TAURI_DEV_HOST;
 const isTauri = Boolean(process.env.TAURI_ENV_PLATFORM || host);
-// The Capacitor CLI sets no env of its own, so the iOS build opts in explicitly
-// (see the `build:ios` script).
+// The Capacitor CLI sets no env of its own, so the iOS and Android builds opt
+// in explicitly (see the `build:native` script).
 const isCapacitor = process.env.KAMI_TARGET === "capacitor";
 // Anything that loads the bundle off disk rather than over HTTP.
 const isNative = isTauri || isCapacitor;
@@ -82,16 +82,17 @@ export default defineConfig({
         }
       : undefined,
     watch: {
-      ignored: ["**/src-tauri/**", "**/ios/**"],
+      ignored: ["**/src-tauri/**", "**/ios/**", "**/android/**"],
     },
   },
   envPrefix: ["VITE_", "TAURI_ENV_*", "KAMI_"],
   build: isCapacitor
     ? {
-        // WKWebView on the minimum supported iOS; the app ships no privacy
-        // page of its own (that link goes to the hosted site instead), so the
-        // default single index.html input is correct here.
-        target: "safari15",
+        // WKWebView on the minimum supported iOS and Android System WebView
+        // on API 24 (auto-updated, so a modern Chrome); the app ships no
+        // privacy page of its own (that link goes to the hosted site
+        // instead), so the default single index.html input is correct here.
+        target: ["safari15", "chrome100"],
       }
     : isTauri
       ? {

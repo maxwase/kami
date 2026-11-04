@@ -19,7 +19,6 @@ local.properties
 
 # Apple provisioning profiles - regenerable, don't commit
 *.provisionprofile
-twa-manifest.json
 
 # iOS build outputs (the Xcode project itself is committed; ios/.gitignore
 # covers the Capacitor-generated files inside it)
@@ -27,10 +26,10 @@ build/ios/
 *.xcarchive
 *.ipa
 
-# Android / Gradle build outputs
+# Android / Gradle build outputs (android/.gitignore covers the Capacitor
+# project's own generated files)
 .gradle/
 build/
-app/build/
 *.aab
 *.apk
 *.apk.idsig

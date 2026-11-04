@@ -1,4 +1,4 @@
-name: Build Android TWA for release
+name: Build Android app for release
 
 on:
   workflow_dispatch:
@@ -10,21 +10,45 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    env:
+      VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+      VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: "pnpm"
+      # capacitor-hinge is a private git dependency; HINGE_DEPLOY_KEY is a
+      # read-only deploy key on that repo.
+      - name: Load capacitor-hinge deploy key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.HINGE_DEPLOY_KEY }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Capacitor 8's Android Gradle plugin needs JDK 21.
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: Build web bundle and sync into the Android project
+        run: pnpm android:sync
       - name: Decode keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
       - name: Build signed APK + AAB
+        working-directory: android
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -36,8 +60,8 @@ jobs:
       - name: Collect outputs
         run: |
           mkdir -p release-artifacts
-          cp app/build/outputs/apk/release/*.apk release-artifacts/kami-release.apk
-          cp app/build/outputs/bundle/release/*.aab release-artifacts/kami-release.aab
+          cp android/app/build/outputs/apk/release/*.apk release-artifacts/kami-release.apk
+          cp android/app/build/outputs/bundle/release/*.aab release-artifacts/kami-release.aab
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:

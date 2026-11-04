@@ -17,13 +17,18 @@
     "build:sandbox-dev": "scripts/build-sandbox-dev.sh",
     "build:appstore": "scripts/build-appstore.sh",
     "build:appstore:upload": "scripts/build-appstore.sh --upload",
-    "build:ios": "KAMI_TARGET=capacitor pnpm build",
-    "ios:sync": "pnpm build:ios && cap sync ios",
+    "build:native": "KAMI_TARGET=capacitor pnpm build",
+    "ios:sync": "pnpm build:native && cap sync ios",
     "ios:open": "cap open ios",
     "ios:run": "scripts/run-ios-sim.sh",
     "ios:assets": "capacitor-assets generate --ios --assetPath public/icons/capacitor --iosProject ios/App",
     "build:ios:appstore": "scripts/build-ios.sh",
-    "build:ios:appstore:upload": "scripts/build-ios.sh --upload"
+    "build:ios:appstore:upload": "scripts/build-ios.sh --upload",
+    "android:sync": "pnpm build:native && cap sync android",
+    "android:open": "cap open android",
+    "android:run": "pnpm android:sync && cap run android",
+    "android:assets": "capacitor-assets generate --android --assetPath public/icons/capacitor --androidProject android",
+    "build:android": "pnpm android:sync && cd android && ./gradlew assembleRelease bundleRelease"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.13",
@@ -45,10 +50,11 @@
     "workbox-window": "^7.4.1"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.1",
-    "@maxwase/capacitor-hinge": "git+ssh://git@github.com/maxwase/capacitor-hinge.git#master",
     "@capacitor/ios": "^8.5.1",
+    "@maxwase/capacitor-hinge": "git+ssh://git@github.com/maxwase/capacitor-hinge.git#master",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
     "gl-matrix": "^3.4.4",

@@ -79,7 +79,7 @@ interface EventMap {
     device_pixel_ratio: number;
   };
   outbound_link: { link_type: string; link_url: string };
-  app_open: { launch_context: "ios" | "twa" | "pwa" | "browser" };
+  app_open: { launch_context: "ios" | "android" | "twa" | "pwa" | "browser" };
   analytics_consent_changed: { granted: boolean };
   playstore_banner_tapped: { banner: "playstore" | "appstore" | "mac" };
   paper_texture_changed: {
@@ -129,8 +129,9 @@ function startPostHog(): void {
     // it doesn't record pixels by default) balloons a session to tens of MB
     // here — even at 4fps/0.4 quality one session hit ~74MB and stalled
     // processing. Left off; session replay will show a blank canvas.
-    // The iOS build never records sessions: the App Store privacy manifest
-    // declares product interaction only, and replay would add more data types.
+    // Native builds never record sessions: the App Store privacy manifest and
+    // the Play data safety form declare product interaction only, and replay
+    // would add more data types.
     disable_session_recording: resolveRuntimeInfo().platform === Platform.Capacitor,
   });
   initialized = true;
