@@ -56,7 +56,7 @@ const pwaPlugins = [
       globPatterns: ["**/*.{js,css,html,png,svg,jpg}"],
       // These are real static pages, not SPA routes — don't serve the
       // app shell for them via the navigate fallback.
-      navigateFallbackDenylist: [/^\/privacy/, /^\/\.well-known/, /\.(txt|xml|json)$/],
+      navigateFallbackDenylist: [/^\/privacy/, /^\/terms/, /^\/\.well-known/, /\.(txt|xml|json)$/],
     },
   }),
 ];
@@ -105,6 +105,7 @@ export default defineConfig({
             input: {
               main: resolve(rootDir, "index.html"),
               privacy: resolve(rootDir, "privacy/index.html"),
+              terms: resolve(rootDir, "terms/index.html"),
             },
           },
         },

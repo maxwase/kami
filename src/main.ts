@@ -88,7 +88,7 @@ if (isIosNative) {
   isFoldable = isCapacitorHingeAvailable();
 }
 
-const PRIVACY_POLICY_URL = "https://kami.maxwase.eu/privacy/";
+const LEGAL_PAGES_ORIGIN = "https://kami.maxwase.eu";
 
 /**
  * Phones report acceleration; desktops and laptops either do not have the
@@ -238,16 +238,17 @@ repoLink.addEventListener("click", (event) => {
   });
   if (openExternal(repoLink.href)) event.preventDefault();
 });
-// The native bundle has no /privacy/ page of its own (single-entry build), and
-// the policy has to stay reachable for App Store review, so point at the
-// hosted copy and open it in the in-app browser.
+// The native bundle has no /privacy/ or /terms/ pages of its own (single-entry
+// build), and they have to stay reachable for store review, so point at the
+// hosted copies and open them in the in-app browser.
 if (isIosNative) {
   for (const link of document.querySelectorAll<HTMLAnchorElement>(
-    'a[href="/privacy/"]',
+    'a[href="/privacy/"], a[href="/terms/"]',
   )) {
-    link.href = PRIVACY_POLICY_URL;
+    const url = LEGAL_PAGES_ORIGIN + link.getAttribute("href");
+    link.href = url;
     link.addEventListener("click", (event) => {
-      if (openExternal(PRIVACY_POLICY_URL)) event.preventDefault();
+      if (openExternal(url)) event.preventDefault();
     });
   }
 }
